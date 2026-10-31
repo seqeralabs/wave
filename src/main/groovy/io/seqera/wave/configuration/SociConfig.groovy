@@ -41,10 +41,9 @@ import jakarta.inject.Singleton
 class SociConfig {
 
     /**
-     * The zTOC span size, i.e. the distance between two decompression checkpoints. Same default as soci
+     * The zTOC span size, i.e. the distance between two decompression checkpoints. Same as soci
      */
-    @Value('${wave.soci.span-size:4194304}')
-    long spanSize
+    final long spanSize = 4194304
 
     /**
      * Layers smaller than this size are not indexed. Same default as soci
@@ -60,12 +59,6 @@ class SociConfig {
     Duration awaitTimeout
 
     /**
-     * How often the indexing status is checked while a manifest request is held
-     */
-    @Value('${wave.soci.status-delay:1s}')
-    Duration statusDelay
-
-    /**
      * How long a zTOC lookup entry is kept in the cache. It must be shorter than the
      * lifecycle expiry of the zTOC repository
      */
@@ -79,26 +72,17 @@ class SociConfig {
     Duration jobTimeout
 
     /**
-     * How long the publication of the SOCI-enabled tag of a durable container waits for the container
-     * (build or mirror) and for its layers indexing
-     */
-    @Value('${wave.soci.publish-timeout:30m}')
-    Duration publishTimeout
-
-    /**
      * How long a layer whose indexing failed is not re-submitted
      */
     @Value('${wave.soci.failure-duration:10m}')
     Duration failureDuration
 
     /**
-     * How long a published SOCI tag is assumed to be current, before checking it again on the registry
+     * How long the publication of the SOCI-enabled tag of a durable container waits for the container
+     * (build or mirror) and for its layers indexing
      */
-    @Value('${wave.soci.current-cache-duration:5m}')
-    Duration currentCacheDuration
-
-    @Value('${wave.soci.retry-attempts:2}')
-    Integer retryAttempts
+    @Value('${wave.soci.publish-timeout:30m}')
+    Duration publishTimeout
 
     /**
      * The OCI repository where zTOC artifacts are stored. Defaults to {@code <wave.build.repo>/soci-ztoc}

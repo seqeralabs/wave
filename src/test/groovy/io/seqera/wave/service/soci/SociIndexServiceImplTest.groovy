@@ -41,7 +41,7 @@ class SociIndexServiceImplTest extends Specification {
     static final String BIG = 'sha256:' + '3'*64
     static final String GZIP = 'application/vnd.oci.image.layer.v1.tar+gzip'
 
-    SociConfig config = new SociConfig(spanSize: 4194304, minLayerSize: 10485760, repo: 'registry.io/wave/soci-ztoc',
+    SociConfig config = new SociConfig(minLayerSize: 10485760, repo: 'registry.io/wave/soci-ztoc',
             jobTimeout: Duration.ofMinutes(10))
 
     static String manifest() {
@@ -61,19 +61,17 @@ class SociIndexServiceImplTest extends Specification {
 
     def 'should launch one job per missing eligible layer' () {
         given:
-        def ztocStore = Mock(SociZtocStore)
         def jobStore = Mock(SociIndexStateStore)
         def jobService = Mock(JobService)
         def proxy = Mock(RegistryProxyService)
         def inspect = Mock(ContainerInspectService)
-        def service = new SociIndexServiceImpl(config: config, ztocStore: ztocStore, jobStore: jobStore, jobService: jobService, proxyService: proxy, inspectService: inspect)
+        def service = new SociIndexServiceImpl(config: config, jobStore: jobStore, jobService: jobService, proxyService: proxy, inspectService: inspect)
 
         when:
         service.indexLayers('docker.io/library/app', SociManifestAssembler.eligibleLayers(manifest(), 10485760), PlatformId.NULL)
 
         then:
-        ztocStore.get("4194304/$CACHED") >> ztoc(CACHED)
-        ztocStore.get("4194304/$BIG") >> null
+        jobStore.get("4194304/$CACHED") >> SociIndexEntry.found(ztoc(CACHED))
         jobStore.get("4194304/$BIG") >> null
         1 * proxy.getManifestContent("registry.io/wave/soci-ztoc:ztoc-4194304-${'3'*64}", null) >> null
         1 * inspect.credentialsConfigJson('FROM docker.io/library/app', 'registry.io/wave/soci-ztoc', null, PlatformId.NULL) >> '{"auths":{}}'
@@ -81,7 +79,6 @@ class SociIndexServiceImplTest extends Specification {
         1 * jobService.launchSociIndex({ SociIndexRequest it ->
             it.source == "docker.io/library/app@$BIG" &&
             it.layerDigest == BIG &&
-            it.layerSize == 52428800 &&
             it.repository == 'registry.io/wave/soci-ztoc' &&
             it.authJson == '{"auths":{}}' &&
             it.requestId.startsWith('soci-') })
@@ -90,17 +87,15 @@ class SociIndexServiceImplTest extends Specification {
 
     def 'should dedup concurrent requests for the same layer' () {
         given:
-        def ztocStore = Mock(SociZtocStore)
         def jobStore = Mock(SociIndexStateStore)
         def jobService = Mock(JobService)
         def proxy = Mock(RegistryProxyService)
-        def service = new SociIndexServiceImpl(config: config, ztocStore: ztocStore, jobStore: jobStore, jobService: jobService, proxyService: proxy, inspectService: Mock(ContainerInspectService))
+        def service = new SociIndexServiceImpl(config: config, jobStore: jobStore, jobService: jobService, proxyService: proxy, inspectService: Mock(ContainerInspectService))
 
         when:
         service.indexLayers('docker.io/library/app', SociManifestAssembler.eligibleLayers(manifest(), 10485760), PlatformId.NULL)
 
         then:
-        ztocStore.get(_) >> null
         jobStore.get(_) >> null
         proxy.getManifestContent(_, null) >> null
         2 * jobStore.putIfAbsent(_, _) >> false
@@ -109,10 +104,9 @@ class SociIndexServiceImplTest extends Specification {
 
     def 'should restore entry from registry tag annotations when Redis misses' () {
         given:
-        def ztocStore = Mock(SociZtocStore)
         def jobStore = Mock(SociIndexStateStore)
         def proxy = Mock(RegistryProxyService)
-        def service = new SociIndexServiceImpl(config: config, ztocStore: ztocStore, jobStore: jobStore, proxyService: proxy)
+        def service = new SociIndexServiceImpl(config: config, jobStore: jobStore, proxyService: proxy)
         def artifact = JsonOutput.toJson([
                 schemaVersion: 2,
                 mediaType: 'application/vnd.oci.image.manifest.v1+json',
@@ -128,73 +122,54 @@ class SociIndexServiceImplTest extends Specification {
         def result = service.findZtocs([BIG, CACHED])
 
         then:
-        ztocStore.get(_) >> null
         jobStore.get(_) >> null
         1 * proxy.getManifestContent("registry.io/wave/soci-ztoc:ztoc-4194304-${'3'*64}", null) >> artifact
         1 * proxy.getManifestContent("registry.io/wave/soci-ztoc:ztoc-4194304-${'2'*64}", null) >> null
-        1 * ztocStore.put("4194304/$BIG", new ZtocEntry(BIG, GZIP, 'sha256:zbig', 1234, 4194304))
+        1 * jobStore.putEntry(SociIndexEntry.found(new ZtocEntry(BIG, GZIP, 'sha256:zbig', 1234, 4194304)))
         and: 'a missing tag means not indexed'
         result == [(BIG): new ZtocEntry(BIG, GZIP, 'sha256:zbig', 1234, 4194304)]
     }
 
     def 'should not look up the repository while a job is running' () {
         given:
-        def ztocStore = Mock(SociZtocStore)
         def jobStore = Mock(SociIndexStateStore)
         def proxy = Mock(RegistryProxyService)
-        def service = new SociIndexServiceImpl(config: config, ztocStore: ztocStore, jobStore: jobStore, proxyService: proxy)
+        def service = new SociIndexServiceImpl(config: config, jobStore: jobStore, proxyService: proxy)
 
         when:
         def result = service.findZtocs([BIG])
         then:
-        ztocStore.get(_) >> null
-        jobStore.get("4194304/$BIG") >> Mock(SociIndexEntry)
+        jobStore.get("4194304/$BIG") >> SociIndexEntry.of(new SociIndexRequest(layerDigest: BIG, spanSize: 4194304))
         0 * proxy.getManifestContent(_, _)
         result == [:]
     }
 
     def 'should store entry on job completion' () {
         given:
-        def ztocStore = Mock(SociZtocStore)
         def jobStore = Mock(SociIndexStateStore)
-        def events = Mock(io.micronaut.context.event.ApplicationEventPublisher)
-        def service = new SociIndexServiceImpl(config: config, ztocStore: ztocStore, jobStore: jobStore, eventPublisher: events)
+        def service = new SociIndexServiceImpl(config: config, jobStore: jobStore)
         def request = new SociIndexRequest(requestId: 'soci-1', layerDigest: BIG, spanSize: 4194304)
         def entry = SociIndexEntry.of(request)
-        def stdout = 'some log line\n{"layerDigest":"' + BIG + '","layerMediaType":"' + GZIP + '","ztocDigest":"sha256:zbig","ztocSize":1234,"spanSize":4194304,"skipped":false}\n'
+        def stdout = 'some log line\n{"layerDigest":"' + BIG + '","layerMediaType":"' + GZIP + '","ztocDigest":"sha256:zbig","ztocSize":1234,"spanSize":4194304}\n'
 
         when:
         service.onJobCompletion(Mock(JobSpec), entry, JobState.completed(0, stdout))
         then:
-        1 * ztocStore.put("4194304/$BIG", new ZtocEntry(BIG, GZIP, 'sha256:zbig', 1234, 4194304))
         1 * jobStore.putEntry({ SociIndexEntry it -> it.done() && it.succeeded() && it.ztoc.ztocDigest == 'sha256:zbig' })
-        1 * events.publishEvent(new SociLayerEvent(BIG, true))
     }
 
-    def 'should retry a failed job then notify the failure' () {
+    def 'should record a failed job' () {
         given:
-        def ztocStore = Mock(SociZtocStore)
         def jobStore = Mock(SociIndexStateStore)
         def jobService = Mock(JobService)
-        def events = Mock(io.micronaut.context.event.ApplicationEventPublisher)
-        config.retryAttempts = 2
-        def service = new SociIndexServiceImpl(config: config, ztocStore: ztocStore, jobStore: jobStore, jobService: jobService, eventPublisher: events)
-        def request = new SociIndexRequest(requestId: 'soci-1', layerDigest: BIG, spanSize: 4194304, workDir: java.nio.file.Path.of('/tmp/soci-1'), attempt: 1)
+        def service = new SociIndexServiceImpl(config: config, jobStore: jobStore, jobService: jobService)
+        def request = new SociIndexRequest(requestId: 'soci-1', layerDigest: BIG, spanSize: 4194304)
 
-        when: 'the first attempt fails'
+        when:
         service.onJobCompletion(Mock(JobSpec), SociIndexEntry.of(request), JobState.completed(1, 'soci-indexer: unable to access layer'))
         then:
-        1 * jobStore.put("4194304/$BIG", { SociIndexEntry it -> !it.done() && it.request.attempt == 2 })
-        1 * jobService.launchSociIndex({ SociIndexRequest it -> it.attempt == 2 && it.layerDigest == BIG && it.requestId != 'soci-1' })
-        0 * events.publishEvent(_)
-
-        when: 'the last attempt fails'
-        service.onJobCompletion(Mock(JobSpec), SociIndexEntry.of(request.retry(java.nio.file.Path.of('/tmp'))), JobState.completed(1, 'soci-indexer: unable to access layer'))
-        then:
-        0 * ztocStore.put(_, _)
         0 * jobService.launchSociIndex(_)
         1 * jobStore.putEntry({ SociIndexEntry it -> it.done() && !it.succeeded() && it.error.contains('unable to access layer') })
-        1 * events.publishEvent(new SociLayerEvent(BIG, false))
     }
 
     def 'should launch the job with the docker auth' () {
@@ -216,21 +191,6 @@ class SociIndexServiceImplTest extends Specification {
         dir?.deleteDir()
     }
 
-    def 'should find the layers that failed recently' () {
-        given:
-        def jobStore = Mock(SociIndexStateStore)
-        def service = new SociIndexServiceImpl(config: config, jobStore: jobStore)
-        def request = new SociIndexRequest(layerDigest: BIG, spanSize: 4194304)
-
-        when:
-        def result = service.failedLayers([BIG, CACHED, SMALL])
-        then:
-        jobStore.get("4194304/$BIG") >> SociIndexEntry.of(request).complete(1, null, 'error')
-        jobStore.get("4194304/$CACHED") >> SociIndexEntry.of(request)
-        jobStore.get("4194304/$SMALL") >> null
-        result == [BIG] as Set
-    }
-
     def 'should parse the result line' () {
         expect:
         SociIndexServiceImpl.parseResult(STDOUT)?.ztocDigest == EXPECTED
@@ -241,6 +201,5 @@ class SociIndexServiceImplTest extends Specification {
         'error: something'                                                      | null
         '{"layerDigest":"sha256:a","ztocDigest":"sha256:z"}'                    | 'sha256:z'
         'log\n{"layerDigest":"sha256:a","ztocDigest":"sha256:z"}\n'             | 'sha256:z'
-        '{"layerDigest":"sha256:a","skipped":true,"reason":"min-size"}'         | null
     }
 }

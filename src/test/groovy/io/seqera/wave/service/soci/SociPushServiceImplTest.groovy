@@ -49,7 +49,7 @@ class SociPushServiceImplTest extends Specification {
     static final String TARGET = 'quay.io/user/python:3.12'
     static final String SOCI = 'quay.io/user/python:3.12-soci'
 
-    SociConfig config = new SociConfig(spanSize: 4194304, minLayerSize: 10485760, repo: 'public.cr.stage-seqera.io/wave/soci-ztoc',
+    SociConfig config = new SociConfig(minLayerSize: 10485760, repo: 'public.cr.stage-seqera.io/wave/soci-ztoc',
             publishTimeout: Duration.ofMinutes(30), jobTimeout: Duration.ofMinutes(1))
 
     /** runs the async tasks in the calling thread */
@@ -160,43 +160,25 @@ class SociPushServiceImplTest extends Specification {
         0 * index._
     }
 
-    def 'should start the publication on mirror completion and index the missing layers' () {
+    def 'should index the missing layers, wait for them, then push' () {
         given:
         def store = Mock(SociPushStateStore)
-        def waiters = Mock(SociWaitersStore)
         def index = Mock(SociIndexService)
-        def service = new SociPushServiceImpl(config: config, store: store, waiters: waiters, indexService: index, proxyService: proxy(), ioExecutor: direct)
+        def jobService = Mock(JobService)
+        def inspect = Mock(ContainerInspectService)
+        def service = new SociPushServiceImpl(config: config, store: store, indexService: index, proxyService: proxy(), jobService: jobService, inspectService: inspect, ioExecutor: direct)
+        def pending = entry(WAITING_CONTAINER)
 
         when:
         service.onContainerCompletion(TARGET, true)
         then:
-        1 * store.get(SOCI) >> entry(WAITING_CONTAINER)
-        1 * store.putEntry({ SociPushEntry it -> it.status == WAITING_INDEX && it.layers == [LAYER1, LAYER3] })
-        2 * index.findZtocs([LAYER1, LAYER3]) >> ztocs().subMap([LAYER1])
-        1 * index.failedLayers([LAYER3]) >> Set.of()
-        1 * waiters.add(LAYER3, SOCI)
-        1 * index.indexLayers('quay.io/user/python', { List<Map> it -> it*.digest == [LAYER3] }, PlatformId.NULL)
-        0 * store.putIfAbsent(_, _, _)
-    }
-
-    def 'should push when the last ztoc completes' () {
-        given:
-        def store = Mock(SociPushStateStore)
-        def waiters = Mock(SociWaitersStore)
-        def index = Mock(SociIndexService) { findZtocs(_) >> ztocs() }
-        def jobService = Mock(JobService)
-        def inspect = Mock(ContainerInspectService)
-        def service = new SociPushServiceImpl(config: config, store: store, waiters: waiters, indexService: index, proxyService: proxy(), jobService: jobService, inspectService: inspect, ioExecutor: direct)
-        def pending = entry(WAITING_INDEX).withLayers([LAYER1, LAYER3])
-
-        when:
-        service.onLayerEvent(new SociLayerEvent(LAYER3, true))
-        then:
-        1 * waiters.get(LAYER3) >> new SociWaiters([SOCI])
-        2 * store.get(SOCI) >> pending
-        1 * store.putIfAbsent("push/$SOCI", _, Duration.ofMinutes(1)) >> true
+        1 * store.get(SOCI) >> pending
+        1 * store.putEntry({ SociPushEntry it -> it.status == PUBLISHING && it.sourceDigest == null })
+        1 * index.indexLayers('quay.io/user/python', { List<Map> it -> it*.digest == [LAYER1, LAYER3] }, PlatformId.NULL)
+        1 * index.awaitLayers([LAYER1, LAYER3], Duration.ofMinutes(30)) >> true
+        1 * index.findZtocs([LAYER1, LAYER3]) >> ztocs()
         1 * inspect.credentialsConfigJson('FROM public.cr.stage-seqera.io/wave/soci-ztoc', TARGET, null, PlatformId.NULL) >> '{}'
-        1 * store.putEntry({ SociPushEntry it -> it.status == PUSHING && it.sourceDigest == INDEX })
+        1 * store.putEntry({ SociPushEntry it -> it.status == PUBLISHING && it.sourceDigest == INDEX })
         1 * jobService.launchSociPush(pending.request)
         and: 'the plan pushes the index with the source digest under the soci tag'
         def plan = new JsonSlurper().parse(pending.request.workDir.resolve('plan.json')) as Map
@@ -206,64 +188,37 @@ class SociPushServiceImplTest extends Specification {
         (index0.manifests as List<Map>).last().artifactType == 'application/vnd.amazon.soci.index.v2+json'
     }
 
-    def 'should not push twice' () {
+    def 'should fail the publication when a layer cannot be indexed' () {
         given:
         def store = Mock(SociPushStateStore)
+        def index = Mock(SociIndexService)
         def jobService = Mock(JobService)
-        def service = new SociPushServiceImpl(config: config, store: store, jobService: jobService)
-
-        when:
-        service.push(entry(WAITING_INDEX))
-        then:
-        1 * store.get(SOCI) >> entry(WAITING_INDEX)
-        1 * store.putIfAbsent("push/$SOCI", _, _) >> false
-        0 * jobService._
-    }
-
-    def 'should fail at once when a layer failed recently' () {
-        given:
-        def store = Mock(SociPushStateStore)
-        def waiters = Mock(SociWaitersStore)
-        def index = Mock(SociIndexService) { findZtocs(_) >> ztocs().subMap([LAYER1]) }
-        def service = new SociPushServiceImpl(config: config, store: store, waiters: waiters, indexService: index, proxyService: proxy(), ioExecutor: direct)
+        def service = new SociPushServiceImpl(config: config, store: store, indexService: index, proxyService: proxy(), jobService: jobService, ioExecutor: direct)
 
         when:
         service.onContainerCompletion(TARGET, true)
         then:
         1 * store.get(SOCI) >> entry(WAITING_CONTAINER)
-        1 * index.failedLayers([LAYER3]) >> Set.of(LAYER3)
-        1 * store.putEntry({ SociPushEntry it -> it.status == FAILED })
-        0 * waiters.add(_, _)
-        0 * index.indexLayers(_, _, _)
+        1 * index.awaitLayers([LAYER1, LAYER3], _) >> true
+        1 * index.findZtocs([LAYER1, LAYER3]) >> ztocs().subMap([LAYER1])
+        1 * store.putEntry({ SociPushEntry it -> it.status == FAILED && it.error.contains(LAYER3) })
+        0 * jobService._
     }
 
-    def 'should release the push claim when the push fails' () {
+    def 'should not publish a container without layer to index' () {
         given:
         def store = Mock(SociPushStateStore)
-        def proxy = Mock(RegistryProxyService)
-        def service = new SociPushServiceImpl(config: config, store: store, proxyService: proxy)
+        def index = Mock(SociIndexService)
+        def proxy = Mock(RegistryProxyService) {
+            getManifestContent(TARGET, PlatformId.NULL) >> '{"schemaVersion":2,"mediaType":"application/vnd.oci.image.manifest.v1+json","config":{"digest":"sha256:c0"},"layers":[{"mediaType":"' + GZIP + '","digest":"sha256:01","size":100}]}'
+        }
+        def service = new SociPushServiceImpl(config: config, store: store, indexService: index, proxyService: proxy, ioExecutor: direct)
 
         when:
-        service.push(entry(WAITING_INDEX))
+        service.onContainerCompletion(TARGET, true)
         then:
-        1 * store.get(SOCI) >> entry(WAITING_INDEX)
-        1 * store.putIfAbsent("push/$SOCI", _, _) >> true
-        1 * proxy.getManifestContent(TARGET, PlatformId.NULL) >> { throw new IllegalStateException('registry error') }
-        1 * store.remove("push/$SOCI")
-        thrown(IllegalStateException)
-    }
-
-    def 'should fail the publication when a layer cannot be indexed' () {
-        given:
-        def store = Mock(SociPushStateStore)
-        def waiters = Mock(SociWaitersStore)
-        def service = new SociPushServiceImpl(config: config, store: store, waiters: waiters)
-
-        when:
-        service.onLayerEvent(new SociLayerEvent(LAYER3, false))
-        then:
-        1 * waiters.get(LAYER3) >> new SociWaiters([SOCI])
-        1 * store.get(SOCI) >> entry(WAITING_INDEX)
-        1 * store.putEntry({ SociPushEntry it -> it.status == FAILED })
+        1 * store.get(SOCI) >> entry(WAITING_CONTAINER)
+        1 * store.putEntry({ SociPushEntry it -> it.status == NONE })
+        0 * index._
     }
 }

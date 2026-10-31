@@ -51,24 +51,28 @@ class SociPushStateStore extends AbstractStateStore<SociPushEntry> {
         return 'wave-soci-push/v1'
     }
 
+    /** how long a published SOCI tag is assumed current, before checking it again on the registry */
+    static final Duration CURRENT_DURATION = Duration.ofMinutes(5)
+
     /**
-     * A pending publication is dropped after the publish timeout, so nothing is held for ever
+     * A pending publication is dropped after the publish timeout and its push job, so nothing is held for ever
      */
     @Override
     protected Duration getDuration() {
-        return config.publishTimeout
+        return config.publishTimeout.plus(config.jobTimeout)
     }
 
     /**
      * Store a publication with a TTL depending on its status: a succeeded one is kept as the cache of the
-     * SOCI tag existence, a failed one blocks retries for the failure duration
+     * SOCI tag existence, a failed one blocks retries for the failure duration, and a container without
+     * layer to index is not checked again for the zTOC cache duration
      */
     void putEntry(SociPushEntry entry) {
         final ttl = switch (entry.status) {
-            case SociPushEntry.Status.SUCCEEDED -> config.currentCacheDuration
+            case SociPushEntry.Status.SUCCEEDED -> CURRENT_DURATION
             case SociPushEntry.Status.FAILED -> config.failureDuration
-            case SociPushEntry.Status.PUSHING -> config.publishTimeout.plus(config.jobTimeout)
-            default -> config.publishTimeout
+            case SociPushEntry.Status.NONE -> config.ztocCacheDuration
+            default -> getDuration()
         }
         put(entry.key, entry, ttl)
     }

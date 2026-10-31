@@ -19,12 +19,17 @@
 package io.seqera.wave.service.soci
 
 import java.nio.file.Path
+import java.util.function.Function
 
 import groovy.json.JsonSlurper
 import groovy.transform.CompileStatic
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.model.ContainerCoordinates
+import io.seqera.wave.util.RegHelper
+import static io.seqera.wave.model.ContentType.DOCKER_IMAGE_INDEX_V2
 import static io.seqera.wave.model.ContentType.DOCKER_MANIFEST_V2_TYPE
+import static io.seqera.wave.model.ContentType.OCI_IMAGE_INDEX_V1
 import static io.seqera.wave.model.ContentType.OCI_IMAGE_MANIFEST_V1
 /**
  * Helpers shared by the SOCI services to select the image manifests to index and resolve their platform
@@ -33,6 +38,39 @@ import static io.seqera.wave.model.ContentType.OCI_IMAGE_MANIFEST_V1
  */
 @CompileStatic
 class SociPlatforms {
+
+    /**
+     * @return The repository of an image including the registry e.g. {@code docker.io/library/ubuntu}
+     */
+    static String repository(String image) {
+        final coords = ContainerCoordinates.parse(image)
+        return "${coords.registry}/${coords.image}".toString()
+    }
+
+    static boolean isIndex(Map json) {
+        return json.mediaType==OCI_IMAGE_INDEX_V1 || json.mediaType==DOCKER_IMAGE_INDEX_V2
+    }
+
+    /**
+     * The image manifests of a container matching the target platform
+     *
+     * @param content The container manifest, an image index or an image manifest
+     * @param platform The target platform
+     * @param fetch Fetch an image manifest by digest, returning {@code null} when missing
+     * @return The image manifests, by digest
+     */
+    static Map<String,String> platformManifests(String content, ContainerPlatform platform, Function<String,String> fetch) {
+        final json = new JsonSlurper().parseText(content) as Map
+        if( !isIndex(json) )
+            return Map.of(RegHelper.digest(content), content)
+        final result = new LinkedHashMap<String,String>()
+        for( Map entry : targetEntries(json, platform) ) {
+            final manifest = fetch.apply(entry.digest as String)
+            if( manifest )
+                result.put(entry.digest as String, manifest)
+        }
+        return result
+    }
 
     /**
      * Select the image manifest entries of an image index matching the target platform, skipping

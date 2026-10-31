@@ -19,7 +19,6 @@
 package io.seqera.wave.core
 
 import groovy.json.JsonSlurper
-import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerLayer
@@ -49,14 +48,6 @@ import static io.seqera.wave.model.ContentType.OCI_IMAGE_MANIFEST_V1
 @Slf4j
 @CompileStatic
 class SociInjector {
-
-    enum State { READY, NONE }
-
-    @Canonical
-    static class Docs {
-        final State state
-        final SociDocs docs
-    }
 
     private ProxyClient client
     private Storage storage
@@ -115,9 +106,9 @@ class SociInjector {
         final ready = new LinkedHashMap<String,SociDocs>()
         for( Map entry : SociPlatforms.targetEntries(json, platform) ) {
             final manifest = loadManifest(imageName, entry.digest as String, headers)
-            final docs = manifest!=null ? docsFor(imageName, manifest) : new Docs(State.NONE, null)
-            if( docs.state==State.READY )
-                ready.put(entry.digest as String, docs.docs)
+            final docs = manifest!=null ? docsFor(imageName, manifest) : null
+            if( docs )
+                ready.put(entry.digest as String, docs)
         }
         if( !ready )
             return pair
@@ -127,10 +118,10 @@ class SociInjector {
 
     protected ContainerDigestPair applyManifest(String imageName, ContainerDigestPair pair, String content, Map json, Map<String,List<String>> headers) {
         final docs = docsFor(imageName, content)
-        if( docs.state!=State.READY )
+        if( !docs )
             return pair
         final configDigest = (json.config as Map).digest as String
-        final index = SociManifestAssembler.wrapInIndex(docs.docs, imagePlatform(imageName, configDigest, headers))
+        final index = SociManifestAssembler.wrapInIndex(docs, imagePlatform(imageName, configDigest, headers))
         return new ContainerDigestPair(pair.source, saveIndex(imageName, index))
     }
 
@@ -138,29 +129,29 @@ class SociInjector {
      * Create the SOCI documents of an image manifest. The indexing of the layers without zTOC is
      * launched (unless already running) and awaited
      *
-     * @return The SOCI documents, or {@link State#NONE} when the zTOC of some eligible layer is not available
+     * @return The SOCI documents, or {@code null} when the zTOC of some eligible layer is not available
      */
-    protected Docs docsFor(String imageName, String manifest) {
+    protected SociDocs docsFor(String imageName, String manifest) {
         final layers = SociManifestAssembler
                 .eligibleLayers(manifest, config.minLayerSize)
                 .findAll((Map it) -> !excludedLayers.contains(it.digest as String))
         if( !layers )
-            return new Docs(State.NONE, null)
+            return null
         final digests = layers.collect((Map it) -> it.digest as String)
         Map<String,ZtocEntry> ztocs = service.findZtocs(digests)
         final missing = layers.findAll((Map it) -> !ztocs.containsKey(it.digest as String))
         if( missing ) {
             log.debug "SOCI index awaiting for image ${client.registry.name}/${imageName} - indexed ${ztocs.size()} of ${layers.size()} layers"
             service.indexLayers("${client.registry.name}/${imageName}".toString(), missing, identity)
-            if( !service.awaitLayers(missing.collect((Map it) -> it.digest as String)) )
+            if( !service.awaitLayers(missing.collect((Map it) -> it.digest as String), config.awaitTimeout) )
                 log.warn "SOCI index timed out for image ${client.registry.name}/${imageName} - serving it without SOCI index"
             ztocs = service.findZtocs(digests)
         }
         if( ztocs.size()<layers.size() )
-            return new Docs(State.NONE, null)
+            return null
         final docs = SociManifestAssembler.assemble(manifest, ztocs, config.spanSize)
         saveDocs(imageName, docs)
-        return new Docs(State.READY, docs)
+        return docs
     }
 
     protected void saveDocs(String imageName, SociDocs docs) {

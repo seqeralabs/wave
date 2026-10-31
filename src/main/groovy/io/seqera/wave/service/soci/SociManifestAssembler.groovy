@@ -77,14 +77,6 @@ class SociManifestAssembler {
     }
 
     /**
-     * @return {@code true} when the manifest has at least one layer to index and every one of them has a zTOC
-     */
-    static boolean isComplete(String manifestJson, Map<String,ZtocEntry> ztocs, long minLayerSize) {
-        final layers = eligibleLayers(manifestJson, minLayerSize)
-        return layers && layers.every((Map it) -> ztocs.containsKey(it.digest as String))
-    }
-
-    /**
      * @return {@code true} when the image index already has a SOCI index manifest
      */
     static boolean hasSociIndex(String indexJson) {

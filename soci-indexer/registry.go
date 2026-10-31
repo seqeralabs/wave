@@ -47,24 +47,18 @@ func sha256Digest(data []byte) string {
 }
 
 type ociRegistry struct {
-	repo     name.Repository
-	insecure bool
-	options  []remote.Option
+	repo    name.Repository
+	options []remote.Option
 }
 
-func nameOptions(insecure bool) []name.Option {
-	if insecure {
-		return []name.Option{name.Insecure}
-	}
-	return nil
-}
-
-func newRegistry(repository string, insecure bool) (*ociRegistry, error) {
-	repo, err := name.NewRepository(repository, nameOptions(insecure)...)
+// newRegistry creates a client of an OCI repository. Plain HTTP is used for local registries only
+// e.g. localhost or 127.0.0.1, see name.Registry.Scheme
+func newRegistry(repository string) (*ociRegistry, error) {
+	repo, err := name.NewRepository(repository)
 	if err != nil {
 		return nil, fmt.Errorf("invalid repository '%s': %w", repository, err)
 	}
-	return &ociRegistry{repo: repo, insecure: insecure, options: []remote.Option{remote.WithAuthFromKeychain(authn.DefaultKeychain)}}, nil
+	return &ociRegistry{repo: repo, options: []remote.Option{remote.WithAuthFromKeychain(authn.DefaultKeychain)}}, nil
 }
 
 // putBlob uploads a blob, checking its digest; the upload is skipped when the registry already has it
@@ -85,7 +79,7 @@ func (r *ociRegistry) putBlob(content io.Reader, digest string, size int64) erro
 
 // copyBlob copies a blob from another repository, mounting it when both are on the same registry
 func (r *ociRegistry) copyBlob(source string) error {
-	ref, err := name.NewDigest(source, nameOptions(r.insecure)...)
+	ref, err := name.NewDigest(source)
 	if err != nil {
 		return fmt.Errorf("invalid blob source '%s': %w", source, err)
 	}
@@ -110,7 +104,7 @@ func (m rawManifest) MediaType() (types.MediaType, error) { return types.MediaTy
 
 // putManifest uploads the manifest bytes as they are, by tag or by digest
 func (r *ociRegistry) putManifest(reference string, mediaType string, body []byte) error {
-	ref, err := name.ParseReference(r.repo.Name()+referenceSeparator(reference)+reference, nameOptions(r.insecure)...)
+	ref, err := name.ParseReference(r.repo.Name() + referenceSeparator(reference) + reference)
 	if err != nil {
 		return fmt.Errorf("invalid manifest reference '%s': %w", reference, err)
 	}

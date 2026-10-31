@@ -47,7 +47,7 @@ class SociInjectorTest extends Specification {
     static final String GZIP = 'application/vnd.oci.image.layer.v1.tar+gzip'
     static final String PREFIX = 'docker.io/v2/library/python'
 
-    SociConfig config = new SociConfig(spanSize: 4194304, minLayerSize: 10485760, repo: 'public.cr.stage-seqera.io/wave/soci-ztoc')
+    SociConfig config = new SociConfig(minLayerSize: 10485760, repo: 'public.cr.stage-seqera.io/wave/soci-ztoc')
 
     static String resource(String name) {
         SociInjectorTest.getResourceAsStream("/soci/$name").text
@@ -126,7 +126,7 @@ class SociInjectorTest extends Specification {
         then:
         1 * service.indexLayers('docker.io/library/python', { List<Map> it -> it*.digest == [LAYER3] }, PlatformId.NULL)
         then:
-        1 * service.awaitLayers([LAYER3]) >> true
+        1 * service.awaitLayers([LAYER3], _) >> true
         then:
         1 * service.findZtocs([LAYER1, LAYER3]) >> ztocs()
         and:
@@ -146,7 +146,7 @@ class SociInjectorTest extends Specification {
         then:
         2 * service.findZtocs([LAYER1, LAYER3]) >> ztocs().subMap([LAYER1])
         1 * service.indexLayers('docker.io/library/python', _, PlatformId.NULL)
-        1 * service.awaitLayers([LAYER3]) >> COMPLETED
+        1 * service.awaitLayers([LAYER3], _) >> COMPLETED
         and:
         result == new ContainerDigestPair(INDEX, INDEX)
 

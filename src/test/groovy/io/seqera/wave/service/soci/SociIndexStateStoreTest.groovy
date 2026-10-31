@@ -32,9 +32,9 @@ class SociIndexStateStoreTest extends Specification {
 
     static final String LAYER = 'sha256:' + '1'*64
 
-    SociIndexStateStore store(Duration timeout) {
+    SociIndexStateStore store() {
         def config = new SociConfig(jobTimeout: Duration.ofMinutes(10), failureDuration: Duration.ofMinutes(10),
-                awaitTimeout: timeout, statusDelay: Duration.ofMillis(50))
+                ztocCacheDuration: Duration.ofDays(1))
         def store = new SociIndexStateStore(new LocalStateProvider())
         store.@config = config
         return store
@@ -42,13 +42,13 @@ class SociIndexStateStoreTest extends Specification {
 
     def 'should await the completion of the indexing jobs' () {
         given:
-        def store = store(Duration.ofSeconds(5))
+        def store = store()
         def request = new SociIndexRequest(requestId: 'soci-1', layerDigest: LAYER, spanSize: 4194304)
         def entry = SociIndexEntry.of(request)
         store.put(entry.key, entry)
 
         when:
-        def result = CompletableFuture.supplyAsync(() -> store.awaitCompletion([entry.key, 'missing']))
+        def result = CompletableFuture.supplyAsync(() -> store.awaitCompletion([entry.key, 'missing'], Duration.ofSeconds(5)))
         sleep 200
         then:
         !result.isDone()
@@ -61,11 +61,11 @@ class SociIndexStateStoreTest extends Specification {
 
     def 'should time out when a job does not complete' () {
         given:
-        def store = store(Duration.ofMillis(200))
+        def store = store()
         def entry = SociIndexEntry.of(new SociIndexRequest(requestId: 'soci-1', layerDigest: LAYER, spanSize: 4194304))
         store.put(entry.key, entry)
 
         expect:
-        !store.awaitCompletion([entry.key])
+        !store.awaitCompletion([entry.key], Duration.ofMillis(200))
     }
 }

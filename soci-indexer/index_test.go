@@ -76,25 +76,6 @@ func testRegistry(t *testing.T) string {
 	return strings.TrimPrefix(srv.URL, "http://")
 }
 
-func TestSkipReason(t *testing.T) {
-	cases := []struct {
-		mediaType string
-		size      int64
-		expected  string
-	}{
-		{gzipLayer, 20 << 20, ""},
-		{"application/vnd.docker.image.rootfs.diff.tar.gzip", 20 << 20, ""},
-		{gzipLayer, 1 << 20, ReasonMinSize},
-		{"application/vnd.oci.image.layer.v1.tar+zstd", 20 << 20, ReasonCompression},
-		{"application/vnd.oci.image.layer.v1.tar", 20 << 20, ReasonCompression},
-	}
-	for _, c := range cases {
-		if got := SkipReason(c.mediaType, c.size, DefaultMinLayerSize); got != c.expected {
-			t.Errorf("SkipReason(%s, %d) = %q, expected %q", c.mediaType, c.size, got, c.expected)
-		}
-	}
-}
-
 func TestZtocTag(t *testing.T) {
 	got := ZtocTag("sha256:6fc242d221a673263eabd14a9ad9584d3177c96e5cb504c891497338e2f912f5", DefaultSpanSize)
 	expected := "ztoc-4194304-6fc242d221a673263eabd14a9ad9584d3177c96e5cb504c891497338e2f912f5"
@@ -105,15 +86,22 @@ func TestZtocTag(t *testing.T) {
 
 func TestIndexGzipLayer(t *testing.T) {
 	layer, names := writeLayer(t, map[string]int{"bin/tool": 8 << 20, "lib/data.bin": 4 << 20, "etc/conf": 100})
-	repo := testRegistry(t) + "/wave/soci-ztoc"
-	digest := "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+	host := testRegistry(t)
+	// upload the layer into an image repository, the indexer downloads it from there
+	data, _ := os.ReadFile(layer)
+	digest := sha256Digest(data)
+	src, _ := newRegistry(host + "/library/app")
+	if err := src.putBlob(strings.NewReader(string(data)), digest, int64(len(data))); err != nil {
+		t.Fatal(err)
+	}
+	repo := host + "/wave/soci-ztoc"
 
-	result, err := IndexLayer(IndexRequest{LayerFile: layer, LayerDigest: digest, LayerMediaType: gzipLayer,
-		SpanSize: DefaultSpanSize, MinLayerSize: DefaultMinLayerSize, Repository: repo, Insecure: true})
+	result, err := IndexLayer(IndexRequest{Source: host + "/library/app@" + digest, LayerDigest: digest, LayerMediaType: gzipLayer,
+		SpanSize: DefaultSpanSize, Repository: repo})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.Skipped || result.ZtocDigest == "" || result.ZtocSize == 0 {
+	if result.ZtocDigest == "" || result.ZtocSize == 0 {
 		t.Fatalf("unexpected result %+v", result)
 	}
 
@@ -158,67 +146,13 @@ func TestIndexGzipLayer(t *testing.T) {
 	}
 }
 
-func TestIndexLayerFromSource(t *testing.T) {
-	layer, names := writeLayer(t, map[string]int{"bin/tool": 12 << 20})
-	host := testRegistry(t)
-	// upload the layer into an image repository
-	data, _ := os.ReadFile(layer)
-	digest := sha256Digest(data)
-	src, _ := newRegistry(host+"/library/app", true)
-	if err := src.putBlob(strings.NewReader(string(data)), digest, int64(len(data))); err != nil {
-		t.Fatal(err)
-	}
-	repo := host + "/wave/soci-ztoc"
-	result, err := IndexLayer(IndexRequest{Source: host + "/library/app@" + digest, LayerDigest: digest, LayerMediaType: gzipLayer,
-		SpanSize: DefaultSpanSize, MinLayerSize: DefaultMinLayerSize, Repository: repo, Insecure: true})
-	if err != nil {
-		t.Fatal(err)
-	}
-	blob, err := crane.PullLayer(repo+"@"+result.ZtocDigest, crane.Insecure)
-	if err != nil {
-		t.Fatal(err)
-	}
-	rc, _ := blob.Compressed()
-	toc, err := ztoc.Unmarshal(rc)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(toc.TOC.FileMetadata) != len(names) || toc.TOC.FileMetadata[0].Name != names[0] {
-		t.Fatalf("unexpected ztoc files %+v", toc.TOC.FileMetadata)
-	}
-}
-
-func TestSkipSmallLayer(t *testing.T) {
-	layer, _ := writeLayer(t, map[string]int{"small": 1 << 20})
-	result, err := IndexLayer(IndexRequest{LayerFile: layer, LayerDigest: "sha256:01", LayerMediaType: gzipLayer,
-		SpanSize: DefaultSpanSize, MinLayerSize: DefaultMinLayerSize, Repository: "localhost:1/none", Insecure: true})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !result.Skipped || result.Reason != ReasonMinSize {
-		t.Fatalf("unexpected result %+v", result)
-	}
-}
-
-func TestSkipNonGzip(t *testing.T) {
-	layer, _ := writeLayer(t, map[string]int{"big": 12 << 20})
-	result, err := IndexLayer(IndexRequest{LayerFile: layer, LayerDigest: "sha256:01", LayerMediaType: "application/vnd.oci.image.layer.v1.tar+zstd",
-		SpanSize: DefaultSpanSize, MinLayerSize: DefaultMinLayerSize, Repository: "localhost:1/none", Insecure: true})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !result.Skipped || result.Reason != ReasonCompression {
-		t.Fatalf("unexpected result %+v", result)
-	}
-}
-
 func TestPushPlan(t *testing.T) {
 	host := testRegistry(t)
 	// a source blob in another repository of the same registry
 	src := host + "/wave/soci-ztoc"
 	srcData := []byte("ztoc-bytes")
 	srcDigest := sha256Digest(srcData)
-	reg, _ := newRegistry(src, true)
+	reg, _ := newRegistry(src)
 	if err := reg.putBlob(strings.NewReader(string(srcData)), srcDigest, int64(len(srcData))); err != nil {
 		t.Fatal(err)
 	}
@@ -235,7 +169,7 @@ func TestPushPlan(t *testing.T) {
 		},
 	}
 	target := host + "/library/app"
-	if err := Push(target, plan, true); err != nil {
+	if err := Push(target, plan); err != nil {
 		t.Fatal(err)
 	}
 	got, err := crane.Manifest(target+":1.0-soci", crane.Insecure)
@@ -254,7 +188,7 @@ func TestPushRejectsDigestMismatch(t *testing.T) {
 	host := testRegistry(t)
 	plan := PushPlan{Manifests: []PushManifest{{Reference: "sha256:0000000000000000000000000000000000000000000000000000000000000000",
 		MediaType: OCIManifestMediaType, Body: base64.StdEncoding.EncodeToString([]byte("{}"))}}}
-	if err := Push(host+"/library/app", plan, true); err == nil || !strings.Contains(err.Error(), "does not match digest") {
+	if err := Push(host+"/library/app", plan); err == nil || !strings.Contains(err.Error(), "does not match digest") {
 		t.Fatalf("expected digest mismatch error, got %v", err)
 	}
 }
