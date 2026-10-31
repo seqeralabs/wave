@@ -5,6 +5,28 @@ title: SOCI lazy loading
 Wave can attach a [SOCI](https://github.com/awslabs/soci-snapshotter) index (index manifest v2) to a container,
 so that hosts running the SOCI snapshotter start it before the whole image is downloaded and fetch file data on demand.
 
+## How it works
+
+Set `soci: true` in the container request (`wave --soci` with the Wave CLI). Wave builds the zTOC
+(table of contents) of each gzip layer of at least 10 MiB with a `soci-indexer` job. A zTOC is built
+once per layer digest and stored in the `wave.soci.repo` repository, so it is reused by every
+image sharing that layer. Indexing starts when the container is requested, and takes seconds
+(the 5 eligible layers of `python:3.12`, 394 MB, were indexed in 11.5 s).
+
+**Ephemeral containers** (pulled through Wave). Once the zTOCs of all the eligible layers are
+available, Wave adds the SOCI index manifest to the image index it serves. Until then it serves
+the plain image (pulled in full) and caches it for 30 s only, so a later pull is SOCI-enabled.
+Layers added by Wave (e.g. Fusion) are not indexed. Containers requested by digest cannot be
+altered and are rejected with `soci: true`.
+
+**Freeze and mirror containers** (pulled from their registry). Wave pushes a SOCI-enabled copy
+of the image index to the sibling tag `<tag>-soci`, once the container exists and its layers are
+indexed. The original tag is never changed. The request returns the `-soci` tag only once it
+exists, otherwise the original tag: the first request of a container is not SOCI-enabled. The
+target registry must accept OCI image indexes with artifact manifests.
+
+Clients without the SOCI snapshotter ignore the SOCI index and pull the image as usual.
+
 ## Feasibility results
 
 Spike run on 31 Oct 2026 with soci-snapshotter v0.16.1 and containerd v2.4.2. The test image was

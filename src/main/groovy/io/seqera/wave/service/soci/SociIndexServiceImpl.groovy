@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService
 import groovy.json.JsonSlurper
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.scheduling.TaskExecutors
@@ -98,6 +99,10 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
     @Inject
     @Named(TaskExecutors.BLOCKING)
     private ExecutorService ioExecutor
+
+    @Inject
+    @Nullable
+    private MeterRegistry meterRegistry
 
     /**
      * @return The tag of the zTOC artifact of a layer
@@ -243,6 +248,7 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
     @Override
     void onJobCompletion(JobSpec job, SociIndexEntry entry, JobState state) {
         final result = state.succeeded() ? parseResult(state.stdout) : null
+        recordJob(entry, result!=null ? 'succeeded' : 'failed')
         if( result==null ) {
             log.warn "== SOCI index failed - job=${job.operationName}; layer=${entry.request.layerDigest}; state=${state}"
             jobStore.putEntry(entry.complete(state.exitCode, null, state.stdout ?: 'Unknown error'))
@@ -257,14 +263,22 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
 
     @Override
     void onJobException(JobSpec job, SociIndexEntry entry, Throwable error) {
+        recordJob(entry, 'failed')
         log.error("== SOCI index errored - job=${job.operationName}; layer=${entry.request.layerDigest}", error)
         jobStore.putEntry(entry.complete(null, null, error.message ?: error.toString()))
     }
 
     @Override
     void onJobTimeout(JobSpec job, SociIndexEntry entry) {
+        recordJob(entry, 'timeout')
         log.warn "== SOCI index timed out - job=${job.operationName}; layer=${entry.request.layerDigest}"
         jobStore.putEntry(entry.complete(null, null, 'SOCI index job timed out'))
+    }
+
+    protected void recordJob(SociIndexEntry entry, String result) {
+        meterRegistry?.counter('wave.soci.index.jobs', 'result', result)?.increment()
+        if( entry.request.creationTime )
+            meterRegistry?.timer('wave.soci.index.duration', 'result', result)?.record(java.time.Duration.between(entry.request.creationTime, Instant.now()))
     }
 
     /**

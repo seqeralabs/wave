@@ -28,6 +28,7 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.scheduling.TaskExecutors
@@ -97,6 +98,10 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
     @Inject
     @Named(TaskExecutors.BLOCKING)
     private ExecutorService ioExecutor
+
+    @Inject
+    @Nullable
+    private MeterRegistry meterRegistry
 
     /**
      * @return The SOCI-enabled image of a container e.g. {@code quay.io/user/app:1.0-soci}
@@ -304,6 +309,7 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
 
     @Override
     void onJobCompletion(JobSpec job, SociPushEntry entry, JobState state) {
+        meterRegistry?.counter('wave.soci.push.jobs', 'result', state.succeeded() ? 'succeeded' : 'failed')?.increment()
         if( state.succeeded() ) {
             log.info "== SOCI push completed - job=${job.operationName}; image=${entry.request.sociImage}"
             store.putEntry(entry.complete(state.exitCode, null))
