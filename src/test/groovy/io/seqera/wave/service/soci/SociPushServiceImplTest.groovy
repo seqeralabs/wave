@@ -49,7 +49,7 @@ class SociPushServiceImplTest extends Specification {
     static final String TARGET = 'quay.io/user/python:3.12'
     static final String SOCI = 'quay.io/user/python:3.12-soci'
 
-    SociConfig config = new SociConfig(spanSize: 4194304, minLayerSize: 10485760, repo: 'public.cr.stage-seqera.io/wave/soci-ztoc',
+    SociConfig config = new SociConfig(minLayerSize: 10485760, repo: 'public.cr.stage-seqera.io/wave/soci-ztoc',
             publishTimeout: Duration.ofMinutes(30), jobTimeout: Duration.ofMinutes(1))
 
     /** runs the async tasks in the calling thread */

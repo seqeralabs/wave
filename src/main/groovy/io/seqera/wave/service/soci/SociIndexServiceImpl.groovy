@@ -27,8 +27,8 @@ import groovy.json.JsonSlurper
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micrometer.core.instrument.MeterRegistry
-import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.context.annotation.Requires
+import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BuildConfig
@@ -55,7 +55,7 @@ import static io.seqera.wave.service.job.JobHelper.saveDockerAuth
  *
  * Each zTOC is pushed to the repository {@code wave.soci.repo} as an OCI artifact tagged
  * {@code ztoc-<span-size>-<layer-digest-hex>}, whose annotations describe the zTOC. The repository is
- * the source of truth, the {@link SociZtocStore} caches the lookups.
+ * the source of truth, the {@link SociIndexStateStore} caches the lookups.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -74,9 +74,6 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
 
     @Inject
     private SociConfig config
-
-    @Inject
-    private SociZtocStore ztocStore
 
     @Inject
     private SociIndexStateStore jobStore
@@ -127,16 +124,13 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
     }
 
     protected ZtocEntry findZtoc(String layerDigest) {
-        final key = SociIndexRequest.key(layerDigest, config.spanSize)
-        final cached = ztocStore.get(key)
-        if( cached )
-            return cached
-        // a job is running (or failed recently) for this layer, no need to look up the repository
-        if( jobStore.get(key) )
-            return null
+        final entry = jobStore.get(SociIndexRequest.key(layerDigest, config.spanSize))
+        // a cached zTOC, or a job running (or failed recently) for this layer
+        if( entry )
+            return entry.ztoc
         final found = lookupZtoc(layerDigest)
         if( found )
-            ztocStore.put(key, found)
+            jobStore.putEntry(SociIndexEntry.found(found))
         return found
     }
 
@@ -192,9 +186,7 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
                 "${repository}@${digest}",
                 digest,
                 layer.mediaType as String,
-                layer.size as long,
                 config.spanSize,
-                config.minLayerSize,
                 config.repo,
                 SociPlatforms.workspace(buildConfig),
                 authJson )
@@ -256,19 +248,16 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
 
     @Override
     void onJobCompletion(JobSpec job, SociIndexEntry entry, JobState state) {
-        final result = state.succeeded() ? parseResult(state.stdout) : null
-        recordJob(entry, result!=null ? 'succeeded' : 'failed')
-        if( result==null ) {
+        final ztoc = state.succeeded() ? toZtoc(parseResult(state.stdout)) : null
+        recordJob(entry, ztoc!=null ? 'succeeded' : 'failed')
+        if( ztoc==null ) {
             log.warn "== SOCI index failed - job=${job.operationName}; layer=${entry.request.layerDigest}; state=${state}"
             failed(entry, state.exitCode, state.stdout ?: 'Unknown error')
             return
         }
-        final ztoc = result.skipped ? null : toZtoc(result)
-        if( ztoc )
-            ztocStore.put(entry.key, ztoc)
         jobStore.putEntry(entry.complete(state.exitCode, ztoc, null))
-        eventPublisher.publishEvent(new SociLayerEvent(entry.request.layerDigest, ztoc!=null))
-        log.info "== SOCI index completed - job=${job.operationName}; layer=${entry.request.layerDigest}; ztoc=${ztoc?.ztocDigest}; skipped=${result.skipped}; reason=${result.reason}"
+        eventPublisher.publishEvent(new SociLayerEvent(entry.request.layerDigest, true))
+        log.info "== SOCI index completed - job=${job.operationName}; layer=${entry.request.layerDigest}; ztoc=${ztoc.ztocDigest}"
     }
 
     @Override
@@ -286,16 +275,9 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
     }
 
     /**
-     * Retry a failed layer up to {@code wave.soci.retry-attempts} times, then record the failure and notify it
+     * Record the failure and notify it: the layer is indexed again by a pull after {@code wave.soci.failure-duration}
      */
     protected void failed(SociIndexEntry entry, Integer exitCode, String error) {
-        if( entry.request.attempt < config.retryAttempts ) {
-            final retry = entry.request.retry(SociPlatforms.workspace(buildConfig))
-            log.info "== SOCI index retry - attempt=${retry.attempt}; request=${retry}"
-            jobStore.put(retry.key, SociIndexEntry.of(retry))
-            jobService.launchSociIndex(retry)
-            return
-        }
         jobStore.putEntry(entry.complete(exitCode, null, error))
         eventPublisher.publishEvent(new SociLayerEvent(entry.request.layerDigest, false))
     }
@@ -328,7 +310,7 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
     }
 
     static protected ZtocEntry toZtoc(Map result) {
-        if( !result.ztocDigest )
+        if( !result?.ztocDigest )
             return null
         return new ZtocEntry(
                 result.layerDigest as String,

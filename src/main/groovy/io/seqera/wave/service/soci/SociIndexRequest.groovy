@@ -32,14 +32,11 @@ import io.seqera.random.LongRndKey
  * @param source The layer reference e.g. {@code docker.io/library/ubuntu@sha256:...}
  * @param layerDigest The layer digest
  * @param layerMediaType The layer media type
- * @param layerSize The layer size in bytes
  * @param spanSize The zTOC span size
- * @param minLayerSize The minimum size of an indexed layer
  * @param repository The repository where the zTOC artifact is pushed
  * @param workDir The job work directory, holding the docker auth file
  * @param authJson The docker config json authorising the layer pull and the zTOC push
  * @param creationTime When the request was created
- * @param attempt The attempt number, starting from 1
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -54,14 +51,11 @@ class SociIndexRequest {
     String source
     String layerDigest
     String layerMediaType
-    long layerSize
     long spanSize
-    long minLayerSize
     String repository
     Path workDir
     String authJson
     Instant creationTime
-    int attempt
 
     /**
      * @return The key identifying the zTOC of this layer
@@ -74,28 +68,17 @@ class SociIndexRequest {
         return "${spanSize}/${layerDigest}"
     }
 
-    static SociIndexRequest create(String source, String layerDigest, String layerMediaType, long layerSize, long spanSize, long minLayerSize, String repository, Path workspace, String authJson) {
+    static SociIndexRequest create(String source, String layerDigest, String layerMediaType, long spanSize, String repository, Path workspace, String authJson) {
         final id = ID_PREFIX + LongRndKey.rndHex()
         return new SociIndexRequest(
                 id,
                 source,
                 layerDigest,
                 layerMediaType,
-                layerSize,
                 spanSize,
-                minLayerSize,
                 repository,
                 workspace.resolve(id),
                 authJson,
-                Instant.now(),
-                1 )
-    }
-
-    /**
-     * @return A new request to retry this one
-     */
-    SociIndexRequest retry(Path workspace) {
-        final id = ID_PREFIX + LongRndKey.rndHex()
-        return new SociIndexRequest(id, source, layerDigest, layerMediaType, layerSize, spanSize, minLayerSize, repository, workspace.resolve(id), authJson, Instant.now(), attempt+1)
+                Instant.now() )
     }
 }

@@ -39,6 +39,8 @@ import jakarta.inject.Singleton
 @CompileStatic
 class SociIndexStateStore extends AbstractStateStore<SociIndexEntry> {
 
+    static final private Duration STATUS_DELAY = Duration.ofSeconds(1)
+
     @Inject
     private SociConfig config
 
@@ -60,12 +62,12 @@ class SociIndexStateStore extends AbstractStateStore<SociIndexEntry> {
     }
 
     /**
-     * Store a completed job. A failed layer is not re-submitted before the failure duration, so that
-     * a layer that cannot be indexed does not churn jobs. A succeeded one is not needed anymore once
-     * its zTOC is in the {@link SociZtocStore}
+     * Store a completed job. A succeeded one holds the layer zTOC and is kept {@code wave.soci.ztoc-cache-duration}.
+     * A failed layer is not re-submitted before {@code wave.soci.failure-duration}, so that a layer that cannot
+     * be indexed does not churn jobs
      */
     void putEntry(SociIndexEntry entry) {
-        put(entry.key, entry, config.failureDuration)
+        put(entry.key, entry, entry.succeeded() ? config.ztocCacheDuration : config.failureDuration)
     }
 
     /**
@@ -79,7 +81,7 @@ class SociIndexStateStore extends AbstractStateStore<SociIndexEntry> {
         while( keys.stream().anyMatch(this::pending) ) {
             if( System.currentTimeMillis()-beg > config.awaitTimeout.toMillis() )
                 return false
-            Thread.sleep(config.statusDelay.toMillis())
+            Thread.sleep(STATUS_DELAY.toMillis())
         }
         return true
     }

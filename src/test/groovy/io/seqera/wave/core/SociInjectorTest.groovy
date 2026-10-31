@@ -47,7 +47,7 @@ class SociInjectorTest extends Specification {
     static final String GZIP = 'application/vnd.oci.image.layer.v1.tar+gzip'
     static final String PREFIX = 'docker.io/v2/library/python'
 
-    SociConfig config = new SociConfig(spanSize: 4194304, minLayerSize: 10485760, repo: 'public.cr.stage-seqera.io/wave/soci-ztoc')
+    SociConfig config = new SociConfig(minLayerSize: 10485760, repo: 'public.cr.stage-seqera.io/wave/soci-ztoc')
 
     static String resource(String name) {
         SociInjectorTest.getResourceAsStream("/soci/$name").text

@@ -34,7 +34,7 @@ class SociIndexStateStoreTest extends Specification {
 
     SociIndexStateStore store(Duration timeout) {
         def config = new SociConfig(jobTimeout: Duration.ofMinutes(10), failureDuration: Duration.ofMinutes(10),
-                awaitTimeout: timeout, statusDelay: Duration.ofMillis(50))
+                ztocCacheDuration: Duration.ofDays(1), awaitTimeout: timeout)
         def store = new SociIndexStateStore(new LocalStateProvider())
         store.@config = config
         return store

@@ -49,8 +49,8 @@ type PushManifest struct {
 }
 
 // Push uploads the plan blobs and manifests to the target repository
-func Push(target string, plan PushPlan, insecure bool) error {
-	reg, err := newRegistry(target, insecure)
+func Push(target string, plan PushPlan) error {
+	reg, err := newRegistry(target)
 	if err != nil {
 		return err
 	}
