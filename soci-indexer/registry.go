@@ -88,7 +88,7 @@ func (m rawManifest) MediaType() (types.MediaType, error) { return types.MediaTy
 
 // putManifest uploads the manifest bytes as they are, by tag or by digest
 func (r *ociRegistry) putManifest(reference string, mediaType string, body []byte) error {
-	ref, err := name.ParseReference(r.repo.Name()+referenceSeparator(reference)+reference)
+	ref, err := name.ParseReference(r.repo.Name() + referenceSeparator(reference) + reference)
 	if err != nil {
 		return fmt.Errorf("invalid manifest reference '%s': %w", reference, err)
 	}
