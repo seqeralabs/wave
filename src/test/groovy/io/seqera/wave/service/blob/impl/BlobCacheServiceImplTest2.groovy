@@ -63,9 +63,7 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         then:
         def uri = URI.create(downloadUrl)
         uri.scheme == EX_SCHEME
-        // 'localhost' stands for the S3 container's host: localhost when the build runs on the Docker host,
-        // the Docker gateway address when it runs inside a container (e.g. a sched GitHub Actions runner)
-        uri.host == EX_HOST.replace('localhost', getAwsS3HostName())
+        uri.host == EX_HOST
         uri.path == EX_PATH
         uri.query.contains('X-Amz-SignedHeaders=host')
 

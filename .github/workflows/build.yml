@@ -126,6 +126,10 @@ jobs:
           make check
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
+          # TEMPORARY (sched runner): the job runs inside the runner container, so Testcontainers picks
+          # the Docker gateway IP as the container host; the runner's dockerd publishes ports on localhost
+          # too, which the tests expect (e.g. BlobCacheServiceImplTest2). To be set in the sched runner image.
+          TESTCONTAINERS_HOST_OVERRIDE: localhost
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{secrets.TOWER_CI_AWS_ACCESS}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.TOWER_CI_AWS_SECRET}}
