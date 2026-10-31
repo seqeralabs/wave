@@ -27,7 +27,8 @@ repositories {
 }
 
 dependencies {
-    implementation 'io.seqera:wave-api:1.42.1'
+    // TODO: 1.43.0 is a placeholder for the Wave release adding SubmitContainerTokenRequest.soci, update it before merging
+    implementation 'io.seqera:wave-api:1.43.0'
     implementation 'io.seqera:wave-utils:1.42.1'
     implementation 'info.picocli:picocli:4.7.7'
     implementation 'com.squareup.moshi:moshi:1.15.2'

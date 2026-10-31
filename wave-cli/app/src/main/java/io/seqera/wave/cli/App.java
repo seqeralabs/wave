@@ -232,6 +232,9 @@ public class App implements Runnable {
     @Option(names = {"--build-compression"}, paramLabel = "<value>", description = "Specify the compression algorithm to be used for the build context, it can be 'gzip', 'zstd' or 'estargz'")
     private BuildCompression.Mode buildCompression;
 
+    @Option(names = {"--soci"}, paramLabel = "false", description = "Enable SOCI lazy loading: attach a SOCI v2 index to the container (requires the SOCI snapshotter on the pulling host).")
+    private boolean soci;
+
     @Option(names = {"--build-template"}, paramLabel = "<value>", description = "Specify the build template to be used for building the container, e.g. 'conda/pixi:v1', 'conda/pixi:v1-fast', 'conda/micromamba:v1', 'conda/micromamba:v2', 'conda/micromamba:v2-fast', 'cran/installr:v1'")
     private String buildTemplate;
 
@@ -341,6 +344,13 @@ public class App implements Runnable {
 
         if( isEmpty(towerToken) && !isEmpty(buildRepository) )
             throw new IllegalCliArgumentException("Specify the Tower access token required to authenticate the access to the build repository either by using the --tower-token option or the TOWER_ACCESS_TOKEN environment variable");
+
+        // -- check soci option, same rules as the Wave server
+        if( soci && singularity )
+            throw new IllegalCliArgumentException("Option --soci and --singularity conflict each other");
+
+        if( soci && !isEmpty(image) && image.contains("@sha256:") && !freeze && !mirror )
+            throw new IllegalCliArgumentException("Option --soci requires --freeze or --mirror when the image is specified by digest");
 
         // -- check conda options
         if( !isEmpty(condaFile) && condaPackages!=null )
@@ -467,6 +477,7 @@ public class App implements Runnable {
                 .withScanLevels(scanLevels)
                 .withBuildCompression(compression(buildCompression))
                 .withBuildTemplate(buildTemplate)
+                .withSoci(soci)
                 ;
     }
 
