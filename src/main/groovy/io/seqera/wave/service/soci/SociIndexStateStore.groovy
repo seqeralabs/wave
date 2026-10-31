@@ -62,8 +62,8 @@ class SociIndexStateStore extends AbstractStateStore<SociIndexEntry> {
     }
 
     /**
-     * Store a completed job. A succeeded one holds the layer zTOC and is kept {@code wave.soci.ztoc-cache-duration}.
-     * A failed layer is not re-submitted before {@code wave.soci.failure-duration}, so that a layer that cannot
+     * Store a completed job. A succeeded one holds the layer zTOC and is kept {@code wave.soci.ztoc.duration}.
+     * A failed layer is not re-submitted before {@code wave.soci.failure.duration}, so that a layer that cannot
      * be indexed does not churn jobs
      */
     void putEntry(SociIndexEntry entry) {

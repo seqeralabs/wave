@@ -245,7 +245,7 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
     }
 
     /**
-     * Record the failure: the layer is indexed again by a pull after {@code wave.soci.failure-duration}
+     * Record the failure: the layer is indexed again by a pull after {@code wave.soci.failure.duration}
      */
     protected void failed(SociIndexEntry entry, Integer exitCode, String error) {
         jobStore.putEntry(entry.complete(exitCode, null, error))
