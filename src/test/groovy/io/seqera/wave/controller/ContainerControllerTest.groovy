@@ -43,6 +43,7 @@ import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.config.CondaOpts
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
@@ -149,6 +150,45 @@ class ContainerControllerTest extends Specification {
         then:
         thrown(BadRequestException)
 
+    }
+
+    def 'should reject soci with digest-pinned ephemeral image' () {
+        given:
+        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry, sociConfig: new SociConfig())
+
+        when:
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu@sha256:a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8', soci: true)
+        controller.makeRequestData(req, PlatformId.NULL, "")
+        then:
+        def e = thrown(BadRequestException)
+        e.message == "Container requests made using a SHA256 as tag does not support the 'soci' attribute"
+    }
+
+    def 'should reject soci with singularity format' () {
+        given:
+        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry, sociConfig: new SociConfig())
+
+        when:
+        def req = new SubmitContainerTokenRequest(containerFile: 'FROM ubuntu', format: 'sif', freeze: true, soci: true)
+        controller.makeRequestData(req, PlatformId.NULL, "")
+        then:
+        def e = thrown(BadRequestException)
+        e.message == "Singularity format does not support the 'soci' attribute"
+    }
+
+    def 'should set soci only when enabled' () {
+        when:
+        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry, sociConfig: CONFIG)
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', containerPlatform: 'linux/amd64', soci: SOCI)
+        def data = controller.makeRequestData(req, PlatformId.NULL, "")
+        then:
+        data.soci == EXPECTED
+
+        where:
+        CONFIG          | SOCI  | EXPECTED
+        null            | true  | false
+        new SociConfig()| false | false
+        new SociConfig()| true  | true
     }
 
     def 'should reject pull request when container pull is disabled' () {

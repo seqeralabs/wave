@@ -48,6 +48,7 @@ import io.seqera.wave.api.ScanMode
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
@@ -184,6 +185,10 @@ class ContainerController {
     @Inject
     @Nullable
     private ContainerMirrorService mirrorService
+
+    @Inject
+    @Nullable
+    private SociConfig sociConfig
 
     @Inject
     private ContainerStatusService statusService
@@ -500,6 +505,10 @@ class ContainerController {
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
         if( req.scanMode && !scanService )
             throw new UnsupportedScanServiceException()
+        if( req.soci && req.formatSingularity() )
+            throw new BadRequestException("Singularity format does not support the 'soci' attribute")
+        if( req.soci && req.containerImage?.contains('@sha256:') && !req.freeze && !req.mirror )
+            throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'soci' attribute")
 
         // expand inclusions
         inclusionService.addContainerInclusions(req, identity)
@@ -605,7 +614,8 @@ class ContainerController {
                 req.scanLevels,
                 req.dryRun,
                 succeeded,
-                Instant.now()
+                Instant.now(),
+                req.soci && sociConfig!=null
         )
     }
 
