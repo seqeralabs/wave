@@ -18,7 +18,6 @@
 
 package io.seqera.wave.controller
 
-import spock.lang.IgnoreIf
 import spock.lang.Specification
 
 import io.micronaut.http.HttpRequest
@@ -37,10 +36,6 @@ import jakarta.inject.Inject
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-// TEMPORARY: skipped on sched GitHub Actions runners (named sched-*) until seqeralabs/sched#1858 is deployed.
-// The registry fixture runs a legacy-iptables dockerd inside a container, which needs the host's iptable_nat
-// module; sched runner VMs do not load it yet. Remove once sched#1858 is live on the runners.
-@IgnoreIf({ System.getenv('RUNNER_NAME')?.startsWith('sched-') })
 @MicronautTest
 class RegistryControllerLookupFailureTest extends Specification implements DockerRegistryContainer {
 

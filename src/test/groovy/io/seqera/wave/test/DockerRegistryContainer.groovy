@@ -46,7 +46,11 @@ trait DockerRegistryContainer extends BaseTestContainerRegistry {
     void initRegistryContainer(){
         testcontainers0.start()
         assert testcontainers0.execInContainer("apk","add", "docker","bash").exitCode==0
-        assert testcontainers0.execInContainer("sh","-c","dockerd &").exitCode==0
+        // TEMPORARY: --iptables=false until seqeralabs/sched#1858 is deployed. Alpine's dockerd uses legacy
+        // iptables and exits at startup when the host kernel has not loaded iptable_nat, as on sched GitHub
+        // Actions runner VMs. This engine only pulls from Docker Hub and pushes to localhost:5000, so it
+        // needs no NAT rules.
+        assert testcontainers0.execInContainer("sh","-c","dockerd --iptables=false &").exitCode==0
         assert testcontainers0.execInContainer("docker","pull","hello-world@sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6").exitCode==0
         assert testcontainers0.execInContainer("docker","tag","hello-world@sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6","localhost:5000/hello-world").exitCode==0
         assert testcontainers0.execInContainer("docker","tag","hello-world@sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6","localhost:5000/library/hello-world").exitCode==0
