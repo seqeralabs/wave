@@ -68,8 +68,9 @@ jobs:
           dev=$(ls /dev/mapper/usr 2>/dev/null || ls /dev/dm-0)
           sudo mount -o ro "$dev" /mnt/hostusr; echo "mount $dev exit=$?"
           ls /mnt/hostusr/lib/modules/"$(uname -r)"/kernel/net/ipv4/netfilter/ | grep -E 'iptable_(nat|filter)'
-          command -v modprobe || sudo apt-get install -y -qq kmod >/dev/null
-          sudo modprobe -d /mnt/hostusr -a iptable_nat iptable_filter; echo "modprobe exit=$?"
+          # the runner image has no kmod and no apt lists: load from a privileged Alpine container instead
+          docker run --rm --privileged -v /mnt/hostusr/lib/modules:/lib/modules:ro alpine:3.22 \
+            sh -c 'apk add -q kmod && modprobe -a iptable_nat iptable_filter'; echo "modprobe exit=$?"
           grep -E '^(ip_tables|iptable_|nf_nat) ' /proc/modules
           docker info --format 'dockerd {{.ServerVersion}} driver={{.Driver}} cgroup={{.CgroupVersion}} security={{.SecurityOptions}}'
           id=$(docker run -d --privileged -p 5000 registry:2)
