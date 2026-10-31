@@ -60,6 +60,7 @@ func usage() {
 func runIndex(args []string) error {
 	fs := flag.NewFlagSet("index", flag.ExitOnError)
 	layer := fs.String("layer", "", "path of the layer blob file")
+	source := fs.String("source", "", "layer to download when -layer is not given e.g. docker.io/library/ubuntu@sha256:…")
 	digest := fs.String("digest", "", "digest of the layer blob")
 	mediaType := fs.String("media-type", "", "media type of the layer blob")
 	span := fs.Int64("span", DefaultSpanSize, "zTOC span size in bytes")
@@ -67,11 +68,12 @@ func runIndex(args []string) error {
 	repo := fs.String("repo", "", "repository where the zTOC artifact is pushed")
 	insecure := fs.Bool("insecure", false, "allow plain HTTP registries")
 	_ = fs.Parse(args)
-	if *layer == "" || *digest == "" || *mediaType == "" || *repo == "" {
-		return fmt.Errorf("options -layer, -digest, -media-type and -repo are required")
+	if (*layer == "" && *source == "") || *digest == "" || *mediaType == "" || *repo == "" {
+		return fmt.Errorf("options -layer (or -source), -digest, -media-type and -repo are required")
 	}
 	result, err := IndexLayer(IndexRequest{
 		LayerFile:      *layer,
+		Source:         *source,
 		LayerDigest:    *digest,
 		LayerMediaType: *mediaType,
 		SpanSize:       *span,

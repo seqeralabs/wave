@@ -29,6 +29,9 @@ import (
 
 	"github.com/awslabs/soci-snapshotter/ztoc"
 	"github.com/awslabs/soci-snapshotter/ztoc/compression"
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 )
 
 const (
@@ -57,7 +60,10 @@ const (
 
 // IndexRequest holds the parameters to index one layer
 type IndexRequest struct {
-	LayerFile      string
+	// LayerFile is the path of the layer blob; when empty the layer is downloaded from Source
+	LayerFile string
+	// Source is the layer reference e.g. docker.io/library/ubuntu@sha256:…, used when LayerFile is empty
+	Source         string
 	LayerDigest    string
 	LayerMediaType string
 	SpanSize       int64
@@ -114,6 +120,14 @@ func BuildZtoc(layerFile string, spanSize int64) ([]byte, error) {
 
 // IndexLayer builds the zTOC of a layer and pushes it as an OCI artifact to the zTOC repository
 func IndexLayer(req IndexRequest) (*IndexResult, error) {
+	if req.LayerFile == "" {
+		file, err := downloadLayer(req.Source, req.Insecure)
+		if err != nil {
+			return nil, err
+		}
+		defer os.Remove(file)
+		req.LayerFile = file
+	}
 	info, err := os.Stat(req.LayerFile)
 	if err != nil {
 		return nil, err
@@ -176,4 +190,35 @@ func ZtocArtifactManifest(r IndexResult) ([]byte, error) {
 		},
 	}
 	return json.Marshal(m)
+}
+
+// downloadLayer saves a layer blob into a temporary file, verifying its digest
+func downloadLayer(source string, insecure bool) (string, error) {
+	if source == "" {
+		return "", fmt.Errorf("missing layer file or source")
+	}
+	ref, err := name.NewDigest(source, nameOptions(insecure)...)
+	if err != nil {
+		return "", fmt.Errorf("invalid layer source '%s': %w", source, err)
+	}
+	layer, err := remote.Layer(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	if err != nil {
+		return "", fmt.Errorf("unable to access layer %s: %w", source, err)
+	}
+	content, err := layer.Compressed()
+	if err != nil {
+		return "", fmt.Errorf("unable to download layer %s: %w", source, err)
+	}
+	defer content.Close()
+	file, err := os.CreateTemp("", "layer-*.tar.gz")
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+	// the remote layer reader verifies the digest when the content is fully read
+	if _, err := io.Copy(file, content); err != nil {
+		os.Remove(file.Name())
+		return "", fmt.Errorf("unable to download layer %s: %w", source, err)
+	}
+	return file.Name(), nil
 }

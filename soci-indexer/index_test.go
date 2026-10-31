@@ -158,6 +158,36 @@ func TestIndexGzipLayer(t *testing.T) {
 	}
 }
 
+func TestIndexLayerFromSource(t *testing.T) {
+	layer, names := writeLayer(t, map[string]int{"bin/tool": 12 << 20})
+	host := testRegistry(t)
+	// upload the layer into an image repository
+	data, _ := os.ReadFile(layer)
+	digest := sha256Digest(data)
+	src, _ := newRegistry(host+"/library/app", true)
+	if err := src.putBlob(strings.NewReader(string(data)), digest, int64(len(data))); err != nil {
+		t.Fatal(err)
+	}
+	repo := host + "/wave/soci-ztoc"
+	result, err := IndexLayer(IndexRequest{Source: host + "/library/app@" + digest, LayerDigest: digest, LayerMediaType: gzipLayer,
+		SpanSize: DefaultSpanSize, MinLayerSize: DefaultMinLayerSize, Repository: repo, Insecure: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	blob, err := crane.PullLayer(repo+"@"+result.ZtocDigest, crane.Insecure)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rc, _ := blob.Compressed()
+	toc, err := ztoc.Unmarshal(rc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(toc.TOC.FileMetadata) != len(names) || toc.TOC.FileMetadata[0].Name != names[0] {
+		t.Fatalf("unexpected ztoc files %+v", toc.TOC.FileMetadata)
+	}
+}
+
 func TestSkipSmallLayer(t *testing.T) {
 	layer, _ := writeLayer(t, map[string]int{"small": 1 << 20})
 	result, err := IndexLayer(IndexRequest{LayerFile: layer, LayerDigest: "sha256:01", LayerMediaType: gzipLayer,

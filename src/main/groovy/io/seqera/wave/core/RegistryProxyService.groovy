@@ -364,6 +364,24 @@ class RegistryProxyService {
         return result
     }
 
+    /**
+     * Fetch the content of a manifest
+     *
+     * @param image The image reference, by tag or digest e.g. {@code docker.io/library/ubuntu:24.04}
+     * @param identity The identity used to resolve the registry credentials, or {@code null} for Wave own ones
+     * @return The manifest content or {@code null} when it does not exist
+     */
+    String getManifestContent(String image, PlatformId identity) {
+        final coords = ContainerCoordinates.parse(image)
+        final route = RoutePath.v2manifestPath(coords, identity)
+        final resp = client(route).getString(route.path, WaveDefault.ACCEPT_HEADERS)
+        if( resp.statusCode()==404 )
+            return null
+        if( resp.statusCode()!=200 )
+            throw new IllegalStateException("Unable to fetch manifest for image '${image}' - response status=${resp.statusCode()}")
+        return resp.body()
+    }
+
     Flux<ByteBuffer<?>> streamBlob(RoutePath route, Map<String,List<String>> headers) {
         ProxyClient proxyClient = client(route)
         return proxyClient.stream(streamClient, route.path, headers)

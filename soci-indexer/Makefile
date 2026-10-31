@@ -42,7 +42,7 @@ release: check
 
 # the soci ztoc library needs cgo and a static zlib, so the tests run in a Linux container
 test:
-	docker run --rm -v ${CURDIR}:/src -w /src golang:1.26-bookworm \
+	docker run --rm -v ${CURDIR}:/src -w /src -v soci-indexer-gomod:/go/pkg/mod golang:1.26-bookworm \
 		bash -c 'apt-get update -qq && apt-get install -y -qq zlib1g-dev >/dev/null && go vet ./... && go test ./...'
 
 # image loaded into the local docker as soci-indexer:dev, it is never pushed
