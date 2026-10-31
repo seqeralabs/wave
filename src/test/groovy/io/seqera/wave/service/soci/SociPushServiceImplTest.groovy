@@ -50,7 +50,7 @@ class SociPushServiceImplTest extends Specification {
     static final String SOCI = 'quay.io/user/python:3.12-soci'
 
     SociConfig config = new SociConfig(spanSize: 4194304, minLayerSize: 10485760, repo: 'public.cr.stage-seqera.io/wave/soci-ztoc',
-            pendingCacheDuration: Duration.ofSeconds(30), publishTimeout: Duration.ofMinutes(30), jobTimeout: Duration.ofMinutes(1))
+            publishTimeout: Duration.ofMinutes(30), jobTimeout: Duration.ofMinutes(1))
 
     /** runs the async tasks in the calling thread */
     ExecutorService direct = Mock(ExecutorService) { execute(_) >> { Runnable r -> r.run() } }
