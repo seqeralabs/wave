@@ -418,6 +418,21 @@ class RegistryProxyService {
         return resp.body()
     }
 
+    /**
+     * Forward a {@code HEAD} request to the target registry
+     *
+     * @param route The request route
+     * @param headers The request headers
+     * @return The registry response status and headers, a redirect is returned as is to the client
+     */
+    DelegateResponse handleHead(RoutePath route, Map<String,List<String>> headers) {
+        final resp = client(route).head(route.path, headers)
+        return new DelegateResponse(
+                statusCode: resp.statusCode(),
+                headers: resp.headers().map(),
+                location: resp.headers().firstValue('Location').orElse(null) )
+    }
+
     Flux<ByteBuffer<?>> streamBlob(RoutePath route, Map<String,List<String>> headers) {
         ProxyClient proxyClient = client(route)
         return proxyClient.stream(streamClient, route.path, headers)

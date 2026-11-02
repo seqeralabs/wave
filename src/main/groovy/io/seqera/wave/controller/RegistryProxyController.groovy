@@ -257,6 +257,9 @@ class RegistryProxyController {
 
     MutableHttpResponse<?> handleHead(RoutePath route, HttpRequest httpRequest) {
 
+        if( route.blob )
+            return handleHeadBlob(route, httpRequest)
+
         if ( !route.manifest ) {
             throw new DockerRegistryException("Invalid request HEAD '$httpRequest.path'", 400, 'UNKNOWN')
         }
@@ -267,6 +270,47 @@ class RegistryProxyController {
         }
 
         return fromCacheDigest(entry)
+    }
+
+    /**
+     * Handle a blob {@code HEAD} request, used by clients such as the SOCI snapshotter
+     * to find out the layer size before fetching it lazily
+     */
+    protected MutableHttpResponse<?> handleHeadBlob(RoutePath route, HttpRequest httpRequest) {
+        final entry = storage.getBlob(route.getTargetPath()).orElse(null)
+        String location
+        if( location=dockerRedirection(entry) ) {
+            log.debug "Blob HEAD found in the cache [docker]: ${route.path} ==> mapping to: ${location}"
+            return handleHeadDelegate0(RoutePath.parse(location, route.identity), httpRequest)
+        }
+        if( entry ) {
+            log.trace "Blob HEAD found in the cache [digest]: ${route.path} ==> entry: ${entry}"
+            return fromCacheHead(entry)
+        }
+        return handleHeadDelegate0(route, httpRequest)
+    }
+
+    protected MutableHttpResponse<?> handleHeadDelegate0(RoutePath route, HttpRequest httpRequest) {
+        final headers = httpRequest.headers.asMap() as Map<String, List<String>>
+        final resp = proxyService.handleHead(route, headers)
+        log.debug "Returning blob HEAD from repository: '${route.getTargetContainer()}' - status=${resp.statusCode}"
+        return HttpResponse
+                .status(HttpStatus.valueOf(resp.statusCode))
+                .headers(toMutableHeaders(resp.headers))
+    }
+
+    private MutableHttpResponse fromCacheHead(DigestStore entry) {
+        // do not use 'fromCacheDigest' because 'getBytes' could download the blob content
+        Map<CharSequence, CharSequence> headers = Map.of(
+                "Content-Length", String.valueOf(entry.getSize()),
+                "Content-Type", entry.mediaType,
+                "docker-content-digest", entry.digest,
+                "etag", entry.digest,
+                "docker-distribution-api-version", "registry/2.0") as Map<CharSequence, CharSequence>
+
+        return HttpResponse
+                .ok()
+                .headers(headers)
     }
 
     MutableHttpResponse<?> handleTagList(RoutePath route, HttpRequest httpRequest) {
