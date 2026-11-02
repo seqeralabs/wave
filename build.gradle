@@ -58,7 +58,7 @@ dependencies {
     implementation 'io.seqera:lib-lang:1.2.0'
     implementation 'io.seqera:lib-serde:1.2.0'
     implementation 'io.seqera:lib-serde-moshi:1.2.1'
-    implementation 'io.seqera:lib-mail:1.3.1'
+    implementation 'io.seqera:lib-mail:1.3.2'
     implementation 'io.seqera:lib-pool:1.0.0'
     implementation 'io.seqera:lib-retry:2.1.0'
     implementation 'io.seqera:lib-random:1.0.0'
@@ -133,8 +133,8 @@ dependencies {
     // rate limit
     implementation 'com.coveo:spillway:3.0.0'
     // logging
-    implementation 'ch.qos.logback:logback-classic:1.6.5'
-    implementation 'ch.qos.logback:logback-core:1.6.5'
+    implementation 'ch.qos.logback:logback-classic:1.6.6'
+    implementation 'ch.qos.logback:logback-core:1.6.6'
     // monitoring
     implementation 'io.micronaut.micrometer:micronaut-micrometer-core'
     implementation 'io.micronaut.micrometer:micronaut-micrometer-registry-prometheus'
@@ -150,7 +150,7 @@ dependencies {
         implementation 'org.jsoup:jsoup:1.23.2'
         implementation 'org.apache.httpcomponents.core5:httpcore5-h2:5.4.4'
         implementation 'org.apache.httpcomponents.client5:httpclient5:5.6.5'
-        implementation 'com.github.jknack:handlebars:4.5.5'
+        implementation 'com.github.jknack:handlebars:4.5.7'
     }
     implementation 'org.bouncycastle:bcpkix-jdk18on:1.86'
     implementation 'org.bouncycastle:bcprov-jdk18on:1.86'
@@ -310,7 +310,7 @@ processResources {
 }
 
 jacoco {
-    toolVersion '0.8.15'
+    toolVersion '0.8.16'
 }
 /**
  * Code coverage with JaCoCo.
