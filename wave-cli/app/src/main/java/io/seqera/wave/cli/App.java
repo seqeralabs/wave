@@ -349,8 +349,9 @@ public class App implements Runnable {
         if( soci && singularity )
             throw new IllegalCliArgumentException("Option --soci and --singularity conflict each other");
 
-        if( soci && !isEmpty(image) && image.contains("@sha256:") && !freeze && !mirror )
-            throw new IllegalCliArgumentException("Option --soci requires --freeze or --mirror when the image is specified by digest");
+        // a digest image can't get a SOCI index unless frozen: a mirror keeps the digest, so no '-soci' tag is published
+        if( soci && !isEmpty(image) && image.contains("@sha256:") && !freeze )
+            throw new IllegalCliArgumentException("Option --soci requires --freeze when the image is specified by digest");
 
         // -- check conda options
         if( !isEmpty(condaFile) && condaPackages!=null )

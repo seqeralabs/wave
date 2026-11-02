@@ -444,4 +444,6 @@ With `--freeze` or `--mirror`, Wave publishes the SOCI-enabled image to the sibl
 wave -i ubuntu:24.04 --freeze --build-repo <repo> --tower-token <token> --soci
 ```
 
+An image specified by digest (`image@sha256:…`) gets a SOCI index only with `--freeze`. A mirror keeps the digest reference, so no `-soci` tag is published for it.
+
 - `--soci`: Attaches a SOCI index (index manifest v2) to the container.
