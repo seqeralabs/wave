@@ -32,10 +32,10 @@ class SociIndexStateStoreTest extends Specification {
 
     static final String LAYER = 'sha256:' + '1'*64
 
-    SociIndexStateStore store() {
+    SociIndexStateStore store(LocalStateProvider provider=new LocalStateProvider(), String repo='registry.io/soci-ztoc') {
         def config = new SociConfig(jobTimeout: Duration.ofMinutes(10), failureDuration: Duration.ofMinutes(10),
-                ztocCacheDuration: Duration.ofDays(1))
-        def store = new SociIndexStateStore(new LocalStateProvider())
+                ztocCacheDuration: Duration.ofDays(1), repo: repo)
+        def store = new SociIndexStateStore(provider)
         store.@config = config
         return store
     }
@@ -67,5 +67,16 @@ class SociIndexStateStoreTest extends Specification {
 
         expect:
         !store.awaitCompletion([entry.key], Duration.ofMillis(200))
+    }
+
+    def 'should not reuse the zTOCs of another zTOC repository' () {
+        given:
+        def provider = new LocalStateProvider()
+        def entry = SociIndexEntry.of(new SociIndexRequest(requestId: 'soci-1', layerDigest: LAYER, spanSize: 4194304))
+        store(provider, 'registry.io/old-ztoc').putEntry(entry.complete(0, null, null))
+
+        expect:
+        store(provider, 'registry.io/old-ztoc').get(entry.key)
+        !store(provider, 'registry.io/new-ztoc').get(entry.key)
     }
 }

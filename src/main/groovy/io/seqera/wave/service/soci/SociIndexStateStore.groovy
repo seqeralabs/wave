@@ -48,9 +48,12 @@ class SociIndexStateStore extends AbstractStateStore<SociIndexEntry> {
         super(provider, new MoshiEncodeStrategy<SociIndexEntry>() {})
     }
 
+    /**
+     * Keyed by zTOC repository, so that changing {@code wave.soci.repo} does not reuse zTOCs pushed to the previous one
+     */
     @Override
     protected String getPrefix() {
-        return 'wave-soci-job/v1'
+        return "wave-soci-job/v1/${config.repo}"
     }
 
     /**
