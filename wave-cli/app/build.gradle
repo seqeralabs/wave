@@ -27,9 +27,8 @@ repositories {
 }
 
 dependencies {
-    // TODO: 1.43.0-b1 is the beta adding SubmitContainerTokenRequest.soci, bump it to the 1.43.0 release before merging
-    implementation 'io.seqera:wave-api:1.43.0-b1'
-    implementation 'io.seqera:wave-utils:1.42.1'
+    implementation 'io.seqera:wave-api:1.43.0'
+    implementation 'io.seqera:wave-utils:1.43.0'
     implementation 'info.picocli:picocli:4.7.7'
     implementation 'com.squareup.moshi:moshi:1.15.2'
     implementation 'com.squareup.moshi:moshi-adapters:1.15.2'
