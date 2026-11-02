@@ -61,6 +61,14 @@ class SociConfig {
     Duration awaitTimeout
 
     /**
+     * The manifest request is held only when the eligible layers still to index add up to at least this
+     * size in bytes. A smaller image is served without SOCI index while its layers are indexed in the
+     * background: a regular pull of it takes less than the indexing it would wait for
+     */
+    @Value('${wave.soci.await-min-size:1073741824}')
+    long awaitMinSize
+
+    /**
      * How long a zTOC lookup entry is kept in the cache. It must be shorter than the
      * lifecycle expiry of the zTOC repository
      */

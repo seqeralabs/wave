@@ -138,6 +138,24 @@ class SociInjectorTest extends Specification {
         result.target != INDEX
     }
 
+    def 'should index the missing layers without awaiting them when they are small' () {
+        given:
+        def storage = storage()
+        def service = Mock(SociIndexService)
+        def small = new SociConfig(minLayerSize: 10485760, repo: config.repo, awaitTimeout: Duration.ofMinutes(3), awaitMinSize: 1073741824)
+        def injector = new SociInjector(client(), storage, service, small, PlatformId.NULL, ContainerPlatform.of('linux/amd64'), null)
+
+        when:
+        def result = injector.apply('library/python', new ContainerDigestPair(INDEX, INDEX), [:])
+
+        then:
+        1 * service.findZtocs([LAYER1, LAYER3]) >> ztocs().subMap([LAYER1])
+        1 * service.indexLayers('docker.io/library/python', { List<Map> it -> it*.digest == [LAYER3] }, PlatformId.NULL)
+        0 * service.awaitLayers(_, _)
+        and:
+        result == new ContainerDigestPair(INDEX, INDEX)
+    }
+
     def 'should enable an image repeating a layer' () {
         given:
         def service = Mock(SociIndexService)
