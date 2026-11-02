@@ -25,6 +25,7 @@ import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1Pod
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.MirrorConfig
+import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.configuration.ScanConfig
 /**
  * Defines Kubernetes operations
@@ -52,6 +53,8 @@ interface K8sService {
     V1Job launchScanJob(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector)
 
     V1Job launchMirrorJob(String name, String containerImage, List<String> args, Path workDir, Path creds, MirrorConfig config, Map<String,String> nodeSelector)
+
+    V1Job launchSociIndexJob(String name, String containerImage, List<String> args, Path workDir, Path creds, SociConfig config, Map<String,String> nodeSelector)
 
     V1Pod getLatestPodForJob(String jobName)
 

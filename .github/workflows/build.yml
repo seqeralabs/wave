@@ -165,6 +165,11 @@ jobs:
         if: "steps.detect-release.outputs.is_publish == 'true'"
         run: make -C condasplit release registry=public.cr.seqera.io/wave
 
+      # the `wave.soci.indexer-image` default names the soci-indexer/VERSION tag, see SociConfig
+      - name: Publish soci-indexer image
+        if: "steps.detect-release.outputs.is_publish == 'true'"
+        run: make -C soci-indexer release registry=public.cr.seqera.io/wave
+
       # --- Internal (dev) ECR push: [preview] only, any branch ---
       # Lets features be built from any branch and pulled into dev/testing without reaching a
       # customer-deployed location. Inlined from seqeralabs/actions/push because that action is
