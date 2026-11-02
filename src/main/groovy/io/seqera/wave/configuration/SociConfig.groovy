@@ -74,8 +74,8 @@ class SociConfig {
     Duration jobTimeout
 
     /**
-     * Job slots, out of {@code wave.job-manager.max-running-jobs}, that indexing jobs cannot take,
-     * so that a burst of indexing does not delay the builds
+     * Job slots, out of {@code wave.job-manager.max-running-jobs}, that SOCI indexing and push jobs cannot take,
+     * so that a burst of SOCI jobs does not delay the builds
      */
     @Value('${wave.soci.reserved-jobs:5}')
     int reservedJobs
@@ -85,6 +85,13 @@ class SociConfig {
      */
     @Value('${wave.soci.failure.duration:10m}')
     Duration failureDuration
+
+    /**
+     * How long the publication of the SOCI-enabled tag of a durable container waits for the container
+     * (build or mirror) and for its layers indexing
+     */
+    @Value('${wave.soci.publish-timeout:30m}')
+    Duration publishTimeout
 
     /**
      * The OCI repository where zTOC artifacts are stored. Defaults to {@code <wave.build.repo>/soci-ztoc}

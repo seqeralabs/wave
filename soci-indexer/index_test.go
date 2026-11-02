@@ -22,6 +22,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"net/http/httptest"
 	"os"
@@ -142,5 +143,52 @@ func TestIndexGzipLayer(t *testing.T) {
 	}
 	if toc.BuildToolIdentifier != BuildToolIdentifier {
 		t.Fatalf("unexpected build tool %s", toc.BuildToolIdentifier)
+	}
+}
+
+func TestPushPlan(t *testing.T) {
+	host := testRegistry(t)
+	// a source blob in another repository of the same registry
+	src := host + "/wave/soci-ztoc"
+	srcData := []byte("ztoc-bytes")
+	srcDigest := sha256Digest(srcData)
+	reg, _ := newRegistry(src)
+	if err := reg.putBlob(strings.NewReader(string(srcData)), srcDigest, int64(len(srcData))); err != nil {
+		t.Fatal(err)
+	}
+
+	manifest := []byte(`{"schemaVersion":2,"mediaType":"application/vnd.oci.image.manifest.v1+json","config":{"mediaType":"application/vnd.amazon.soci.index.v2+json","digest":"` + EmptyJSONDigest + `","size":2},"layers":[{"mediaType":"application/octet-stream","digest":"` + srcDigest + `","size":10}]}`)
+	plan := PushPlan{
+		Blobs: []PushBlob{
+			{Digest: EmptyJSONDigest, Size: 2, Source: "base64:" + base64.StdEncoding.EncodeToString(EmptyJSON)},
+			{Digest: srcDigest, Size: int64(len(srcData)), Source: "docker://" + src + "@" + srcDigest},
+		},
+		Manifests: []PushManifest{
+			{Reference: sha256Digest(manifest), MediaType: OCIManifestMediaType, Body: base64.StdEncoding.EncodeToString(manifest)},
+			{Reference: "1.0-soci", MediaType: OCIManifestMediaType, Body: base64.StdEncoding.EncodeToString(manifest)},
+		},
+	}
+	target := host + "/library/app"
+	if err := Push(target, plan); err != nil {
+		t.Fatal(err)
+	}
+	got, err := crane.Manifest(target+":1.0-soci", crane.Insecure)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(manifest) {
+		t.Fatalf("manifest bytes not preserved: %s", got)
+	}
+	if _, err := crane.PullLayer(target+"@"+srcDigest, crane.Insecure); err != nil {
+		t.Fatalf("blob not copied: %v", err)
+	}
+}
+
+func TestPushRejectsDigestMismatch(t *testing.T) {
+	host := testRegistry(t)
+	plan := PushPlan{Manifests: []PushManifest{{Reference: "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+		MediaType: OCIManifestMediaType, Body: base64.StdEncoding.EncodeToString([]byte("{}"))}}}
+	if err := Push(host+"/library/app", plan); err == nil || !strings.Contains(err.Error(), "does not match digest") {
+		t.Fatalf("expected digest mismatch error, got %v", err)
 	}
 }

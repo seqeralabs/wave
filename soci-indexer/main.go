@@ -16,11 +16,13 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Command soci-indexer builds SOCI zTOCs for container image layers on behalf of Wave.
-// It has one sub-command:
+// Command soci-indexer builds SOCI zTOCs for container image layers and publishes
+// SOCI index artifacts on behalf of Wave. It has two sub-commands:
 //
 //	index  builds the zTOC of one layer and pushes it to the zTOC repository as an
 //	       OCI artifact tagged by layer digest
+//	push   uploads a list of blobs and raw manifests to a target repository, preserving
+//	       the manifest bytes (and therefore their digests) exactly
 package main
 
 import (
@@ -39,6 +41,8 @@ func main() {
 	switch os.Args[1] {
 	case "index":
 		err = runIndex(os.Args[2:])
+	case "push":
+		err = runPush(os.Args[2:])
 	default:
 		usage()
 		os.Exit(2)
@@ -50,7 +54,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: soci-indexer index [options]")
+	fmt.Fprintln(os.Stderr, "usage: soci-indexer index|push [options]")
 }
 
 func runIndex(args []string) error {
@@ -75,4 +79,23 @@ func runIndex(args []string) error {
 		return err
 	}
 	return json.NewEncoder(os.Stdout).Encode(result)
+}
+
+func runPush(args []string) error {
+	fs := flag.NewFlagSet("push", flag.ExitOnError)
+	target := fs.String("target", "", "target repository")
+	planFile := fs.String("plan", "", "path of the push plan JSON file")
+	_ = fs.Parse(args)
+	if *target == "" || *planFile == "" {
+		return fmt.Errorf("options -target and -plan are required")
+	}
+	data, err := os.ReadFile(*planFile)
+	if err != nil {
+		return err
+	}
+	var plan PushPlan
+	if err := json.Unmarshal(data, &plan); err != nil {
+		return fmt.Errorf("invalid push plan: %w", err)
+	}
+	return Push(*target, plan)
 }

@@ -516,11 +516,14 @@ Configure the SOCI lazy loading support, see [SOCI lazy loading](../soci.md).
 `wave.soci.timeout` *(optional)*
 : Max duration of a `soci-indexer` job (default: `10m`).
 
+`wave.soci.publish-timeout` *(optional)*
+: How long the publication of the `-soci` tag of a freeze or mirror container waits for the container and its indexing (default: `30m`).
+
 `wave.soci.reserved-jobs` *(optional)*
-: Number of `wave.job-manager.max-running-jobs` slots that `soci-indexer` jobs cannot take, so that indexing does not delay builds (default: `5`).
+: Number of `wave.job-manager.max-running-jobs` slots that `soci-indexer` jobs, indexing and push, cannot take, so that SOCI does not delay builds (default: `5`).
 
 `wave.soci.failure.duration` *(optional)*
-: How long a layer that could not be indexed is not retried. The next pull after it indexes the layer again (default: `10m`).
+: How long a layer that could not be indexed is not retried, the next request after it indexes the layer again. A failed publication of a `-soci` tag is retried after this duration, doubled at each consecutive failure up to one day (default: `10m`).
 
 `wave.soci.k8s.resources.requests.cpu`, `wave.soci.k8s.resources.requests.memory`, `wave.soci.k8s.resources.limits.cpu`, `wave.soci.k8s.resources.limits.memory` *(optional)*
 : Kubernetes resources of the `soci-indexer` jobs.

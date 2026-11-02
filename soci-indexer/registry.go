@@ -77,6 +77,22 @@ func (r *ociRegistry) putBlob(content io.Reader, digest string, size int64) erro
 	return nil
 }
 
+// copyBlob copies a blob from another repository, mounting it when both are on the same registry
+func (r *ociRegistry) copyBlob(source string) error {
+	ref, err := name.NewDigest(source)
+	if err != nil {
+		return fmt.Errorf("invalid blob source '%s': %w", source, err)
+	}
+	layer, err := remote.Layer(ref, r.options...)
+	if err != nil {
+		return fmt.Errorf("unable to access blob %s: %w", source, err)
+	}
+	if err := remote.WriteLayer(r.repo, layer, r.options...); err != nil {
+		return fmt.Errorf("unable to copy blob %s to %s: %w", source, r.repo, err)
+	}
+	return nil
+}
+
 type rawManifest struct {
 	body      []byte
 	mediaType string
