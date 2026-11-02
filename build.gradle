@@ -101,7 +101,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
     // Moshi dependencies now provided by lib-serde-moshi
     implementation 'redis.clients:jedis:5.2.0'
-    implementation 'io.github.resilience4j:resilience4j-ratelimiter:0.17.0'
+    implementation 'io.github.resilience4j:resilience4j-ratelimiter:2.4.0'
     implementation 'io.micronaut:micronaut-retry'
     // caching deps
     implementation 'io.micronaut.cache:micronaut-cache-core'
