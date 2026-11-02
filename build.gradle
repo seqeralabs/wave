@@ -94,7 +94,7 @@ dependencies {
     implementation 'io.micronaut.reactor:micronaut-reactor-http-client'
     implementation 'org.apache.commons:commons-compress:1.28.0'
     implementation 'org.apache.commons:commons-lang3:3.21.0'
-    implementation 'io.kubernetes:client-java:27.0.1'
+    implementation 'io.kubernetes:client-java:28.0.0'
     implementation 'io.kubernetes:client-java-api-fluent:27.0.1'
     implementation 'com.google.code.gson:gson:2.14.0'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
