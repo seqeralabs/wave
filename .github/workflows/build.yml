@@ -31,7 +31,7 @@ jobs:
   build:
     name: Build Wave
     if: "github.event == 'push' || github.repository != github.event.pull_request.head.repo.full_name"
-    runs-on: ubuntu-latest
+    runs-on: sched/run=${{ github.run_id }}-build-${{ matrix.java_version }}/cpu=8/mem=32/type=m7a+m7i/spot=true
     # includes the condasplit image build on a release, ~6 minutes when the tag is new, plus headroom
     # for registry stalls: a release cancelled on timeout publishes nothing and must be pushed again
     timeout-minutes: 45
@@ -109,6 +109,12 @@ jobs:
           architecture: x64
           cache: gradle
 
+      # processResources builds the TypeSpec API with npm, which the sched runner image lacks
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24.22.0'
+
       - name: Compile
         run: make compile
         env:
@@ -120,6 +126,10 @@ jobs:
           make check
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
+          # Testcontainers sees it runs in a container (the sched runner) and picks the Docker gateway IP
+          # as the container host; the runner's dockerd publishes ports on localhost, which the tests
+          # expect (e.g. BlobCacheServiceImplTest2). On GitHub-hosted runners localhost is the default.
+          TESTCONTAINERS_HOST_OVERRIDE: localhost
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{secrets.TOWER_CI_AWS_ACCESS}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.TOWER_CI_AWS_SECRET}}
@@ -151,7 +161,7 @@ jobs:
       # when the tag is already published with the same sources, see `make check`.
       - name: Docker Login to Seqera public CR
         if: "steps.detect-release.outputs.is_publish == 'true'"
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: public.cr.seqera.io
           username: ${{ vars.SEQERA_PUBLIC_CR_USERNAME }}
@@ -173,6 +183,11 @@ jobs:
           else
             echo "skipping the condasplit build"
           fi
+
+      # the `wave.soci.indexer-image` default names the soci-indexer/VERSION tag, see SociConfig
+      - name: Publish soci-indexer image
+        if: "steps.detect-release.outputs.is_publish == 'true'"
+        run: make -C soci-indexer release registry=public.cr.seqera.io/wave
 
       # --- Internal (dev) ECR push: [preview] only, any branch ---
       # Lets features be built from any branch and pulled into dev/testing without reaching a

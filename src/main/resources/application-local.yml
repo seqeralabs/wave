@@ -37,6 +37,12 @@ wave:
   security:
     ssrf-protection:
       enabled: false
+  soci:
+    enabled: true
+    # must be on the build registry, zTOCs are tagged in the build repo
+    repo: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/dev"
+    # built with 'make load' in soci-indexer/
+    indexer-image: "soci-indexer:dev"
 ---
 endpoints:
   metrics:
