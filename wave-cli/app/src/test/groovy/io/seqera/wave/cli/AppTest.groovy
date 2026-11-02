@@ -322,6 +322,59 @@ class AppTest extends Specification {
         req.buildCompression == new BuildCompression().withMode(BuildCompression.Mode.gzip)
     }
 
+    def 'should set soci flag' () {
+        given:
+        def app = new App()
+        String[] args = ["--image", "ubuntu", "--soci"]
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        then:
+        app.createRequest().soci
+    }
+
+    def 'should not set soci by default' () {
+        given:
+        def app = new App()
+        String[] args = ["--image", "ubuntu"]
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        then:
+        !app.createRequest().soci
+    }
+
+    def 'should fail when soci with singularity' () {
+        given:
+        def app = new App()
+        String[] args = ["--image", "ubuntu", "--soci", "--singularity", "--freeze", "--build-repo", "docker.io/foo", "--tower-token", "xyz"]
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        app.validateArgs()
+        then:
+        def e = thrown(IllegalCliArgumentException)
+        e.message == 'Option --soci and --singularity conflict each other'
+    }
+
+    def 'should fail when soci with digest image and no freeze' () {
+        given:
+        def app = new App()
+        new CommandLine(app).parseArgs(ARGS as String[])
+
+        when:
+        app.validateArgs()
+        then:
+        def e = thrown(IllegalCliArgumentException)
+        e.message == 'Option --soci requires --freeze when the image is specified by digest'
+
+        where:
+        ARGS << [
+            ["--image", "ubuntu@sha256:a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8", "--soci"],
+            ["--image", "ubuntu@sha256:a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8", "--soci", "--mirror", "--build-repo", "docker.io/foo", "--tower-token", "xyz"],
+        ]
+    }
+
     def 'should set build compression estargz' () {
         given:
         def app = new App()

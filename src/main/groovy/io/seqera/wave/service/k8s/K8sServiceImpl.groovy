@@ -56,6 +56,8 @@ import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.MirrorConfig
+import io.seqera.wave.configuration.SociConfig
+import io.seqera.wave.service.soci.strategy.SociIndexStrategy
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.service.scan.Trivy
 import jakarta.inject.Inject
@@ -710,6 +712,43 @@ class K8sServiceImpl implements K8sService {
     }
 
     V1Job mirrorJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, MirrorConfig config, Map<String,String> nodeSelector) {
+        final resources = resources(config.requestsCpu, config.requestsMemory, config.limitsCpu, config.limitsMemory)
+        final env = new V1EnvVar().name("REGISTRY_AUTH_FILE").value("/tmp/config.json")
+        return toolJobSpec(name, containerImage, args, workDir, credsFile, '/tmp/config.json', resources, env, nodeSelector)
+    }
+
+    @Override
+    V1Job launchSociIndexJob(String name, String containerImage, List<String> args, Path workDir, Path creds, SociConfig config, Map<String,String> nodeSelector) {
+        final spec = sociIndexJobSpec(name, containerImage, args, workDir, creds, config, nodeSelector)
+        return k8sClient
+                .batchV1Api()
+                .createNamespacedJob(namespace, spec)
+                .execute()
+    }
+
+    V1Job sociIndexJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, SociConfig config, Map<String,String> nodeSelector) {
+        final resources = resources(config.requestsCpu, config.requestsMemory, config.limitsCpu, config.limitsMemory)
+        final env = new V1EnvVar().name("DOCKER_CONFIG").value(SociIndexStrategy.DOCKER_CONFIG_DIR)
+        return toolJobSpec(name, containerImage, args, workDir, credsFile, "${SociIndexStrategy.DOCKER_CONFIG_DIR}/config.json", resources, env, nodeSelector)
+    }
+
+    protected static V1ResourceRequirements resources(String requestsCpu, String requestsMemory, String limitsCpu, String limitsMemory) {
+        final requests = new V1ResourceRequirements()
+        if( requestsCpu )
+            requests.putRequestsItem('cpu', new Quantity(requestsCpu))
+        if( requestsMemory )
+            requests.putRequestsItem('memory', new Quantity(requestsMemory))
+        if( limitsCpu )
+            requests.putLimitsItem('cpu', new Quantity(limitsCpu))
+        if( limitsMemory )
+            requests.putLimitsItem('memory', new Quantity(limitsMemory))
+        return requests
+    }
+
+    /**
+     * Spec of a job running a registry tool (skopeo, soci-indexer) with the docker auth file mounted at {@code credsPath}
+     */
+    protected V1Job toolJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, String credsPath, V1ResourceRequirements requests, V1EnvVar env, Map<String,String> nodeSelector) {
 
         // required volumes
         final mounts = new ArrayList<V1VolumeMount>(5)
@@ -719,7 +758,7 @@ class K8sServiceImpl implements K8sService {
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
         if( credsFile ){
-            mounts.add(0, mountHostPath(credsFile, storageMountPath, '/tmp/config.json'))
+            mounts.add(0, mountHostPath(credsFile, storageMountPath, credsPath))
         }
 
         V1JobBuilder builder = new V1JobBuilder()
@@ -745,16 +784,6 @@ class K8sServiceImpl implements K8sService {
                 .withDnsPolicy(dnsPolicy)
                 .withNodeSelector(nodeSelector)
 
-        final requests = new V1ResourceRequirements()
-        if( config.requestsCpu )
-            requests.putRequestsItem('cpu', new Quantity(config.requestsCpu))
-        if( config.requestsMemory )
-            requests.putRequestsItem('memory', new Quantity(config.requestsMemory))
-        if( config.limitsCpu )
-            requests.putLimitsItem('cpu', new Quantity(config.limitsCpu))
-        if( config.limitsMemory )
-            requests.putLimitsItem('memory', new Quantity(config.limitsMemory))
-
         // container section
         final container = new V1ContainerBuilder()
                 .withName(name)
@@ -762,7 +791,7 @@ class K8sServiceImpl implements K8sService {
                 .withArgs(args)
                 .withVolumeMounts(mounts)
                 .withResources(requests)
-                .withEnv(new V1EnvVar().name("REGISTRY_AUTH_FILE").value("/tmp/config.json"))
+                .withEnv(env)
 
         // spec section
         spec.withContainers(container.build()).endSpec().endTemplate().endSpec()

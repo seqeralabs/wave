@@ -173,6 +173,7 @@ Returns the name of the container request made available by Wave.
     fingerprint: string,
     freeze: boolean,
     mirror: boolean,
+    soci: boolean,
     dryRun: boolean,
     scanMode: string,
     scanLevels: string[],
@@ -240,6 +241,7 @@ To check that an option is applied, send the request with `dryRun: true` and com
 | `fingerprint`                       | Request unique fingerprint.                                                                                                                        |
 | `freeze`                            | Freeze requires buildRepository to push the build container to a user-defined repository. This provides the container URL from the user-defined repository, not the Wave generated URL. This URL won't change.                                                             |
 | `mirror`                            | Mirror the `containerImage` to the `buildRepository` instead of building a container (optional). Default: `false`.                                |
+| `soci`                              | Attach a SOCI index (index manifest v2) to the container, so hosts running the SOCI snapshotter load it lazily (optional). Default: `false`. See [SOCI lazy loading](./soci.md). |
 | `dryRun`                            | Return the container token and target image name without building or pushing a container (optional). Default: `false`.                            |
 | `scanMode`                          | Security scan mode. Options: `none` (no scan), `async` (scan after the build completes), `required` (the container request is only complete once the scan completes) (optional). |
 | `scanLevels`                        | Vulnerability levels allowed in the container, e.g., `['LOW', 'MEDIUM']`. Options: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`. When empty, no vulnerabilities are allowed (optional). |
@@ -307,7 +309,7 @@ Setting `basePackages` replaces the default list. To keep the default packages, 
 | Attribute        | Description                                                                              |
 | ---------------- | ---------------------------------------------------------------------------------------- |
 | `containerToken` | The unique token identifying the Wave container request, e.g., `0123456789`.               |
-| `targetImage`    | The Wave container image name, e.g., `wave.seqera.io/wt/0123456789/library/ubuntu:latest`. |
+| `targetImage`    | The Wave container image name, e.g., `wave.seqera.io/wt/0123456789/library/ubuntu:latest`. With `soci: true`, a freeze or mirror request returns the SOCI-enabled `<tag>-soci` image once it exists, otherwise the original tag. |
 | `expiration`     | The expiration timestamp of the Wave container using ISO-8601 format.                    |
 | `cached`         | Indicates if the requested image is built or in progress.                                |
 
