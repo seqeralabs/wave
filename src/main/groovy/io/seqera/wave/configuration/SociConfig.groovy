@@ -73,6 +73,13 @@ class SociConfig {
     Duration jobTimeout
 
     /**
+     * Job slots, out of {@code wave.job-manager.max-running-jobs}, that indexing jobs cannot take,
+     * so that a burst of indexing does not delay the builds
+     */
+    @Value('${wave.soci.reserved-jobs:5}')
+    int reservedJobs
+
+    /**
      * How long a layer whose indexing failed is not re-submitted
      */
     @Value('${wave.soci.failure.duration:10m}')

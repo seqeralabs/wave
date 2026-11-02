@@ -499,7 +499,7 @@ Configure the SOCI lazy loading support, see [SOCI lazy loading](../soci.md).
 : Enables the `soci` container request attribute (default: `false`).
 
 `wave.soci.repo` *(optional)*
-: Repository where the zTOC artifacts are stored (default: `<wave.build.repo>/soci-ztoc`). Its lifecycle expiry must be longer than `wave.soci.ztoc.duration`.
+: Repository where the zTOC artifacts are stored (default: `<wave.build.repo>/soci-ztoc`). It must be on the same registry as `wave.build.repo`. Its lifecycle expiry must be longer than `wave.soci.ztoc.duration`.
 
 `wave.soci.indexer-image` *(optional)*
 : Container image of the `soci-indexer` job (default: `public.cr.seqera.io/wave/soci-indexer:v0.1.0`).
@@ -515,6 +515,9 @@ Configure the SOCI lazy loading support, see [SOCI lazy loading](../soci.md).
 
 `wave.soci.timeout` *(optional)*
 : Max duration of a `soci-indexer` job (default: `10m`).
+
+`wave.soci.reserved-jobs` *(optional)*
+: Number of `wave.job-manager.max-running-jobs` slots that `soci-indexer` jobs cannot take, so that indexing does not delay builds (default: `5`).
 
 `wave.soci.failure.duration` *(optional)*
 : How long a layer that could not be indexed is not retried. The next pull after it indexes the layer again (default: `10m`).
