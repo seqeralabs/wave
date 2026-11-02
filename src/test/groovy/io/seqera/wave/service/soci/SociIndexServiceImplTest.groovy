@@ -190,13 +190,17 @@ class SociIndexServiceImplTest extends Specification {
     def 'should launch the job with the docker auth' () {
         given:
         def strategy = Mock(SociIndexStrategy)
-        def service = new SociIndexServiceImpl(config: config, strategy: strategy)
+        def jobStore = Mock(SociIndexStateStore)
+        def service = new SociIndexServiceImpl(config: config, strategy: strategy, jobStore: jobStore)
         def dir = java.nio.file.Files.createTempDirectory('test')
         def request = new SociIndexRequest(requestId: 'soci-1', layerDigest: BIG, spanSize: 4194304, workDir: dir.resolve('soci-1'), authJson: '{"auths":{}}')
         def job = JobSpec.sociIndex(request.key, 'soci-1', java.time.Instant.now(), Duration.ofMinutes(1), request.workDir)
+        def entry = SociIndexEntry.of(request)
 
         when:
-        def result = service.launchJob(job, SociIndexEntry.of(request))
+        def result = service.launchJob(job, entry)
+        then: 'the pending entry ttl is refreshed, the job may have waited in the queue'
+        1 * jobStore.put(entry.key, entry)
         then:
         1 * strategy.launchJob('soci-1', request)
         result.launchTime != null

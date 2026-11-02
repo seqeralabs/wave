@@ -54,11 +54,12 @@ class SociIndexStateStore extends AbstractStateStore<SociIndexEntry> {
     }
 
     /**
-     * A pending job is kept twice the job timeout, so a lost job does not block the layer for ever
+     * A pending job is kept longer than the job manager waits for it (2.1 times the job timeout from its
+     * launch, when the entry is refreshed), and not for ever, so a lost job does not block the layer
      */
     @Override
     protected Duration getDuration() {
-        return config.jobTimeout.multipliedBy(2)
+        return config.jobTimeout.multipliedBy(3)
     }
 
     /**
@@ -74,12 +75,13 @@ class SociIndexStateStore extends AbstractStateStore<SociIndexEntry> {
      * Wait for the completion of the indexing jobs with the given keys
      *
      * @param keys The keys of the jobs, see {@link SociIndexRequest#key}
-     * @return {@code true} when all jobs completed, or {@code false} when the {@code wave.soci.await-timeout} expired
+     * @param timeout How long to wait at most
+     * @return {@code true} when all jobs completed, or {@code false} when the timeout expired
      */
-    boolean awaitCompletion(Collection<String> keys) {
+    boolean awaitCompletion(Collection<String> keys, Duration timeout) {
         final beg = System.currentTimeMillis()
         while( keys.stream().anyMatch(this::pending) ) {
-            if( System.currentTimeMillis()-beg > config.awaitTimeout.toMillis() )
+            if( System.currentTimeMillis()-beg > timeout.toMillis() )
                 return false
             Thread.sleep(STATUS_DELAY.toMillis())
         }

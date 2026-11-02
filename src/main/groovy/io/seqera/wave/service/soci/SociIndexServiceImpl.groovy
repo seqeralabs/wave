@@ -19,6 +19,7 @@
 package io.seqera.wave.service.soci
 
 import java.nio.file.Path
+import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
@@ -172,8 +173,8 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
     }
 
     @Override
-    boolean awaitLayers(Collection<String> layerDigests) {
-        return jobStore.awaitCompletion(layerDigests.collect((String it) -> SociIndexRequest.key(it, config.spanSize)))
+    boolean awaitLayers(Collection<String> layerDigests, Duration timeout) {
+        return jobStore.awaitCompletion(layerDigests.collect((String it) -> SociIndexRequest.key(it, config.spanSize)), timeout)
     }
 
     protected void launchIndex(String repository, Map layer, String authJson) {
@@ -238,6 +239,8 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
     JobSpec launchJob(JobSpec job, SociIndexEntry entry) {
         final request = entry.request
         saveDockerAuth(request.workDir, request.authJson)
+        // the job may have waited in the queue, keep the pending entry for the whole job run
+        jobStore.put(entry.key, entry)
         strategy.launchJob(job.operationName, request)
         return job.withLaunchTime(Instant.now())
     }

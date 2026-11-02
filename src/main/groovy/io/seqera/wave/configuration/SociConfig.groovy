@@ -54,9 +54,10 @@ class SociConfig {
 
     /**
      * How long the request of a container manifest is held while its layers are indexed. When the
-     * indexing does not complete in time the container is served without SOCI index
+     * indexing does not complete in time the container is served without SOCI index. Keep it below the
+     * containerd {@code image_pull_progress_timeout} (5m), a held request does not report progress
      */
-    @Value('${wave.soci.await-timeout:5m}')
+    @Value('${wave.soci.await-timeout:3m}')
     Duration awaitTimeout
 
     /**
