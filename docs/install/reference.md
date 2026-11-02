@@ -499,7 +499,7 @@ Configure the SOCI lazy loading support, see [SOCI lazy loading](../soci.md).
 : Enables the `soci` container request attribute (default: `false`).
 
 `wave.soci.repo` *(optional)*
-: Repository where the zTOC artifacts are stored (default: `<wave.build.repo>/soci-ztoc`). Its lifecycle expiry must be longer than `wave.soci.ztoc.duration`.
+: Repository where the zTOC artifacts are stored (default: `<wave.build.repo>/soci-ztoc`). It must be on the same registry as `wave.build.repo`. Its lifecycle expiry must be longer than `wave.soci.ztoc.duration`.
 
 `wave.soci.indexer-image` *(optional)*
 : Container image of the `soci-indexer` job (default: `public.cr.seqera.io/wave/soci-indexer:v0.1.0`).
@@ -508,7 +508,7 @@ Configure the SOCI lazy loading support, see [SOCI lazy loading](../soci.md).
 : Layers smaller than this size in bytes are not indexed (default: `10485760`).
 
 `wave.soci.await-timeout` *(optional)*
-: How long a container manifest request is held while its layers are indexed. When the indexing does not complete in time, the container is served without SOCI index (default: `5m`).
+: How long a container manifest request is held while its layers are indexed. When the indexing does not complete in time, the container is served without SOCI index. It covers all the platforms of the image and must stay below the containerd `image_pull_progress_timeout` (default: `3m`).
 
 `wave.soci.ztoc.duration` *(optional)*
 : How long a zTOC lookup is cached (default: `30d`).
@@ -518,6 +518,9 @@ Configure the SOCI lazy loading support, see [SOCI lazy loading](../soci.md).
 
 `wave.soci.publish-timeout` *(optional)*
 : How long the publication of the `-soci` tag of a freeze or mirror container waits for the container and its indexing (default: `30m`).
+
+`wave.soci.reserved-jobs` *(optional)*
+: Number of `wave.job-manager.max-running-jobs` slots that `soci-indexer` jobs cannot take, so that indexing does not delay builds (default: `5`).
 
 `wave.soci.failure.duration` *(optional)*
 : How long a layer that could not be indexed, or a failed publication, is not retried. The next request after it indexes the layer again (default: `10m`).

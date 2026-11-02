@@ -18,6 +18,9 @@
 
 package io.seqera.wave.core
 
+import java.time.Duration
+import java.time.Instant
+
 import groovy.json.JsonSlurper
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -57,6 +60,8 @@ class SociInjector {
     private ContainerPlatform platform
     /** layers added by Wave (e.g. Fusion), which are not in the upstream repository and therefore not indexed */
     private Set<String> excludedLayers
+    /** when the wait for the indexing ends, one deadline for all the platforms of the image */
+    private Instant deadline
 
     SociInjector(ProxyClient client, Storage storage, SociIndexService service, SociConfig config, PlatformId identity, ContainerPlatform platform, Set<String> excludedLayers) {
         this.client = client
@@ -66,6 +71,7 @@ class SociInjector {
         this.identity = identity
         this.platform = platform
         this.excludedLayers = excludedLayers ?: Set.<String>of()
+        this.deadline = Instant.now().plus(config.awaitTimeout)
     }
 
     /**
@@ -137,17 +143,18 @@ class SociInjector {
                 .findAll((Map it) -> !excludedLayers.contains(it.digest as String))
         if( !layers )
             return null
-        final digests = layers.collect((Map it) -> it.digest as String)
+        // an image can repeat a layer, while the zTOCs are keyed by digest
+        final digests = layers.collect((Map it) -> it.digest as String).unique()
         Map<String,ZtocEntry> ztocs = service.findZtocs(digests)
         final missing = layers.findAll((Map it) -> !ztocs.containsKey(it.digest as String))
         if( missing ) {
             log.debug "SOCI index awaiting for image ${client.registry.name}/${imageName} - indexed ${ztocs.size()} of ${layers.size()} layers"
             service.indexLayers("${client.registry.name}/${imageName}".toString(), missing, identity)
-            if( !service.awaitLayers(missing.collect((Map it) -> it.digest as String), config.awaitTimeout) )
+            if( !service.awaitLayers(missing.collect((Map it) -> it.digest as String), Duration.between(Instant.now(), deadline)) )
                 log.warn "SOCI index timed out for image ${client.registry.name}/${imageName} - serving it without SOCI index"
             ztocs = service.findZtocs(digests)
         }
-        if( ztocs.size()<layers.size() )
+        if( ztocs.size()<digests.size() )
             return null
         final docs = SociManifestAssembler.assemble(manifest, ztocs, config.spanSize)
         saveDocs(imageName, docs)

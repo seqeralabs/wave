@@ -20,6 +20,7 @@ package io.seqera.wave.service.job
 
 import io.seqera.data.workqueue.MessageLease
 import io.seqera.wave.configuration.JobManagerConfig
+import io.seqera.wave.configuration.SociConfig
 import spock.lang.Specification
 
 import java.nio.file.Path
@@ -35,6 +36,19 @@ import com.github.benmanes.caffeine.cache.Caffeine
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 class JobManagerTest extends Specification {
+
+    def 'should keep the reserved slots out of the SOCI index jobs'() {
+        given:
+        def config = new JobManagerConfig(maxRunningJobs: 20)
+        def manager = new JobManager(config: config, sociConfig: new SociConfig(reservedJobs: 5))
+        and:
+        def soci = JobSpec.sociIndex('soci-1', 'soci-1', Instant.now(), Duration.ofMinutes(10), Path.of('/work'))
+        def build = JobSpec.build('bd-1', 'bd-1', Instant.now(), Duration.ofMinutes(10), Path.of('/work'))
+
+        expect:
+        manager.maxRunningJobs(soci) == 15
+        manager.maxRunningJobs(build) == 20
+    }
 
     def 'processJob should handle valid TransferJobSpec'() {
         given:

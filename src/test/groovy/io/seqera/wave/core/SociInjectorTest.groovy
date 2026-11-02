@@ -18,6 +18,10 @@
 
 package io.seqera.wave.core
 
+import groovy.json.JsonOutput
+
+import java.time.Duration
+
 import spock.lang.Specification
 
 import java.net.http.HttpResponse
@@ -47,7 +51,7 @@ class SociInjectorTest extends Specification {
     static final String GZIP = 'application/vnd.oci.image.layer.v1.tar+gzip'
     static final String PREFIX = 'docker.io/v2/library/python'
 
-    SociConfig config = new SociConfig(minLayerSize: 10485760, repo: 'public.cr.stage-seqera.io/wave/soci-ztoc')
+    SociConfig config = new SociConfig(minLayerSize: 10485760, repo: 'public.cr.stage-seqera.io/wave/soci-ztoc', awaitTimeout: Duration.ofMinutes(3))
 
     static String resource(String name) {
         SociInjectorTest.getResourceAsStream("/soci/$name").text
@@ -126,12 +130,32 @@ class SociInjectorTest extends Specification {
         then:
         1 * service.indexLayers('docker.io/library/python', { List<Map> it -> it*.digest == [LAYER3] }, PlatformId.NULL)
         then:
-        1 * service.awaitLayers([LAYER3], _) >> true
+        1 * service.awaitLayers([LAYER3], { Duration it -> it > Duration.ZERO && it <= Duration.ofMinutes(3) }) >> true
         then:
         1 * service.findZtocs([LAYER1, LAYER3]) >> ztocs()
         and:
         result.source == INDEX
         result.target != INDEX
+    }
+
+    def 'should enable an image repeating a layer' () {
+        given:
+        def service = Mock(SociIndexService)
+        def injector = new SociInjector(client(), storage(), service, config, PlatformId.NULL, ContainerPlatform.of('linux/amd64'), null)
+        def manifest = JsonOutput.toJson([
+                schemaVersion: 2,
+                mediaType: 'application/vnd.oci.image.manifest.v1+json',
+                config: [mediaType: 'application/vnd.oci.image.config.v1+json', digest: 'sha256:c0', size: 10],
+                layers: [
+                        [mediaType: GZIP, digest: LAYER1, size: 20000000],
+                        [mediaType: GZIP, digest: LAYER1, size: 20000000] ] ])
+
+        when:
+        def docs = injector.docsFor('library/python', manifest)
+        then:
+        1 * service.findZtocs([LAYER1]) >> ztocs().subMap([LAYER1])
+        0 * service.indexLayers(_, _, _)
+        docs != null
     }
 
     def 'should serve the container as it is when some layer is not indexed' () {
