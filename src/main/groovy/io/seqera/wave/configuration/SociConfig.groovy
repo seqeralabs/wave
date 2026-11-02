@@ -26,6 +26,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.seqera.wave.model.ContainerCoordinates
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Singleton
 /**
@@ -110,6 +111,14 @@ class SociConfig {
             repo = "${buildRepo}/soci-ztoc".toString()
         if( !repo )
             throw new IllegalStateException("Missing SOCI zTOC repository - set 'wave.soci.repo' or 'wave.build.repo'")
+        // zTOCs are pushed and pulled with Wave credentials, granted only for the build registry
+        // see RegistryCredentialsProviderImpl#getUserCredentials
+        if( registry(repo) != registry(buildRepo) )
+            throw new IllegalStateException("SOCI zTOC repository '${repo}' must be on the same registry as 'wave.build.repo' (${buildRepo})")
         log.info "Creating SOCI config - ${this}"
+    }
+
+    static private String registry(String repo) {
+        return repo ? ContainerCoordinates.parse(repo).registry : null
     }
 }

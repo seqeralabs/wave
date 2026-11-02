@@ -39,8 +39,8 @@ wave:
       enabled: false
   soci:
     enabled: true
-    # pushed with the docker.io credentials, see DOCKER_USER and DOCKER_PAT in config.yml
-    repo: "docker.io/pditommaso/tests"
+    # must be on the build registry, zTOCs are tagged in the build repo
+    repo: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/dev"
     # built with 'make load' in soci-indexer/
     indexer-image: "soci-indexer:dev"
 ---
