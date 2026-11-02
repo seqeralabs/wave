@@ -108,7 +108,7 @@ Build template selection supports the following arguments:
 - `--pixi-base-packages`: Space-separated Conda packages added to every Pixi build (default: `conda-forge::procps-ng`). Replaces the default list.
 - `--pixi-run-command`: A line appended to the build file, for example `RUN mkdir -p /data`. Can be specified multiple times.
 
-Wave CLI 1.9.1 added the `--pixi-*` arguments.
+Wave CLI 1.8.1 added the `--pixi-*` arguments.
 
 **Benefits of multi-stage templates**
 
