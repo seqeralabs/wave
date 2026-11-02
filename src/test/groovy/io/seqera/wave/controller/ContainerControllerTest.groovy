@@ -378,7 +378,7 @@ class ContainerControllerTest extends Specification {
         'docker.io/source/image:latest' | 'quay.io/lib/'  | 'quay.io/lib/source/image:latest'
     }
 
-    def 'should return the soci tag of a mirrored container' () {
+    def 'should return the soci tag of a mirrored container with its status' () {
         given:
         def mirrorService = Mock(ContainerMirrorService)
         def inspectService = Mock(ContainerInspectServiceImpl)
@@ -393,7 +393,8 @@ class ContainerControllerTest extends Specification {
         1 * proxyRegistry.getImageDigest('docker.io/source/image:latest', user) >> 'sha256:12345'
         1 * proxyRegistry.getImageDigest('quay.io/source/image:latest', user) >> null
         1 * mirrorService.mirrorImage(_) >> new BuildTrack('mr-1', 'quay.io/source/image:latest', false, null)
-        1 * sociPush.sociTarget('quay.io/source/image:latest', ContainerPlatform.of('arm64'), user) >> RESULT
+        and: 'the mirror is in progress'
+        1 * sociPush.sociTarget('quay.io/source/image:latest', ContainerPlatform.of('arm64'), user, null) >> RESULT
         and:
         data.containerImage == RESULT
         data.soci

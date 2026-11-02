@@ -614,7 +614,7 @@ class ContainerController {
 
         // a durable container is pulled from its registry, return its SOCI-enabled tag when published
         if( req.soci && sociPushService && (req.freeze || req.mirror) && !req.dryRun )
-            targetImage = sociPushService.sociTarget(targetImage, ContainerPlatform.of(req.containerPlatform), identity)
+            targetImage = sociPushService.sociTarget(targetImage, ContainerPlatform.of(req.containerPlatform), identity, succeeded)
 
         ContainerRequest.create(
                 type,

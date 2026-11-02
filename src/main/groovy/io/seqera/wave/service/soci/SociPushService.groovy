@@ -36,9 +36,11 @@ interface SociPushService {
      * @param targetImage The container image e.g. {@code quay.io/user/app:1.0}
      * @param platform The container platform
      * @param identity The identity of the requester
+     * @param succeeded The status of the container build or mirror: {@code true} when the container is
+     *      available, {@code false} when it failed, {@code null} while it is in progress
      * @return The SOCI-enabled image e.g. {@code quay.io/user/app:1.0-soci}, or {@code targetImage}
      */
-    String sociTarget(String targetImage, ContainerPlatform platform, PlatformId identity)
+    String sociTarget(String targetImage, ContainerPlatform platform, PlatformId identity, Boolean succeeded)
 
     /**
      * Notify the completion of a container mirror, which starts or drops the pending publication of its SOCI tag

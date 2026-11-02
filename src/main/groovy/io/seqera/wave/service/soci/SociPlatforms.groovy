@@ -55,7 +55,7 @@ class SociPlatforms {
      * The image manifests of a container matching the target platform
      *
      * @param content The container manifest, an image index or an image manifest
-     * @param platform The target platform
+     * @param platform The target platform, or {@code null} for all the image manifests
      * @param fetch Fetch an image manifest by digest, returning {@code null} when missing
      * @return The image manifests, by digest
      */
@@ -77,7 +77,7 @@ class SociPlatforms {
      * non-image manifests e.g. attestations and SOCI indexes
      *
      * @param index The parsed image index
-     * @param platform The target platform
+     * @param platform The target platform, or {@code null} for all the image manifests
      * @return The matching manifest descriptors
      */
     static List<Map> targetEntries(Map index, ContainerPlatform platform) {
@@ -91,6 +91,15 @@ class SociPlatforms {
             return false
         if( entry.artifactType )
             return false
+        // skip the BuildKit attestations (SBOM, provenance). An index built with BuildKit holds, next to each
+        // platform image, an attestation manifest with the image manifest media type and no `artifactType`, so the
+        // checks above don't catch it. It is marked by the annotation `vnd.docker.reference.type: attestation-manifest`
+        // and has the `unknown/unknown` platform. It has no layer to index, and its platform matches no target platform,
+        // but it must be skipped explicitly when selecting all the platforms (`platform==null`)
+        if( (entry.annotations as Map)?.get('vnd.docker.reference.type') )
+            return false
+        if( platform==null )
+            return true
         final entryPlatform = entry.platform as Map
         return entryPlatform && platform.platforms.any((ContainerPlatform.Platform it) -> it.matches(entryPlatform))
     }

@@ -22,6 +22,7 @@ import spock.lang.Specification
 
 import java.nio.file.Files
 import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.ExecutorService
 
 import groovy.json.JsonSlurper
@@ -33,6 +34,7 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.job.JobService
+import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.RegHelper
 import static io.seqera.wave.service.soci.SociPushEntry.Status.*
@@ -70,6 +72,14 @@ class SociPushServiceImplTest extends Specification {
         SociPushEntry.of(SociPushRequest.create(TARGET, SOCI, ContainerPlatform.of('linux/amd64'), PlatformId.NULL, Files.createTempDirectory('soci')), status)
     }
 
+    /** a store granting every claim */
+    SociPushStateStore store() {
+        Mock(SociPushStateStore) {
+            claim(_, _) >> true
+            failureBackoff(_) >> Duration.ofMinutes(10)
+        }
+    }
+
     RegistryProxyService proxy() {
         Mock(RegistryProxyService) {
             getManifestContent(TARGET, PlatformId.NULL) >> resource('python-3.12-slim-index.json')
@@ -87,20 +97,18 @@ class SociPushServiceImplTest extends Specification {
         'ubuntu'                            | 'docker.io/library/ubuntu:latest-soci'
     }
 
-    def 'should return the soci tag of a recent publication with a single registry request' () {
+    def 'should return the soci tag of a recent publication with the cached digest only' () {
         given:
         def proxy = Mock(RegistryProxyService)
         def store = Mock(SociPushStateStore)
         def service = new SociPushServiceImpl(config: config, proxyService: proxy, store: store)
 
-        def target = '{"schemaVersion":2}'
-
         when:
-        def result = service.sociTarget(TARGET, ContainerPlatform.of('linux/amd64'), PlatformId.NULL)
-        then: 'only the target manifest is fetched'
-        1 * store.get(SOCI) >> entry(SUCCEEDED).withSourceDigest(RegHelper.digest(target))
-        1 * proxy.getManifestContent(TARGET, PlatformId.NULL) >> target
-        0 * proxy.getManifestContent(SOCI, _)
+        def result = service.sociTarget(TARGET, ContainerPlatform.of('linux/amd64'), PlatformId.NULL, true)
+        then: 'no manifest is fetched'
+        1 * store.get(SOCI) >> entry(SUCCEEDED).withSourceDigest(INDEX)
+        1 * proxy.getImageDigest(TARGET, PlatformId.NULL) >> INDEX
+        0 * proxy.getManifestContent(_, _)
         result == SOCI
     }
 
@@ -109,18 +117,18 @@ class SociPushServiceImplTest extends Specification {
         def proxy = Mock(RegistryProxyService)
         def store = Mock(SociPushStateStore)
         def service = new SociPushServiceImpl(config: config, proxyService: proxy, store: store)
-        def target = '{"schemaVersion":2}'
 
         when:
-        def result = service.sociTarget(TARGET, ContainerPlatform.of('linux/amd64'), PlatformId.NULL)
+        def result = service.sociTarget(TARGET, ContainerPlatform.of('linux/amd64'), PlatformId.NULL, true)
         then:
-        1 * proxy.getManifestContent(TARGET, PlatformId.NULL) >> target
-        1 * proxy.getManifestContent(SOCI, PlatformId.NULL) >> '{"annotations":{"io.seqera.wave.soci.source-digest":"' + RegHelper.digest(target) + '"}}'
+        1 * proxy.getImageDigest(TARGET, PlatformId.NULL) >> INDEX
+        1 * proxy.getManifestContent(SOCI, PlatformId.NULL) >> '{"annotations":{"io.seqera.wave.soci.source-digest":"' + INDEX + '"}}'
+        0 * proxy.getManifestContent(TARGET, _)
         1 * store.putEntry({ SociPushEntry it -> it.succeeded() })
         result == SOCI
     }
 
-    def 'should register the publication and wait for the container' () {
+    def 'should publish an existing container' () {
         given:
         def proxy = Mock(RegistryProxyService)
         def store = Mock(SociPushStateStore)
@@ -128,12 +136,169 @@ class SociPushServiceImplTest extends Specification {
         def service = new SociPushServiceImpl(config: config, proxyService: proxy, store: store, ioExecutor: executor)
 
         when:
-        def result = service.sociTarget(TARGET, ContainerPlatform.of('linux/amd64'), PlatformId.NULL)
-        then: 'the container does not exist yet, the build event starts the publication'
-        2 * proxy.getManifestContent(TARGET, PlatformId.NULL) >> null
+        def result = service.sociTarget(TARGET, ContainerPlatform.of('linux/amd64'), PlatformId.NULL, true)
+        then:
+        1 * proxy.getImageDigest(TARGET, PlatformId.NULL) >> INDEX
+        1 * proxy.getManifestContent(SOCI, PlatformId.NULL) >> null
         1 * store.putIfAbsent(SOCI, { SociPushEntry it -> it.status == WAITING_CONTAINER }) >> true
+        1 * executor.execute(_)
+        result == TARGET
+    }
+
+    def 'should wait for a container in progress, without checking the tag content' () {
+        given:
+        def proxy = Mock(RegistryProxyService)
+        def store = Mock(SociPushStateStore)
+        def executor = Mock(ExecutorService)
+        def service = new SociPushServiceImpl(config: config, proxyService: proxy, store: store, ioExecutor: executor)
+        def previous = entry(SUCCEEDED).withSourceDigest(INDEX)
+
+        when: 'e.g. a mirror over the tag of a previous content, published already'
+        def result = service.sociTarget(TARGET, ContainerPlatform.of('linux/amd64'), PlatformId.NULL, null)
+        then: 'the completion event starts the publication'
+        1 * store.get(SOCI) >> previous
+        1 * store.claim(previous, 'replace') >> true
+        1 * store.putEntry({ SociPushEntry it -> it.status == WAITING_CONTAINER })
+        0 * proxy._
         0 * executor.execute(_)
         result == TARGET
+    }
+
+    def 'should replace a publication once among concurrent requests' () {
+        given:
+        def proxy = Mock(RegistryProxyService)
+        def store = Mock(SociPushStateStore)
+        def executor = Mock(ExecutorService)
+        def service = new SociPushServiceImpl(config: config, proxyService: proxy, store: store, ioExecutor: executor)
+        def previous = entry(SUCCEEDED).withSourceDigest('sha256:old')
+
+        when:
+        def result = service.sociTarget(TARGET, ContainerPlatform.of('linux/amd64'), PlatformId.NULL, true)
+        then: 'another request replaced it'
+        1 * store.get(SOCI) >> previous
+        1 * proxy.getImageDigest(TARGET, PlatformId.NULL) >> INDEX
+        1 * proxy.getManifestContent(SOCI, PlatformId.NULL) >> null
+        1 * store.claim(previous, 'replace') >> false
+        0 * store.putEntry(_)
+        0 * executor.execute(_)
+        result == TARGET
+    }
+
+    def 'should back off a failed publication' () {
+        given:
+        def proxy = Mock(RegistryProxyService)
+        def store = Mock(SociPushStateStore)
+        def executor = Mock(ExecutorService)
+        def service = new SociPushServiceImpl(config: config, proxyService: proxy, store: store, ioExecutor: executor)
+        def failed = entry(WAITING_CONTAINER).withFailures(2).failed('error', Instant.now().plus(RETRY))
+
+        when:
+        service.sociTarget(TARGET, ContainerPlatform.of('linux/amd64'), PlatformId.NULL, true)
+        then:
+        1 * store.get(SOCI) >> failed
+        (RETRIED ? 1 : 0) * proxy.getImageDigest(TARGET, PlatformId.NULL) >> INDEX
+        (RETRIED ? 1 : 0) * store.claim(failed, 'replace') >> true
+        (RETRIED ? 1 : 0) * store.putEntry({ SociPushEntry it -> it.status == WAITING_CONTAINER && it.failures == 3 })
+
+        where:
+        RETRY                   | RETRIED
+        Duration.ofMinutes(5)   | false
+        Duration.ofMinutes(-1)  | true
+    }
+
+    def 'should record the failure count and the retry time' () {
+        given:
+        def store = store()
+        def service = new SociPushServiceImpl(config: config, store: store)
+
+        when:
+        service.fail(entry(PUBLISHING).withFailures(1), 'error')
+        then:
+        1 * store.failureBackoff(2) >> Duration.ofMinutes(20)
+        1 * store.putEntry({ SociPushEntry it -> it.status == FAILED && it.failures == 2 && it.retryAt > Instant.now().plus(Duration.ofMinutes(19)) })
+    }
+
+    def 'should publish once' () {
+        given:
+        def store = Mock(SociPushStateStore)
+        def index = Mock(SociIndexService)
+        def service = new SociPushServiceImpl(config: config, store: store, indexService: index, proxyService: proxy())
+        def pending = entry(WAITING_CONTAINER)
+
+        when: 'the request and the completion event both start it'
+        service.publish(pending)
+        then:
+        1 * store.claim(pending, 'publish') >> false
+        0 * store.putEntry(_)
+        0 * index._
+    }
+
+    def 'should start a pending publication when the container is available' () {
+        given:
+        def proxy = Mock(RegistryProxyService)
+        def store = Mock(SociPushStateStore)
+        def executor = Mock(ExecutorService)
+        def service = new SociPushServiceImpl(config: config, proxyService: proxy, store: store, ioExecutor: executor)
+
+        when: 'its completion event came before the registration'
+        def result = service.sociTarget(TARGET, ContainerPlatform.of('linux/amd64'), PlatformId.NULL, true)
+        then:
+        1 * store.get(SOCI) >> entry(WAITING_CONTAINER)
+        1 * executor.execute(_)
+        0 * proxy._
+        result == TARGET
+    }
+
+    def 'should not return the job entry of a replaced publication' () {
+        given:
+        def store = Mock(SociPushStateStore)
+        def service = new SociPushServiceImpl(config: config, store: store)
+        def current = entry(PUBLISHING)
+        store.get(SOCI) >> current
+
+        expect:
+        service.getJobEntry(JobSpec.sociPush(SOCI, current.request.requestId, Instant.now(), Duration.ofMinutes(1), current.request.workDir)) == current
+        service.getJobEntry(JobSpec.sociPush(SOCI, 'socipush-other', Instant.now(), Duration.ofMinutes(1), current.request.workDir)) == null
+    }
+
+    def 'should select all the image manifests of an index, without the attestations' () {
+        given:
+        def fetched = []
+
+        when:
+        SociPlatforms.platformManifests(resource('python-3.12-slim-index.json'), null, (String digest) -> { fetched << digest; null })
+        then: 'amd64, arm/v5, arm/v7, arm64, 386, ppc64le, riscv64, s390x'
+        fetched.size() == 8
+        fetched.first() == AMD64
+        !fetched.contains('sha256:ab5f3966894aa3023f567191b4ef8bf8af68b409fc5f9c8e6c50627505e5cc99')
+    }
+
+    def 'should double the failure backoff up to one day' () {
+        given:
+        def store = new SociPushStateStore(Mock(io.seqera.data.store.state.impl.StateProvider))
+        store.@config = config.tap { failureDuration = Duration.ofMinutes(10) }
+
+        expect:
+        store.failureBackoff(FAILURES) == EXPECTED
+
+        where:
+        FAILURES | EXPECTED
+        1        | Duration.ofMinutes(10)
+        2        | Duration.ofMinutes(20)
+        4        | Duration.ofMinutes(80)
+        20       | Duration.ofDays(1)
+    }
+
+    def 'should not throw on the completion of a container' () {
+        given:
+        def store = Mock(SociPushStateStore)
+        def service = new SociPushServiceImpl(config: config, store: store)
+
+        when:
+        service.onContainerCompletion(TARGET, true)
+        then:
+        1 * store.get(SOCI) >> { throw new IllegalStateException('redis down') }
+        noExceptionThrown()
     }
 
     def 'should not publish a soci tag for a digest reference' () {
@@ -142,12 +307,12 @@ class SociPushServiceImplTest extends Specification {
         def service = new SociPushServiceImpl(config: config, proxyService: proxy)
 
         expect:
-        service.sociTarget('quay.io/user/app@sha256:' + 'a'*64, ContainerPlatform.of('linux/amd64'), PlatformId.NULL) == 'quay.io/user/app@sha256:' + 'a'*64
+        service.sociTarget('quay.io/user/app@sha256:' + 'a'*64, ContainerPlatform.of('linux/amd64'), PlatformId.NULL, true) == 'quay.io/user/app@sha256:' + 'a'*64
     }
 
     def 'should drop the publication when the build fails, without waiting' () {
         given:
-        def store = Mock(SociPushStateStore)
+        def store = store()
         def index = Mock(SociIndexService)
         def service = new SociPushServiceImpl(config: config, store: store, indexService: index, ioExecutor: direct)
         def event = new BuildEvent(new BuildRequest(targetImage: TARGET), BuildResult.completed('bd-1', 1, 'error', java.time.Instant.now(), null))
@@ -162,7 +327,7 @@ class SociPushServiceImplTest extends Specification {
 
     def 'should index the missing layers, wait for them, then push' () {
         given:
-        def store = Mock(SociPushStateStore)
+        def store = store()
         def index = Mock(SociIndexService)
         def jobService = Mock(JobService)
         def inspect = Mock(ContainerInspectService)
@@ -190,7 +355,7 @@ class SociPushServiceImplTest extends Specification {
 
     def 'should fail the publication when a layer cannot be indexed' () {
         given:
-        def store = Mock(SociPushStateStore)
+        def store = store()
         def index = Mock(SociIndexService)
         def jobService = Mock(JobService)
         def service = new SociPushServiceImpl(config: config, store: store, indexService: index, proxyService: proxy(), jobService: jobService, ioExecutor: direct)
@@ -207,7 +372,7 @@ class SociPushServiceImplTest extends Specification {
 
     def 'should not publish a container without layer to index' () {
         given:
-        def store = Mock(SociPushStateStore)
+        def store = store()
         def index = Mock(SociIndexService)
         def proxy = Mock(RegistryProxyService) {
             getManifestContent(TARGET, PlatformId.NULL) >> '{"schemaVersion":2,"mediaType":"application/vnd.oci.image.manifest.v1+json","config":{"digest":"sha256:c0"},"layers":[{"mediaType":"' + GZIP + '","digest":"sha256:01","size":100}]}'

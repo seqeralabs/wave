@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.soci
 
+import java.time.Instant
+
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
@@ -49,14 +51,20 @@ class SociPushEntry implements StateEntry<String>, JobEntry {
     final String error
     /** the digest of the target image content the SOCI tag is published from */
     final String sourceDigest
+    /** the consecutive failed publications of the SOCI tag */
+    final int failures
+    /** when a failed publication can be retried */
+    final Instant retryAt
 
     protected SociPushEntry() {}
 
-    SociPushEntry(SociPushRequest request, Status status, String error, String sourceDigest=null) {
+    SociPushEntry(SociPushRequest request, Status status, String error, String sourceDigest=null, int failures=0, Instant retryAt=null) {
         this.request = request
         this.status = status
         this.error = error
         this.sourceDigest = sourceDigest
+        this.failures = failures
+        this.retryAt = retryAt
     }
 
     @Override
@@ -73,16 +81,28 @@ class SociPushEntry implements StateEntry<String>, JobEntry {
         return status==Status.SUCCEEDED
     }
 
+    /**
+     * @return {@code true} when a failed publication can be retried
+     */
+    boolean retryable(Instant now) {
+        return status==Status.FAILED && (retryAt==null || !now.isBefore(retryAt))
+    }
+
     SociPushEntry withStatus(Status status) {
-        return new SociPushEntry(request, status, null, sourceDigest)
+        // a succeeded publication resets the failures
+        return new SociPushEntry(request, status, null, sourceDigest, status==Status.SUCCEEDED ? 0 : failures)
     }
 
     SociPushEntry withSourceDigest(String digest) {
-        return new SociPushEntry(request, status, null, digest)
+        return new SociPushEntry(request, status, null, digest, failures)
     }
 
-    SociPushEntry failed(String error) {
-        return new SociPushEntry(request, Status.FAILED, error, sourceDigest)
+    SociPushEntry withFailures(int failures) {
+        return new SociPushEntry(request, status, error, sourceDigest, failures, retryAt)
+    }
+
+    SociPushEntry failed(String error, Instant retryAt) {
+        return new SociPushEntry(request, Status.FAILED, error, sourceDigest, failures+1, retryAt)
     }
 
     static SociPushEntry of(SociPushRequest request, Status status) {

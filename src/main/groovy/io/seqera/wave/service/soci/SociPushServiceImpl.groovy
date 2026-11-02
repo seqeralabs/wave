@@ -125,50 +125,69 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
     }
 
     @Override
-    String sociTarget(String targetImage, ContainerPlatform platform, PlatformId identity) {
-        // a container referenced by digest cannot have a sibling tag
-        if( ContainerCoordinates.parse(targetImage).reference?.startsWith('sha256:') )
+    String sociTarget(String targetImage, ContainerPlatform platform, PlatformId identity, Boolean succeeded) {
+        // a container referenced by digest cannot have a sibling tag, and a failed container has nothing to publish
+        if( ContainerCoordinates.parse(targetImage).reference?.startsWith('sha256:') || succeeded==Boolean.FALSE )
             return targetImage
         final soci = sociImage(targetImage)
         final entry = store.get(soci)
-        // a publication is pending, failed recently, or there is nothing to publish
-        if( entry && !entry.succeeded() )
-            return targetImage
-        final String target
-        try {
-            target = proxyService.getManifestContent(targetImage, identity)
-        }
-        catch (Exception e) {
-            log.warn "Unable to fetch manifest of '${targetImage}' - cause: ${e.message}"
+        // the build or mirror is in progress: the tag may still hold a previous content e.g. a mirror of
+        // a moved upstream tag, wait for the completion event to publish the new one
+        if( succeeded==null ) {
+            if( !entry || entry.done() )
+                register(entry, pending(targetImage, soci, platform, identity, entry))
             return targetImage
         }
-        final digest = target ? RegHelper.digest(target) : null
-        // a recent publication of the current content, a single registry request
-        if( digest && entry?.sourceDigest==digest )
+        // the container is available, its completion event may have come before the publication was registered
+        if( entry?.status==WAITING_CONTAINER ) {
+            CompletableFuture.runAsync(() -> publish(entry), ioExecutor)
+            return targetImage
+        }
+        // a publication is in progress, failed recently, or there is nothing to publish
+        if( entry && !entry.succeeded() && !entry.retryable(Instant.now()) )
+            return targetImage
+        // the digest of the target is cached, it is the same request made by the build and mirror checks
+        final digest = proxyService.getImageDigest(targetImage, identity)
+        if( !digest )
+            return targetImage
+        // a recent publication of the current content
+        if( entry?.succeeded() && entry.sourceDigest==digest )
             return soci
-        if( target && isCurrent(soci, digest, identity) ) {
-            store.putEntry(SociPushEntry.of(SociPushRequest.create(targetImage, soci, platform, identity, SociPlatforms.workspace(buildConfig)), SUCCEEDED).withSourceDigest(digest))
+        if( isCurrent(soci, digest, identity) ) {
+            store.putEntry(SociPushEntry.of(newRequest(targetImage, soci, platform, identity), SUCCEEDED).withSourceDigest(digest))
             return soci
         }
-        final pending = SociPushEntry.of(SociPushRequest.create(targetImage, soci, platform, identity, SociPlatforms.workspace(buildConfig)), WAITING_CONTAINER)
-        if( entry )
-            store.remove(soci)
-        if( !store.putIfAbsent(soci, pending) )
-            return targetImage
-        // the container exists already e.g. a cached build, or completed meanwhile: there is no event to wait for
-        if( target || exists(targetImage, identity) )
+        // the container exists already e.g. a cached build: there is no event to wait for
+        final pending = pending(targetImage, soci, platform, identity, entry)
+        if( register(entry, pending) )
             CompletableFuture.runAsync(() -> publish(pending), ioExecutor)
         return targetImage
     }
 
-    protected boolean exists(String image, PlatformId identity) {
-        try {
-            return proxyService.getManifestContent(image, identity) != null
-        }
-        catch (Exception e) {
-            log.warn "Unable to fetch manifest of '${image}' - cause: ${e.message}"
+    protected SociPushRequest newRequest(String targetImage, String soci, ContainerPlatform platform, PlatformId identity) {
+        return SociPushRequest.create(targetImage, soci, platform, identity, SociPlatforms.workspace(buildConfig))
+    }
+
+    /**
+     * @return A publication waiting for the container, keeping the failure count of the publication it replaces
+     */
+    protected SociPushEntry pending(String targetImage, String soci, ContainerPlatform platform, PlatformId identity, SociPushEntry current) {
+        final failures = current?.status==FAILED ? current.failures : 0
+        return SociPushEntry.of(newRequest(targetImage, soci, platform, identity), WAITING_CONTAINER).withFailures(failures)
+    }
+
+    /**
+     * Register a pending publication in place of the current one, once among concurrent requests
+     *
+     * @return {@code true} when registered by this caller
+     */
+    protected boolean register(SociPushEntry current, SociPushEntry pending) {
+        if( !current )
+            return store.putIfAbsent(pending.key, pending)
+        if( !store.claim(current, 'replace') )
             return false
-        }
+        store.putEntry(pending)
+        return true
     }
 
     /**
@@ -193,8 +212,22 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
         onContainerCompletion(event.request.targetImage, event.result.succeeded())
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * It runs in the build and mirror completion paths, therefore it never throws
+     */
     @Override
     void onContainerCompletion(String targetImage, boolean succeeded) {
+        try {
+            onContainerCompletion0(targetImage, succeeded)
+        }
+        catch (Throwable t) {
+            log.warn "== SOCI push unable to handle the completion of image '${targetImage}' - cause: ${t.message}", t
+        }
+    }
+
+    protected void onContainerCompletion0(String targetImage, boolean succeeded) {
         final entry = store.get(sociImage(targetImage))
         if( entry?.status!=WAITING_CONTAINER )
             return
@@ -207,10 +240,13 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
 
     /**
      * Publish the SOCI tag of a container: index its layers, wait for them, then launch the push job.
-     * It runs in the background and blocks up to {@code wave.soci.publish-timeout}
+     * It runs in the background and blocks up to {@code wave.soci.publish-timeout}. A publication
+     * is carried out once, even when both the container request and the completion event start it
      */
     protected void publish(SociPushEntry entry) {
         try {
+            if( !store.claim(entry, 'publish') )
+                return
             publish0(entry.withStatus(PUBLISHING))
         }
         catch (Throwable t) {
@@ -226,7 +262,8 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
         if( !content )
             throw new IllegalStateException("Missing image '${request.targetImage}'")
         final repository = SociPlatforms.repository(request.targetImage)
-        final manifests = SociPlatforms.platformManifests(content, request.platform, (String digest) -> proxyService.getManifestContent("${repository}@${digest}".toString(), request.identity))
+        // index all the platforms, the SOCI tag is shared by all of them
+        final manifests = SociPlatforms.platformManifests(content, null, (String digest) -> proxyService.getManifestContent("${repository}@${digest}".toString(), request.identity))
         final layers = manifests.values()
                 .collectMany((String it) -> SociManifestAssembler.eligibleLayers(it, config.minLayerSize))
                 .unique((Map it) -> it.digest)
@@ -340,13 +377,18 @@ class SociPushServiceImpl implements SociPushService, JobHandler<SociPushEntry> 
     }
 
     protected void fail(SociPushEntry entry, String error) {
-        log.warn "== SOCI push failed - image=${entry.request.sociImage}; cause=${error}"
-        store.putEntry(entry.failed(error))
+        final backoff = store.failureBackoff(entry.failures+1)
+        log.warn "== SOCI push failed - image=${entry.request.sociImage}; failures=${entry.failures+1}; retry-in=${backoff}; cause=${error}"
+        store.putEntry(entry.failed(error, Instant.now().plus(backoff)))
     }
 
+    /**
+     * @return The publication of the job, or {@code null} when it was replaced by a newer one
+     */
     @Override
     SociPushEntry getJobEntry(JobSpec job) {
-        return store.get(job.entryKey)
+        final entry = store.get(job.entryKey)
+        return entry?.request?.requestId==job.operationName ? entry : null
     }
 
     @Override
