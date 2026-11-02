@@ -165,6 +165,12 @@ public class SubmitContainerTokenRequest implements Cloneable {
      */
     public String buildTemplate;
 
+    /**
+     * Whenever attach a SOCI index (index manifest v2) to the container to enable lazy loading
+     * by the SOCI snapshotter
+     */
+    public boolean soci;
+
 
     public SubmitContainerTokenRequest copyWith(Map opts) {
         try {
@@ -221,6 +227,8 @@ public class SubmitContainerTokenRequest implements Cloneable {
                 copy.buildCompression = (BuildCompression) opts.get("buildCompression");
             if( opts.containsKey("buildTemplate"))
                 copy.buildTemplate = (String) opts.get("buildTemplate");
+            if( opts.containsKey("soci") )
+                copy.soci = (boolean) opts.get("soci");
             // done
             return copy;
         }
@@ -366,6 +374,11 @@ public class SubmitContainerTokenRequest implements Cloneable {
         return this;
     }
 
+    public SubmitContainerTokenRequest withSoci(boolean value) {
+        this.soci = value;
+        return this;
+    }
+
     public boolean formatSingularity() {
         return "sif".equals(format);
     }
@@ -399,6 +412,7 @@ public class SubmitContainerTokenRequest implements Cloneable {
                 ", scanLevels=" + scanLevels +
                 ", buildCompression=" + buildCompression +
                 ", buildTemplate=" + buildTemplate +
+                ", soci=" + soci +
                 '}';
     }
 }

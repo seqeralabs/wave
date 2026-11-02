@@ -161,7 +161,7 @@ jobs:
       # when the tag is already published with the same sources.
       - name: Docker Login to Seqera public CR
         if: "steps.detect-release.outputs.is_publish == 'true'"
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: public.cr.seqera.io
           username: ${{ vars.SEQERA_PUBLIC_CR_USERNAME }}
@@ -174,6 +174,11 @@ jobs:
       - name: Publish condasplit image
         if: "steps.detect-release.outputs.is_publish == 'true'"
         run: make -C condasplit release registry=public.cr.seqera.io/wave
+
+      # the `wave.soci.indexer-image` default names the soci-indexer/VERSION tag, see SociConfig
+      - name: Publish soci-indexer image
+        if: "steps.detect-release.outputs.is_publish == 'true'"
+        run: make -C soci-indexer release registry=public.cr.seqera.io/wave
 
       # --- Internal (dev) ECR push: [preview] only, any branch ---
       # Lets features be built from any branch and pulled into dev/testing without reaching a
