@@ -40,7 +40,7 @@ dependencies {
     // bump commons-io version to address security vulnerabilities
     runtimeOnly 'commons-io:commons-io:2.22.0'
 
-    testImplementation "org.apache.groovy:groovy:4.0.33"
+    testImplementation "org.apache.groovy:groovy:6.0.0"
     testImplementation "org.apache.groovy:groovy-nio:4.0.33"
     testImplementation "org.apache.groovy:groovy-test:4.0.33"
     testImplementation "org.apache.groovy:groovy-json:4.0.33"
