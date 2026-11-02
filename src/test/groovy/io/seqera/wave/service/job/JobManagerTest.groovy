@@ -37,16 +37,18 @@ import com.github.benmanes.caffeine.cache.Caffeine
  */
 class JobManagerTest extends Specification {
 
-    def 'should keep the reserved slots out of the SOCI index jobs'() {
+    def 'should keep the reserved slots out of the SOCI jobs'() {
         given:
         def config = new JobManagerConfig(maxRunningJobs: 20)
         def manager = new JobManager(config: config, sociConfig: new SociConfig(reservedJobs: 5))
         and:
         def soci = JobSpec.sociIndex('soci-1', 'soci-1', Instant.now(), Duration.ofMinutes(10), Path.of('/work'))
+        def push = JobSpec.sociPush('soci-2', 'soci-2', Instant.now(), Duration.ofMinutes(10), Path.of('/work'))
         def build = JobSpec.build('bd-1', 'bd-1', Instant.now(), Duration.ofMinutes(10), Path.of('/work'))
 
         expect:
         manager.maxRunningJobs(soci) == 15
+        manager.maxRunningJobs(push) == 15
         manager.maxRunningJobs(build) == 20
     }
 

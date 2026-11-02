@@ -520,7 +520,7 @@ Configure the SOCI lazy loading support, see [SOCI lazy loading](../soci.md).
 : How long the publication of the `-soci` tag of a freeze or mirror container waits for the container and its indexing (default: `30m`).
 
 `wave.soci.reserved-jobs` *(optional)*
-: Number of `wave.job-manager.max-running-jobs` slots that `soci-indexer` jobs cannot take, so that indexing does not delay builds (default: `5`).
+: Number of `wave.job-manager.max-running-jobs` slots that `soci-indexer` jobs, indexing and push, cannot take, so that SOCI does not delay builds (default: `5`).
 
 `wave.soci.failure.duration` *(optional)*
 : How long a layer that could not be indexed, or a failed publication, is not retried. The next request after it indexes the layer again (default: `10m`).

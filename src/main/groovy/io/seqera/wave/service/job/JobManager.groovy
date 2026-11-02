@@ -147,10 +147,10 @@ class JobManager implements GracefulShutdownCapable {
     }
 
     /**
-     * SOCI indexing is best effort, it cannot take the slots reserved to the other jobs
+     * SOCI indexing and publication are best effort, they cannot take the slots reserved to the other jobs
      */
     protected int maxRunningJobs(JobSpec job) {
-        return job.type==JobSpec.Type.SociIndex && sociConfig
+        return (job.type==JobSpec.Type.SociIndex || job.type==JobSpec.Type.SociPush) && sociConfig
                 ? config.maxRunningJobs - sociConfig.reservedJobs
                 : config.maxRunningJobs
     }
