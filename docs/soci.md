@@ -26,8 +26,7 @@ indexing of any layer still without zTOC (e.g. another platform, or a failed war
 already being indexed is never launched twice. When the indexing fails or times out, the image is served as it
 is, without SOCI index. Wave caches the manifest it served for the container token, so later pulls
 with the same token also get the image without SOCI index; request a new token to get it once the
-layers are indexed. Layers added by Wave (e.g. Fusion) are not indexed. Containers requested by digest cannot be
-altered and are rejected with `soci: true`.
+layers are indexed. Layers added by Wave (e.g. Fusion) are not indexed.
 
 **Freeze and mirror containers** (pulled from their registry). Wave pushes a SOCI-enabled copy
 of the image index to the sibling tag `<tag>-soci`, once the container exists and its layers are
@@ -35,27 +34,19 @@ indexed. The original tag is never changed. The request returns the `-soci` tag 
 exists, otherwise the original tag: the first request of a container is not SOCI-enabled. A container
 with no layer to index has no `-soci` tag. The target registry must accept OCI image indexes with artifact manifests.
 
-Clients without the SOCI snapshotter ignore the SOCI index and pull the image as usual.
+## Rejected requests
 
-## Feasibility results
+A request with `soci: true` is rejected (HTTP 400) when:
+- SOCI is not enabled in the Wave deployment (`wave.soci.enabled`);
+- the container format is Singularity;
+- an ephemeral container is requested by digest, since its manifest cannot be altered.
 
-Spike run on 31 Oct 2026 with soci-snapshotter v0.16.1 and containerd v2.4.2. The test image was
-`python:3.12-slim`, converted with `soci convert --platform linux/arm64 --platform linux/amd64`. The converted
-index lists the two image manifests first and the two SOCI index manifests last.
+A freeze or mirror container requested by digest is not rejected, but gets no `-soci` tag.
 
-| Client | Pulls and runs the real image | Selected manifest |
-|---|---|---|
-| Docker Desktop 27 (containerd image store) | yes, both `--platform linux/arm64` and `linux/amd64` | image manifest |
-| Docker 27.5 (classic `overlay2` store, dind) | yes | image manifest (`RepoDigests` = index digest) |
-| containerd 2.4 + nerdctl, `overlayfs` snapshotter (no SOCI) | yes | image manifest |
-| Podman 5.8 | pull resolves to the arm64 image manifest | image manifest (exec failed in the nested-container sandbox, the control image too) |
-| Apptainer 1.4.4 | yes (`exec docker://…`) | image manifest |
+## Client compatibility
 
-No client selected a SOCI index descriptor, although it carries the same `platform` as the image manifest.
+Clients without the SOCI snapshotter ignore the SOCI index and pull the image as usual. This was checked with
+Docker (classic and containerd image store), containerd, Podman and Apptainer.
 
-`soci convert` indexed a 29.8 MB and a 12.1 MB layer in 0.7 s. It skipped the 251-byte layer
-(below `min-layer-size` 10 MiB).
-
-The golden fixtures used by the tests live in `src/test/resources/soci/`:
-- the original Docker Hub index and amd64 manifest;
-- the converted index, annotated manifest and SOCI index manifest, kept as raw bytes so their digests match.
+nerdctl 2.1 or later and `ctr` don't pass the image labels the SOCI snapshotter needs, so they fall back to
+a full pull. Docker with the SOCI snapshotter and nerdctl 2.0 load the image lazily.

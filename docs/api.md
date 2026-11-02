@@ -309,7 +309,7 @@ Setting `basePackages` replaces the default list. To keep the default packages, 
 | Attribute        | Description                                                                              |
 | ---------------- | ---------------------------------------------------------------------------------------- |
 | `containerToken` | The unique token identifying the Wave container request, e.g., `0123456789`.               |
-| `targetImage`    | The Wave container image name, e.g., `wave.seqera.io/wt/0123456789/library/ubuntu:latest`. |
+| `targetImage`    | The Wave container image name, e.g., `wave.seqera.io/wt/0123456789/library/ubuntu:latest`. With `soci: true`, a freeze or mirror request returns the SOCI-enabled `<tag>-soci` image once it exists, otherwise the original tag. |
 | `expiration`     | The expiration timestamp of the Wave container using ISO-8601 format.                    |
 | `cached`         | Indicates if the requested image is built or in progress.                                |
 

@@ -70,7 +70,7 @@ Configure general Wave application settings.
 
 ## Feature toggles
 
-Each Wave feature is an independent toggle. Wave Lite runs with all four off, which is what the `lite` Micronaut environment applies.
+Each Wave feature is an independent toggle. Wave Lite runs with all of them off, which is what the `lite` Micronaut environment applies.
 
 `wave.build.enabled` *(optional)*
 : When `true`, Wave provisions containers with on-demand builds (default: `true`). Freeze and scanning both depend on the build pipeline and are unavailable when this is `false`.
@@ -83,6 +83,9 @@ Each Wave feature is an independent toggle. Wave Lite runs with all four off, wh
 
 `wave.blob-cache.enabled` *(optional)*
 : When `true`, Wave caches container layers in object storage (default: `false`). Requires the blob cache storage settings.
+
+`wave.soci.enabled` *(optional)*
+: When `true`, Wave accepts the `soci` container request attribute and attaches a SOCI index to the container (default: `false`). See [SOCI index](#soci-index) settings.
 
 ## Capabilities
 
@@ -493,10 +496,7 @@ Configure Kubernetes resource requirements for Wave container mirroring operatio
 
 ## SOCI index
 
-Configure the SOCI lazy loading support, see [SOCI lazy loading](../soci.md).
-
-`wave.soci.enabled` *(optional)*
-: Enables the `soci` container request attribute (default: `false`).
+Configure the SOCI lazy loading support, enabled by `wave.soci.enabled`. See [SOCI lazy loading](../soci.md).
 
 `wave.soci.repo` *(optional)*
 : Repository where the zTOC artifacts are stored (default: `<wave.build.repo>/soci-ztoc`). It must be on the same registry as `wave.build.repo`. Its lifecycle expiry must be longer than `wave.soci.ztoc.duration`.
