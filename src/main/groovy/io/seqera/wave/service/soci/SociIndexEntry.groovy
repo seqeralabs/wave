@@ -66,7 +66,8 @@ class SociIndexEntry implements StateEntry<String>, JobEntry {
     }
 
     SociIndexEntry complete(Integer exitCode, ZtocEntry ztoc, String error) {
-        return new SociIndexEntry(request, ztoc, true, exitCode, error)
+        // drop the registry credentials, a completed entry is cached for the zTOC duration
+        return new SociIndexEntry(request?.withoutAuth(), ztoc, true, exitCode, error)
     }
 
     static SociIndexEntry of(SociIndexRequest request) {

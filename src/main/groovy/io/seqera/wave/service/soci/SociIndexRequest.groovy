@@ -64,6 +64,13 @@ class SociIndexRequest {
         return SociIndexRequest.key(layerDigest, spanSize)
     }
 
+    /**
+     * @return A copy of this request without the registry credentials
+     */
+    SociIndexRequest withoutAuth() {
+        return new SociIndexRequest(requestId, source, layerDigest, layerMediaType, spanSize, repository, workDir, null, creationTime)
+    }
+
     static String key(String layerDigest, long spanSize) {
         return "${spanSize}/${layerDigest}"
     }

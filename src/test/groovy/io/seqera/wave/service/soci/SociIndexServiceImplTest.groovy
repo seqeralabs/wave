@@ -130,6 +130,21 @@ class SociIndexServiceImplTest extends Specification {
         result == [(BIG): new ZtocEntry(BIG, GZIP, 'sha256:zbig', 1234, 4194304)]
     }
 
+    def 'should treat a failed zTOC lookup as not found' () {
+        given:
+        def jobStore = Mock(SociIndexStateStore)
+        def proxy = Mock(RegistryProxyService)
+        def service = new SociIndexServiceImpl(config: config, jobStore: jobStore, proxyService: proxy)
+
+        when:
+        def result = service.findZtocs([BIG])
+        then:
+        jobStore.get(_) >> null
+        1 * proxy.getManifestContent(_, null) >> { throw new IllegalStateException('response status=401') }
+        0 * jobStore.putEntry(_)
+        result == [:]
+    }
+
     def 'should not look up the repository while a job is running' () {
         given:
         def jobStore = Mock(SociIndexStateStore)
@@ -148,14 +163,14 @@ class SociIndexServiceImplTest extends Specification {
         given:
         def jobStore = Mock(SociIndexStateStore)
         def service = new SociIndexServiceImpl(config: config, jobStore: jobStore)
-        def request = new SociIndexRequest(requestId: 'soci-1', layerDigest: BIG, spanSize: 4194304)
+        def request = new SociIndexRequest(requestId: 'soci-1', layerDigest: BIG, spanSize: 4194304, authJson: '{"auths":{}}')
         def entry = SociIndexEntry.of(request)
         def stdout = 'some log line\n{"layerDigest":"' + BIG + '","layerMediaType":"' + GZIP + '","ztocDigest":"sha256:zbig","ztocSize":1234,"spanSize":4194304}\n'
 
         when:
         service.onJobCompletion(Mock(JobSpec), entry, JobState.completed(0, stdout))
         then:
-        1 * jobStore.putEntry({ SociIndexEntry it -> it.done() && it.succeeded() && it.ztoc.ztocDigest == 'sha256:zbig' })
+        1 * jobStore.putEntry({ SociIndexEntry it -> it.done() && it.succeeded() && it.ztoc.ztocDigest == 'sha256:zbig' && it.request.authJson == null })
     }
 
     def 'should record a failed job' () {

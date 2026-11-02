@@ -135,8 +135,15 @@ class SociIndexServiceImpl implements SociIndexService, JobHandler<SociIndexEntr
      */
     protected ZtocEntry lookupZtoc(String layerDigest) {
         final image = "${config.repo}:${ztocTag(layerDigest, config.spanSize)}"
-        final manifest = proxyService.getManifestContent(image, null)
-        return manifest ? parseZtocArtifact(manifest) : null
+        try {
+            final manifest = proxyService.getManifestContent(image, null)
+            return manifest ? parseZtocArtifact(manifest) : null
+        }
+        catch (Exception e) {
+            // e.g. 401/403 for a repo not created yet: treat as not found, so the layer gets indexed
+            log.warn "Unable to look up zTOC '${image}' - cause: ${e.message}"
+            return null
+        }
     }
 
     static protected ZtocEntry parseZtocArtifact(String manifest) {
