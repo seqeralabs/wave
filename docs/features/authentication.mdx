@@ -63,9 +63,22 @@ sequenceDiagram
 
 Wave resolves registry credentials based on whether the request is authenticated:
 
-- **Authenticated requests** use credentials stored in your Seqera Platform workspace. Wave queries the Platform credentials service with your access token, matches credentials by registry hostname, and uses the first matching entry.
+- **Authenticated requests** use credentials stored in your Seqera Platform workspace. Wave queries the Platform credentials service with your access token and selects the container registry credential that most specifically matches the image repository.
 - **Anonymous requests** and requests targeting Wave's own build, cache, or public repositories use credentials configured by the Wave operator.
 
 For AWS ECR, Wave can additionally authenticate using its own cloud identity, removing the need to store ECR credentials in your workspace.
+
+#### Registry matching
+
+The **Registry server** value of a container registry credential can be a bare host, such as `quay.io`, or a host followed by a repository path, such as `quay.io/org`. Path-scoped credentials let you use different credentials for different repositories on the same host.
+
+Wave compares the registry value against the full image repository, for example `quay.io/org/image`, and applies these rules:
+
+- A registry value matches when it equals the repository or is a prefix of it that ends at a `/` boundary. `quay.io/org` matches `quay.io/org/image` but not `quay.io/organization/image`.
+- When several credentials match, Wave uses the one with the longest registry value. A bare-host credential applies to any repository on that host that no more specific credential matches.
+- If two credentials have the same registry value, Wave uses only one of them. Avoid duplicate registry values in a workspace.
+- Wave normalizes Docker Hub official images, so `ubuntu` becomes `docker.io/library/ubuntu`. A bare `docker.io` credential still matches. A path-scoped credential for an official image must include the `library/` path, for example `docker.io/library/ubuntu`.
+
+When Wave builds a container image, the build uses one credential per registry host. The build and cache repository credentials take priority over base image credentials. If a base image comes from another repository on the same host as the build repository, Wave pulls it with the build repository's credential.
 
 The workspace used for credential lookup depends on the request context. If `tower.workspaceId` is set in the Nextflow configuration, Wave uses that workspace. Otherwise, Seqera Platform defaults to your personal workspace.
