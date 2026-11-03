@@ -18,4 +18,4 @@
 #
 
 docker run --rm -i -t -p 3000:3000 -v $PWD/docs:/home/node/app/docs \
-  cr.seqera.io/public/docs-previewer:latest
+  public.cr.seqera.io/platform/docs-previewer:2023-11-09

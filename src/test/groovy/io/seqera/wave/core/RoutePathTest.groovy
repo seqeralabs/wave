@@ -117,6 +117,10 @@ class RoutePathTest extends Specification {
         'foo.com:5000/v2/hello-world/blobs/sha256:123456'       | 'blobs'   | 'foo.com:5000'    | 'hello-world' | 'sha256:123456'
         and:
         'docker://quay.io/v2/hello-world/blobs/sha256:123456'   | 'blobs'   | 'quay.io'         | 'hello-world' | 'sha256:123456'
+        and:
+        'docker://foo.com/v2/wave/build/dev/blobs/sha256:123'   | 'blobs'   | 'foo.com'         | 'wave/build/dev' | 'sha256:123'
+        'docker://foo.com/v2/wave/build/dev/soci-ztoc/blobs/sha256:123' | 'blobs' | 'foo.com' | 'wave/build/dev/soci-ztoc' | 'sha256:123'
+        'foo.com:5000/v2/wave/build/dev/manifests/latest'       | 'manifests' | 'foo.com:5000'  | 'wave/build/dev' | 'latest'
     }
 
     def 'should create route path' () {

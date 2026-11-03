@@ -67,6 +67,11 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
         initRegistryContainer(applicationContext)
     }
 
+    private String testRegistryName(String registry) {
+        // validation rejects a scheme, and a bare localhost registry is reached over http
+        return registry == 'test' ? "localhost:${testcontainers.firstMappedPort}" : registry
+    }
+
     void 'should validate username required'() {
         when:
         HttpRequest request = HttpRequest.POST("/validate-creds", [request: [
@@ -92,7 +97,7 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
         def req = [request: [
                 userName:'test',
                 password:'test',
-                registry: getTestRegistryUrl('test') ]]
+                registry: testRegistryName('test') ]]
         and:
         HttpRequest request = HttpRequest.POST("/validate-creds", req)
         when:
@@ -108,7 +113,7 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
         def req = [request: [
                 userName: USER,
                 password: PWD,
-                registry: getTestRegistryUrl(REGISTRY_URL)
+                registry: testRegistryName(REGISTRY_URL)
         ]]
         HttpRequest request = HttpRequest.POST("/validate-creds", req)
         when:
@@ -123,10 +128,10 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
         USER             | PWD             | REGISTRY_URL                   | VALID
         'test'           | 'test'          | 'test'                         | true
         'nope'           | 'yepes'         | 'test'                         | false
-        dockerUsername   | dockerPassword  | "https://registry-1.docker.io" | true
-        'nope'           | 'yepes'         | "https://registry-1.docker.io" | false
-        quayUsername     | quayPassword    | "https://quay.io"              | true
-        'nope'           | 'yepes'         | "https://quay.io"              | false
+        dockerUsername   | dockerPassword  | "docker.io"                    | true
+        'nope'           | 'yepes'         | "docker.io"                    | false
+        quayUsername     | quayPassword    | "quay.io"                      | true
+        'nope'           | 'yepes'         | "quay.io"                      | false
         'test'           | 'test'          | 'test'                         | true
     }
 
@@ -155,7 +160,7 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
         def req = [
                 userName:'test',
                 password:'test',
-                registry: getTestRegistryUrl('test') ]
+                registry: testRegistryName('test') ]
         and:
         HttpRequest request = HttpRequest.POST("/v1alpha2/validate-creds", req)
         when:
@@ -171,7 +176,7 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
         def req = [
                 userName: USER,
                 password: PWD,
-                registry: getTestRegistryUrl(REGISTRY_URL)
+                registry: testRegistryName(REGISTRY_URL)
         ]
         HttpRequest request = HttpRequest.POST("/v1alpha2/validate-creds", req)
         when:
@@ -186,10 +191,10 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
         USER             | PWD             | REGISTRY_URL                   | VALID
         'test'           | 'test'          | 'test'                         | true
         'nope'           | 'yepes'         | 'test'                         | false
-        dockerUsername   | dockerPassword  | "https://registry-1.docker.io" | true
-        'nope'           | 'yepes'         | "https://registry-1.docker.io" | false
-        quayUsername     | quayPassword    | "https://quay.io"              | true
-        'nope'           | 'yepes'         | "https://quay.io"              | false
+        dockerUsername   | dockerPassword  | "docker.io"                    | true
+        'nope'           | 'yepes'         | "docker.io"                    | false
+        quayUsername     | quayPassword    | "quay.io"                      | true
+        'nope'           | 'yepes'         | "quay.io"                      | false
         'test'           | 'test'          | 'test'                         | true
     }
 

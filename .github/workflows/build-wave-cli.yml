@@ -70,7 +70,7 @@ jobs:
 
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - uses: graalvm/setup-graalvm@27b360dbb857524eaf0b4c4cef364d38e5b4f173 # v1.6.7
+      - uses: graalvm/setup-graalvm@f70bc8032f90a104502824a54bcb94b6f01715bc # v1.6.8
         if: ${{ matrix.musl }}
         with:
           java-version: '25'
@@ -78,12 +78,26 @@ jobs:
           native-image-job-reports: 'true'
           native-image-musl: 'true'
 
-      - uses: graalvm/setup-graalvm@27b360dbb857524eaf0b4c4cef364d38e5b4f173 # v1.6.7
+      - uses: graalvm/setup-graalvm@f70bc8032f90a104502824a54bcb94b6f01715bc # v1.6.8
         if: ${{ !matrix.musl }}
         with:
           java-version: '25'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           native-image-job-reports: 'true'
+
+      # native-image embeds the build JDK trust store into the binary: drop the Comodo AAA root,
+      # which chains to the compromised eMudhra intermediates (CVE-2026-91403)
+      - name: Remove distrusted CA roots
+        shell: bash
+        run: |
+          # JDK-bundled entries carry a " [jdk]" suffix in their alias
+          alias="comodoaaaca [jdk]"
+          if keytool -list -cacerts -storepass changeit -alias "$alias" >/dev/null 2>&1; then
+            keytool -delete -cacerts -storepass changeit -alias "$alias"
+            echo "Removed '$alias' from the GraalVM trust store"
+          else
+            echo "'$alias' not present in the GraalVM trust store"
+          fi
 
       - name: Run tests
         run: |
@@ -109,6 +123,14 @@ jobs:
       - name: Build native
         if: ${{ !matrix.musl }}
         run: ./gradlew app:nativeCompile
+
+      - name: Check embedded trust store
+        shell: bash
+        run: |
+          if LC_ALL=C grep -q -a "AAA Certificate Services" app/build/native/nativeCompile/wave*; then
+            echo "::error::Native binary still embeds the Comodo AAA root (CVE-2026-91403)"
+            exit 1
+          fi
 
       - name: Codesign binary
         if: ${{ matrix.codesign && needs.detect-release.outputs.release == 'true' }}
@@ -237,7 +259,10 @@ jobs:
         with:
           arguments: full-release --config-file wave-cli/jreleaser.yml --basedir .
         env:
-          JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
+          # the release is created in this repository with the workflow token, the PAT is
+          # only needed to push the formula to the Homebrew tap repository
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JRELEASER_HOMEBREW_GITHUB_TOKEN: ${{ secrets.JRELEASER_HOMEBREW_GITHUB_TOKEN }}
           JRELEASER_PROJECT_VERSION: ${{ steps.version.outputs.VERSION }}
           JRELEASER_PACKAGERS_BREW_ACTIVE: ${{ env.JRELEASER_PACKAGERS_BREW_ACTIVE }}
 

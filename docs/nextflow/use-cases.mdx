@@ -128,6 +128,30 @@ To enable Wave to provision Conda package containers:
 
 </details>
 
+## Build Conda containers with Pixi
+
+Wave can use [Pixi](https://pixi.sh/) instead of Micromamba to resolve and install Conda packages. The `conda/pixi:v1` build template runs a multi-stage build and produces a `pixi.lock` file for reproducibility. See [Build with Pixi](../features/container-builds.mdx#build-with-pixi) for details.
+
+<details open>
+<summary>**Build Conda containers with Pixi**</summary>
+
+To use Pixi for Conda-based container builds:
+
+1. Define your Conda packages using the `conda` directive in your pipeline processes.
+
+1. Enable Wave and set the Pixi build template in your Nextflow configuration:
+
+    ```groovy title="nextflow.config"
+    wave.enabled = true
+    wave.build.template = 'conda/pixi:v1'
+    ```
+
+:::note
+The `wave.build.conda.*` options don't apply to Pixi builds. Conda lock files are not supported through the `conda/pixi:v1` template.
+:::
+
+</details>
+
 ## Build Singularity containers
 
 Nextflow can build Singularity native images on demand using a `Singularityfile` or Conda packages.

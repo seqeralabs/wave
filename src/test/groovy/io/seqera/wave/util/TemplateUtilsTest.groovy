@@ -492,7 +492,8 @@ class TemplateUtilsTest extends Specification {
         then:
         result.contains('''awk '{printf "\\"%s\\", ", $0}' ''')
         result.contains('''printf "\\"%s\\", ",$0;next}''')
-        result.contains('''print nm" = \\"*\\""}' pixi.lock''')
+        result.contains('''printf '[workspace]\\nname = "wave-env"\\nchannels = [%s]\\nplatforms = [%s]\\n' "$CHANNELS" "$PLATFORMS" > pixi.toml''')
+        !result.contains('[dependencies]')
         !result.contains('\\\\"')
         result.contains('pixi shell-hook --frozen > /shell-hook.sh')
     }

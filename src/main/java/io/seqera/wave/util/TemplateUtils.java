@@ -20,8 +20,6 @@ package io.seqera.wave.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -126,19 +124,19 @@ public class TemplateUtils {
     }
 
     static public String pixiLockUrlToDockerFile(String lockUrl, PixiOpts opts) {
-        return pixiLockUrlTemplate("/templates/conda-pixi-v1-lock/dockerfile-pixi-lock-url.txt", lockUrl, opts);
+        return pixiLockTemplate("/templates/conda-pixi-v1-lock/dockerfile-pixi-lock-url.txt", lockUrl, opts);
     }
 
     static public String pixiLockUrlToSingularityFile(String lockUrl, PixiOpts opts) {
-        return pixiLockUrlTemplate("/templates/conda-pixi-v1-lock/singularityfile-pixi-lock-url.txt", lockUrl, opts);
+        return pixiLockTemplate("/templates/conda-pixi-v1-lock/singularityfile-pixi-lock-url.txt", lockUrl, opts);
     }
 
     static public String pixiLockFileToDockerFile(PixiOpts opts) {
-        return pixiLockFileTemplate("/templates/conda-pixi-v1-lock/dockerfile-pixi-lock-file.txt", opts);
+        return pixiLockTemplate("/templates/conda-pixi-v1-lock/dockerfile-pixi-lock-file.txt", null, opts);
     }
 
     static public String pixiLockFileToSingularityFile(PixiOpts opts) {
-        return pixiLockFileTemplate("/templates/conda-pixi-v1-lock/singularityfile-pixi-lock-file.txt", opts);
+        return pixiLockTemplate("/templates/conda-pixi-v1-lock/singularityfile-pixi-lock-file.txt", null, opts);
     }
 
     static public String condaPackagesToDockerFileUsingV2(String packages, List<String> condaChannels, CondaOpts opts) {
@@ -237,25 +235,13 @@ public class TemplateUtils {
         return addCommands(result, opts.commands, singularity);
     }
 
-    static protected String pixiLockUrlTemplate(String template, String lockUrl, PixiOpts opts) {
+    static protected String pixiLockTemplate(String template, String lockUrl, PixiOpts opts) {
         final boolean singularity = template.contains("/singularityfile");
         final Map<String,String> binding = new HashMap<>();
         binding.put("base_image", opts.baseImage);
         binding.put("pixi_image", opts.pixiImage);
         binding.put("lock_url", lockUrl);
-        binding.put("manifest_generate", pixiManifestGenerate(opts.manifest, singularity));
-        binding.put("base_packages", pixiGlobalInstallBasePackage0(opts.basePackages, singularity));
-
-        final String result = renderTemplate0(template, binding);
-        return addCommands(result, opts.commands, singularity);
-    }
-
-    static protected String pixiLockFileTemplate(String template, PixiOpts opts) {
-        final boolean singularity = template.contains("/singularityfile");
-        final Map<String,String> binding = new HashMap<>();
-        binding.put("base_image", opts.baseImage);
-        binding.put("pixi_image", opts.pixiImage);
-        binding.put("manifest_generate", pixiManifestGenerate(opts.manifest, singularity));
+        binding.put("manifest_generate", pixiManifestFromLock(singularity));
         binding.put("base_packages", pixiGlobalInstallBasePackage0(opts.basePackages, singularity));
 
         final String result = renderTemplate0(template, binding, List.of("wave_context_dir"));
@@ -263,31 +249,14 @@ public class TemplateUtils {
     }
 
     /**
-     * Generate the shell commands to create pixi.toml from either a provided manifest
-     * or by extracting metadata from the lock file.
+     * Generate a minimal pixi.toml with the channels and platforms of the lock file,
+     * which is all {@code pixi install --frozen} needs.
      */
-    private static String pixiManifestGenerate(String manifest, boolean singularity) {
-        if (manifest != null && !manifest.isEmpty()) {
-            // Manifest provided: decode from base64 at build time
-            final String encoded = Base64.getEncoder().encodeToString(manifest.getBytes(StandardCharsets.UTF_8));
-            if (singularity) {
-                return "printf '%s' '" + encoded + "' | base64 -d > pixi.toml";
-            } else {
-                return "printf '%s' '" + encoded + "' | base64 -d > pixi.toml \\";
-            }
-        }
-        // No manifest: generate from lock file by extracting channels, platforms, and deps
-        final String awkDeps = "awk '/- conda:/{n=split($NF,u,\"/\");f=u[n];sub(/\\.(conda|tar\\.bz2)$/,\"\",f);m=split(f,s,\"-\");v=0;for(i=2;i<=m;i++)if(s[i]~/^[0-9]/&&index(s[i],\".\")>0){v=i;break};if(!v)for(i=2;i<=m;i++)if(s[i]~/^[0-9]/){v=i;break};nm=\"\";for(i=1;i<(v?v:m+1);i++){if(nm)nm=nm\"-\";nm=nm s[i]};if(nm)print nm\" = \\\"*\\\"\"}' pixi.lock | sort -u > /tmp/deps.toml";
-        final String awkPlatforms = "PLATFORMS=$(awk '/- conda:/{n=split($NF,u,\"/\");p=u[n-1];if(p!=\"noarch\")print p}' pixi.lock | sort -u | awk '{printf \"\\\"%s\\\", \", $0}' | sed 's/, $//')";
-        final String awkChannels = "CHANNELS=$(awk '/^    channels:/{ch=1;next} ch&&/- url:/{gsub(/^ *- url: */,\"\");gsub(/https:\\/\\/conda\\.anaconda\\.org\\//,\"\");gsub(/\\/$/,\"\");printf \"\\\"%s\\\", \",$0;next} ch&&!/^    -/{exit}' pixi.lock | sed 's/, $//')";
-        final String printfToml = "printf \"[workspace]\\nname = \\\"wave-env\\\"\\nchannels = [%s]\\nplatforms = [%s]\\n\\n[dependencies]\\n\" \"$CHANNELS\" \"$PLATFORMS\" > pixi.toml";
-        final String catDeps = "cat /tmp/deps.toml >> pixi.toml";
-
-        if (singularity) {
-            return awkPlatforms + "\n    " + awkChannels + "\n    " + awkDeps + "\n    " + printfToml + "\n    " + catDeps;
-        } else {
-            return awkPlatforms + " \\\n    && " + awkChannels + " \\\n    && " + awkDeps + " \\\n    && " + printfToml + " \\\n    && " + catDeps + " \\";
-        }
+    private static String pixiManifestFromLock(boolean singularity) {
+        final String result = "PLATFORMS=$(awk '/- conda:/{n=split($NF,u,\"/\");p=u[n-1];if(p!=\"noarch\")print p}' pixi.lock | sort -u | awk '{printf \"\\\"%s\\\", \", $0}' | sed 's/, $//')"
+                + " && CHANNELS=$(awk '/^    channels:/{ch=1;next} ch&&/- url:/{gsub(/^ *- url: */,\"\");gsub(/https:\\/\\/conda\\.anaconda\\.org\\//,\"\");gsub(/\\/$/,\"\");printf \"\\\"%s\\\", \",$0;next} ch&&!/^    -/{exit}' pixi.lock | sed 's/, $//')"
+                + " && printf '[workspace]\\nname = \"wave-env\"\\nchannels = [%s]\\nplatforms = [%s]\\n' \"$CHANNELS\" \"$PLATFORMS\" > pixi.toml";
+        return singularity ? result : result + " \\";
     }
 
     static private String renderTemplate0(String templatePath, Map<String,String> binding) {
@@ -328,19 +297,14 @@ public class TemplateUtils {
     }
 
     /**
-     * Install base packages in an isolated pixi global prefix so that the project
-     * environment installed via {@code pixi install --frozen} (and its lock file) is
-     * left untouched. This is used by the pixi lock build templates to add runtime
-     * tools such as {@code procps-ng} (providing the {@code ps} command) without
-     * re-solving the locked environment.
+     * Install {@code which} and the base packages with {@code pixi global install}, so the
+     * locked environment is not re-solved.
      */
     private static String pixiGlobalInstallBasePackage0(String basePackages, boolean singularity) {
-        String result = !StringUtils.isEmpty(basePackages)
-                ? String.format("pixi global install %s", basePackages)
-                : null;
-        return result==null || singularity
-                ? result
-                : "&& " + result + " \\";
+        String result = "pixi global install conda-forge::which";
+        if( !StringUtils.isEmpty(basePackages) )
+            result += " " + basePackages;
+        return singularity ? result : "&& " + result + " \\";
     }
 
     static private String addCommands(String result, List<String> commands, boolean singularity) {

@@ -48,6 +48,7 @@ import io.seqera.wave.api.ScanMode
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
@@ -69,6 +70,8 @@ import io.seqera.wave.service.inclusion.ContainerInclusionService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.mirror.ContainerMirrorService
 import io.seqera.wave.service.mirror.MirrorRequest
+import io.seqera.wave.service.soci.SociIndexService
+import io.seqera.wave.service.soci.SociPushService
 import io.seqera.service.pairing.PairingService
 import io.seqera.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
@@ -184,6 +187,18 @@ class ContainerController {
     @Inject
     @Nullable
     private ContainerMirrorService mirrorService
+
+    @Inject
+    @Nullable
+    private SociConfig sociConfig
+
+    @Inject
+    @Nullable
+    private SociIndexService sociIndexService
+
+    @Inject
+    @Nullable
+    private SociPushService sociPushService
 
     @Inject
     private ContainerStatusService statusService
@@ -305,6 +320,9 @@ class ContainerController {
         // persist request
         storeContainerRequest0(req, data, token, target, ip)
         scanService?.scanOnRequest(data)
+        // index the container layers ahead of the pull
+        if( data.soci && data.isContainer() && !data.dryRun )
+            sociIndexService?.requestIndex(data.containerImage, data.platform, identity)
         // log the response
         log.debug "New container request fulfilled - token=$token.value; expiration=$token.expiration; container=$data.containerImage; build=$resp.buildId; identity=$identity"
         // return response
@@ -500,6 +518,12 @@ class ContainerController {
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
         if( req.scanMode && !scanService )
             throw new UnsupportedScanServiceException()
+        if( req.soci && !sociConfig )
+            throw new BadRequestException("SOCI index is not enabled in this Wave deployment - see 'wave.soci.enabled' setting")
+        if( req.soci && req.formatSingularity() )
+            throw new BadRequestException("Singularity format does not support the 'soci' attribute")
+        if( req.soci && req.containerImage?.contains('@sha256:') && !req.freeze && !req.mirror )
+            throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'soci' attribute")
 
         // expand inclusions
         inclusionService.addContainerInclusions(req, identity)
@@ -588,6 +612,10 @@ class ContainerController {
         else
             throw new IllegalStateException("Specify either 'containerImage' or 'containerFile' attribute")
 
+        // a durable container is pulled from its registry, return its SOCI-enabled tag when published
+        if( req.soci && sociPushService && (req.freeze || req.mirror) && !req.dryRun )
+            targetImage = sociPushService.sociTarget(targetImage, ContainerPlatform.of(req.containerPlatform), identity, succeeded)
+
         ContainerRequest.create(
                 type,
                 identity,
@@ -605,7 +633,8 @@ class ContainerController {
                 req.scanLevels,
                 req.dryRun,
                 succeeded,
-                Instant.now()
+                Instant.now(),
+                req.soci && sociConfig!=null
         )
     }
 

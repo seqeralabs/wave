@@ -93,27 +93,53 @@ class BuildLogsServiceTest extends Specification implements AwsS3TestContainer {
     }
 
     def 'should extract conda lockfile' () {
-        def logs = """
-                #9 12.23 logs....
-                #10 12.24 >> CONDA_LOCK_START
-                #10 12.24 # This file may be used to create an environment using:
-                #10 12.24 # \$ conda create --name <env> --file <this file>
-                #10 12.24 # platform: linux-aarch64
-                #10 12.24 @EXPLICIT
-                #10 12.25 << CONDA_LOCK_END
-                #11 12.26 logs....""".stripIndent()
-        def service = new BuildLogServiceImpl()
+        given:
+        def logs = '''\
+            #9 12.23 logs....
+            #10 12.24 >> CONDA_LOCK_START
+            #10 12.24 # This file may be used to create an environment using:
+            #10 12.24 # $ conda create --name <env> --file <this file>
+            #10 12.24 # platform: linux-aarch64
+            #10 12.24 @EXPLICIT
+            #10 12.25 << CONDA_LOCK_END
+            #11 12.26 logs....'''.stripIndent()
 
-        when:
-        def result = service.extractCondaLockFile(logs)
+        expect:
+        BuildLogServiceImpl.extractCondaLockFile(logs) == '''\
+            # This file may be used to create an environment using:
+            # $ conda create --name <env> --file <this file>
+            # platform: linux-aarch64
+            @EXPLICIT
+            '''.stripIndent()
+    }
 
-        then:
-        result == """
-             # This file may be used to create an environment using:
-             # \$ conda create --name <env> --file <this file>
-             # platform: linux-aarch64
-             @EXPLICIT
-             """.stripIndent()
+    def 'should extract pixi lockfile preserving indentation and blank lines' () {
+        given:
+        def logs = '''\
+            #9 12.23 logs....
+            #10 12.24 >> CONDA_LOCK_START
+            #10 12.24 version: 6
+            #10 12.24 environments:
+            #10 12.24   default:
+            #10 12.24     channels:
+            #10 12.24     - url: https://conda.anaconda.org/conda-forge/
+            #10 12.24
+            #10 12.24 packages:
+            #10 12.24 - conda: https://conda.anaconda.org/conda-forge/noarch/which-2.21-noarch.conda
+            #10 12.25 << CONDA_LOCK_END
+            #11 12.26 logs....'''.stripIndent()
+
+        expect:
+        BuildLogServiceImpl.extractCondaLockFile(logs) == '''\
+            version: 6
+            environments:
+              default:
+                channels:
+                - url: https://conda.anaconda.org/conda-forge/
+
+            packages:
+            - conda: https://conda.anaconda.org/conda-forge/noarch/which-2.21-noarch.conda
+            '''.stripIndent()
     }
 
     def 'should extract conda lockfile from s3' (){
@@ -141,26 +167,23 @@ class BuildLogsServiceTest extends Specification implements AwsS3TestContainer {
         def service = new BuildLogServiceImpl(locksStoreOps: awsS3Operations, buildConfig: config)
         and:
         def buildID = "123"
-        def logs = """
-                #9 12.23 logs....
-                #10 12.24 >> CONDA_LOCK_START
-                #10 12.24 # This file may be used to create an environment using:
-                #10 12.24 # \$ conda create --name <env> --file <this file>
-                #10 12.24 # platform: linux-aarch64
-                #10 12.24 @EXPLICIT
-                #10 12.25 << CONDA_LOCK_END
-                #11 12.26 logs....""".stripIndent()
+        def logs = '''\
+            #9 12.23 logs....
+            #10 12.24 >> CONDA_LOCK_START
+            #10 12.24 # This file may be used to create an environment using:
+            #10 12.24 # $ conda create --name <env> --file <this file>
+            #10 12.24 # platform: linux-aarch64
+            #10 12.24 @EXPLICIT
+            #10 12.25 << CONDA_LOCK_END
+            #11 12.26 logs....'''.stripIndent()
 
         when:
         service.storeCondaLock(buildID, logs)
 
         then:
-        service.fetchCondaLockString(buildID) == """
-             # This file may be used to create an environment using:
-             # \$ conda create --name <env> --file <this file>
-             # platform: linux-aarch64
-             @EXPLICIT
-             """.stripIndent()
+        def lock = service.fetchCondaLockString(buildID)
+        lock.startsWith('# This file may be used to create an environment using:')
+        lock == BuildLogServiceImpl.extractCondaLockFile(logs)
     }
 
     def 'should throw no exception when there is no conda lockfile in logs' (){

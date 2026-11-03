@@ -91,14 +91,16 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
      */
     @Override
     String credentialsConfigJson(String containerFile, String buildRepo, String cacheRepo, PlatformId identity) {
-        final repos = new HashSet(10)
-        if( containerFile )
-            repos.addAll(findRepositories(containerFile))
+        // the docker config holds one credential per host, add the push targets first so that
+        // their credentials win over the ones of base images hosted on the same registry
+        final repos = new LinkedHashSet<String>(10)
         if( buildRepo )
             repos.add(buildRepo)
         // skip S3 bucket paths - they don't require container registry credentials
         if( cacheRepo && !BuildConfig.isBucketPath(cacheRepo) )
             repos.add(cacheRepo)
+        if( containerFile )
+            repos.addAll(findRepositories(containerFile))
         final result = credsJson(repos, identity)
         if( buildRepo && result && !result.contains(host0(buildRepo)) )
             throw new BadRequestException("Missing credentials for container repository: $buildRepo")
@@ -121,16 +123,17 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
             final path = ContainerCoordinates.parse(repo)
             final info = lookupService.lookup(path.registry)
             final hostName = info.getIndexHost()
-            if( !hosts.add(hostName) ) {
+            if( hosts.contains(hostName) ) {
                 // skip this index host because it has already be added to the list
                 continue
             }
             final creds = credentialsProvider.getCredentials(path, identity)
             log.debug "Build credentials for repository: $repo => $creds"
             if( !creds ) {
-                // skip this host because there are no credentials
+                // credentials are scoped by repository, a later repository on the same host may still have them
                 continue
             }
+            hosts.add(hostName)
             final encode = "${creds.username}:${creds.password}".getBytes().encodeBase64()
             if( result.size() )
                 result.append(',')

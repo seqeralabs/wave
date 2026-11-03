@@ -1,6 +1,8 @@
 BootStrap: docker
 From: {{pixi_image}}
 %post
+    export PIXI_HOME=/opt/wave/.pixi
+    export PATH=/opt/wave/.pixi/bin:$PATH
     mkdir -p /opt/wave && cd /opt/wave
     pixi exec --spec curl -- curl -fsSL {{lock_url}} -o pixi.lock
     {{manifest_generate}}
@@ -11,5 +13,5 @@ From: {{pixi_image}}
     cat /opt/wave/pixi.lock
     echo "<< CONDA_LOCK_END"
 %environment
-    export PATH=/root/.pixi/bin:$PATH
+    export PATH=/opt/wave/.pixi/bin:$PATH
     . /shell-hook.sh

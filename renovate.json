@@ -140,7 +140,7 @@
     },
     {
       "matchPackageNames": [
-        "cr.seqera.io/public/nf-jdk"
+        "public.cr.seqera.io/seqeralabs/nf-jdk"
       ],
       "versionCompatibility": "^corretto-(?<version>\\d+\\.\\d+\\.\\d+)-(?<compatibility>.+)$",
       "groupName": "jib base image",

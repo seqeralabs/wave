@@ -208,14 +208,16 @@ class PixiHelperTest extends Specification {
         def result = PixiHelper.containerFileV1Lock(packages, null, false)
 
         then:
-        result.contains('FROM ghcr.io/prefix-dev/pixi:0.81.0-noble AS build')
+        result.contains('FROM public.cr.seqera.io/wave/pixi:0.81.0-noble AS build')
         result.contains('ADD https://foo.com/pixi.lock /opt/wave/pixi.lock')
         result.contains('pixi install --frozen')
         result.contains('pixi shell-hook --frozen > /shell-hook.sh')
         result.contains('FROM ubuntu:24.04 AS final')
-        result.contains('COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default')
-        result.contains('COPY --from=build /root/.pixi /root/.pixi')
-        result.contains('pixi global install conda-forge::procps-ng')
+        result.contains('ENV PIXI_HOME=/opt/wave/.pixi')
+        result.contains('ENV PATH="/opt/wave/.pixi/bin:${PATH}"')
+        result.contains('COPY --from=build /opt/wave/.pixi /opt/wave/.pixi')
+        !result.contains('/root/.pixi')
+        result.contains('pixi global install conda-forge::which conda-forge::procps-ng')
         result.contains('ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]')
         !result.contains('pixi add')
         result.contains('>> CONDA_LOCK_START')
@@ -231,13 +233,17 @@ class PixiHelperTest extends Specification {
 
         then:
         result.contains('BootStrap: docker')
-        result.contains('From: ghcr.io/prefix-dev/pixi:0.81.0-noble')
+        result.contains('From: public.cr.seqera.io/wave/pixi:0.81.0-noble')
         result.contains('pixi exec --spec curl -- curl -fsSL https://foo.com/pixi.lock -o pixi.lock')
         result.contains('pixi install --frozen')
         result.contains('pixi shell-hook --frozen > /shell-hook.sh')
         result.contains('%post')
+        result.contains('export PIXI_HOME=/opt/wave/.pixi')
+        result.contains('pixi global install conda-forge::which conda-forge::procps-ng')
         result.contains('%environment')
+        result.contains('export PATH=/opt/wave/.pixi/bin:$PATH')
         result.contains('. /shell-hook.sh')
+        !result.contains('/root/.pixi')
     }
 
     def 'should reject non-CONDA package type with v1-lock'() {
@@ -272,7 +278,7 @@ class PixiHelperTest extends Specification {
         result.contains('pixi install --frozen')
         result.contains('FROM base/image AS final')
         !result.contains('pixi add')
-        !result.contains('pixi global install')
+        result.contains('&& pixi global install conda-forge::which \\\n')
     }
 
     def 'should install base packages via pixi global with v1-lock'() {
@@ -289,9 +295,9 @@ class PixiHelperTest extends Specification {
 
         then:
         result.contains('pixi install --frozen')
-        result.contains('pixi global install foo::one bar::two')
-        result.contains('COPY --from=build /root/.pixi /root/.pixi')
-        result.contains('ENV PATH="/opt/wave/.pixi/envs/default/bin:/root/.pixi/bin:${PATH}"')
+        result.contains('pixi global install conda-forge::which foo::one bar::two')
+        result.contains('COPY --from=build /opt/wave/.pixi /opt/wave/.pixi')
+        result.contains('ENV PATH="/opt/wave/.pixi/envs/default/bin:/opt/wave/.pixi/bin:${PATH}"')
         !result.contains('pixi add')
     }
 
@@ -304,7 +310,7 @@ class PixiHelperTest extends Specification {
         def result = PixiHelper.containerFileV1Lock(packages, 'override/base:2.0', false)
 
         then:
-        result.contains('FROM ghcr.io/prefix-dev/pixi:0.81.0-noble AS build')
+        result.contains('FROM public.cr.seqera.io/wave/pixi:0.81.0-noble AS build')
         result.contains('FROM override/base:2.0 AS final')
         !result.contains('FROM base/image AS final')
     }

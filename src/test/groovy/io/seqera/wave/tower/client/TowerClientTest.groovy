@@ -181,7 +181,7 @@ class TowerClientTest extends Specification{
 
         where:
         ENDPOINT                | WORKSPACE         | WORKFLOW  | EXPECTED
-        'http://foo.com'        | null              | 'abc'     | 'http://foo.com/workflow/abc'
-        'http://foo.com'        | 12345             | 'abc'     | 'http://foo.com/workflow/abc?workspaceId=12345'
+        'http://foo.com'        | null              | 'abc'     | 'http://foo.com/workflow/abc?attributes=minimal'
+        'http://foo.com'        | 12345             | 'abc'     | 'http://foo.com/workflow/abc?attributes=minimal&workspaceId=12345'
     }
 }

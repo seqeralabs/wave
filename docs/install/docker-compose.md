@@ -15,7 +15,7 @@ You need the following:
 - PostgreSQL 16 or later, reachable from the host.
 - Redis 6.2 or later, reachable from the host.
 - A Seqera Platform deployment and its endpoint URL.
-- Access to the Wave container image from `cr.seqera.io`, using credentials provided by Seqera.
+- Access to the Wave container image `cr.seqera.io/enterprise/wave/server`, using credentials provided by Seqera.
 
 :::
 
@@ -144,12 +144,12 @@ docker login cr.seqera.io -u <username>
 
 ## Create the Compose file
 
-Define the Wave service in `docker-compose.yml`. Replace `<wave-image-path>` and `<tag>` with the image path and tag provided by Seqera:
+Define the Wave service in `docker-compose.yml`. Replace `<tag>` with the Wave version to deploy, for example `v1.40.2`. The image has no `latest` tag, so you must specify a version. See [Wave releases](https://github.com/seqeralabs/wave/releases) for available versions. Only the `v*` tags apply to the Wave image; `cli-v*` tags are Wave CLI releases.
 
 ```yaml
 services:
   wave:
-    image: cr.seqera.io/<wave-image-path>:<tag>
+    image: cr.seqera.io/enterprise/wave/server:<tag>
     ports:
       - "9090:9090"
     volumes:

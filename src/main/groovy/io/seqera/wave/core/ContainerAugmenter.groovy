@@ -38,6 +38,9 @@ import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.model.ContainerOrIndexSpec
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
+import io.seqera.wave.configuration.SociConfig
+import io.seqera.wave.service.soci.SociIndexService
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.JacksonHelper
 import io.seqera.wave.service.builder.MultiPlatformBuildService
 import io.seqera.wave.util.RegHelper
@@ -82,6 +85,10 @@ class ContainerAugmenter {
     private ContainerConfig containerConfig
     private ContainerPlatform platform
     private Storage storage
+    private SociIndexService sociService
+    private SociConfig sociConfig
+    private PlatformId identity
+    private Set<String> injectedLayers = Set.<String>of()
 
     ContainerConfig getContainerConfig() {
         return containerConfig
@@ -94,6 +101,15 @@ class ContainerAugmenter {
 
     ContainerAugmenter withClient(ProxyClient client) {
         this.client = client
+        return this
+    }
+
+    /**
+     * Make the resolved container SOCI-enabled, see {@link SociInjector}
+     */
+    ContainerAugmenter withSoci(SociIndexService service, SociConfig config) {
+        this.sociService = service
+        this.sociConfig = config
         return this
     }
 
@@ -119,6 +135,11 @@ class ContainerAugmenter {
     ContainerDigestPair resolve(RoutePath route, Map<String,List<String>> headers) {
         assert route, "Missing route"
         this.platform = route.request?.platform ?: ContainerPlatform.DEFAULT
+        this.identity = route.identity
+        // the layers added by wave, they are not in the upstream repository
+        this.injectedLayers = (route.request?.containerConfig?.layers ?: List.<ContainerLayer>of())
+                .collect((ContainerLayer it) -> it.gzipDigest)
+                .toSet()
         // note: do not propagate container config when "freeze" mode is enabled, because it has been already
         // applied during the container build phase, and therefore it should be ignored by the augmenter
         if( route.request?.containerConfig && !route.request.freeze ) {
@@ -156,6 +177,15 @@ class ContainerAugmenter {
     }
 
     ContainerDigestPair resolve(String imageName, String tag, Map<String,List<String>> headers) {
+        final result = resolve0(imageName, tag, headers)
+        // a container requested by digest cannot be altered
+        if( !sociService || tag.startsWith('sha256:') )
+            return result
+        return new SociInjector(client, storage, sociService, sociConfig, identity, platform, injectedLayers)
+                .apply(imageName, result, headers)
+    }
+
+    protected ContainerDigestPair resolve0(String imageName, String tag, Map<String,List<String>> headers) {
         assert client, "Missing client"
         assert storage, "Missing storage"
         assert platform, "Missing 'platform' parameter"

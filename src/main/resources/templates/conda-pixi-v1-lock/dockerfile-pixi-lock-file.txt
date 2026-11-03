@@ -1,10 +1,12 @@
 FROM {{pixi_image}} AS build
+ENV PIXI_HOME=/opt/wave/.pixi
+# the shell hook saves this PATH, so the global base packages must be on it
+ENV PATH="/opt/wave/.pixi/bin:${PATH}"
 
 COPY conda.yml /opt/wave/pixi.lock
 WORKDIR /opt/wave
 RUN {{manifest_generate}}
     && pixi install --frozen \
-    && mkdir -p /root/.pixi/bin \
     {{base_packages}}
     && pixi shell-hook --frozen > /shell-hook.sh \
     && echo 'exec "$@"' >> /shell-hook.sh \
@@ -14,14 +16,13 @@ RUN {{manifest_generate}}
 
 FROM {{base_image}} AS final
 
-COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
-COPY --from=build /root/.pixi /root/.pixi
+COPY --from=build /opt/wave/.pixi /opt/wave/.pixi
 COPY --from=build /shell-hook.sh /shell-hook.sh
 
 USER root
 ENV USER=root
 # add the env and base packages binaries to PATH for when the entrypoint is bypassed (e.g. 'singularity exec' on an OCI-converted image)
-ENV PATH="/opt/wave/.pixi/envs/default/bin:/root/.pixi/bin:${PATH}"
+ENV PATH="/opt/wave/.pixi/envs/default/bin:/opt/wave/.pixi/bin:${PATH}"
 
 ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]
 CMD ["/bin/bash"]

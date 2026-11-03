@@ -21,7 +21,10 @@ package io.seqera.wave.service.inspect
 import spock.lang.Specification
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsProvider
+import io.seqera.wave.auth.RegistryInfo
+import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.config.CondaOpts
 import io.seqera.wave.config.PixiOpts
 import io.seqera.wave.core.ContainerPlatform
@@ -79,6 +82,28 @@ class ContainerInspectServiceImplTest extends Specification {
         then:
         // note: the auth below depends on the docker user and password used for test
         result == """{"auths":{"https://index.docker.io/v1/":{"auth":"$EXPECTED1"}}}"""
+    }
+
+    def 'should add the host of a later repository with matching credentials' () {
+        given:
+        def lookup = Mock(RegistryLookupService) { lookup('quay.io') >> new RegistryInfo('quay.io', new URI('https://quay.io/v2/'), null) }
+        def provider = Mock(RegistryCredentialsProvider)
+        def service = new ContainerInspectServiceImpl(lookupService: lookup, credentialsProvider: provider)
+        and:
+        def dockerfile = '''\
+            FROM quay.io/biocontainers/samtools:1.17--h00cdaf9_0 AS tools
+            FROM quay.io/acme/base:1.0
+            COPY --from=tools /usr/local/bin/samtools /usr/local/bin/
+            '''.stripIndent()
+
+        when:
+        def result = service.credentialsConfigJson(dockerfile, null, null, PlatformId.NULL)
+
+        then:
+        1 * provider.getCredentials({ it.repository == 'quay.io/biocontainers/samtools' }, PlatformId.NULL) >> null
+        1 * provider.getCredentials({ it.repository == 'quay.io/acme/base' }, PlatformId.NULL) >> Mock(RegistryCredentials) { getUsername() >> 'acme'; getPassword() >> 'secret' }
+        and:
+        result == """{"auths":{"https://quay.io":{"auth":"${'acme:secret'.bytes.encodeBase64()}"}}}"""
     }
 
     def 'should find repos' () {
