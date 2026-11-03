@@ -40,6 +40,7 @@ import io.kubernetes.client.openapi.models.V1PodList
 import io.micronaut.context.ApplicationContext
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.MirrorConfig
+import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.configuration.ScanConfig
 /**
  *
@@ -892,6 +893,44 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.volumes.size() == 1
         job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
         job.spec.template.spec.restartPolicy == 'Never'
+
+        cleanup:
+        ctx.close()
+    }
+
+    def 'should create soci index job spec'() {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'foo',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'bar',
+                'wave.build.k8s.storage.mountPath': '/build',
+                'wave.build.k8s.service-account': 'theAdminAccount',
+        ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def args = ['soci-indexer', 'index', '-source', 'docker.io/library/ubuntu@sha256:a']
+        def workDir = Path.of('/build/work/soci-1')
+        def credsFile = Path.of('/build/work/soci-1/config.json')
+        def config = new SociConfig(limitsMemory: '1Gi')
+
+        when:
+        def job = k8sService.sociIndexJobSpec('soci-1', 'soci-indexer:v1', args, workDir, credsFile, config, null)
+
+        then:
+        job.metadata.name == 'soci-1'
+        job.spec.template.spec.containers[0].image == 'soci-indexer:v1'
+        job.spec.template.spec.containers[0].args == args
+        job.spec.template.spec.containers[0].resources.limits.memory.toSuffixedString() == '1Gi'
+        job.spec.template.spec.containers[0].env == [new V1EnvVar().name('DOCKER_CONFIG').value('/tmp/docker')]
+        and:
+        with(job.spec.template.spec.containers[0].volumeMounts[0]) {
+            mountPath == '/tmp/docker/config.json'
+            readOnly == true
+            subPath == 'work/soci-1/config.json'
+        }
 
         cleanup:
         ctx.close()

@@ -30,12 +30,14 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Requires
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.runtime.graceful.GracefulShutdownCapable
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.data.workqueue.MessageConsumer.Decision
 import io.seqera.data.workqueue.MessageLease
 import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.configuration.JobManagerConfig
+import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.configuration.WaveLite
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
@@ -65,6 +67,10 @@ class JobManager implements GracefulShutdownCapable {
 
     @Inject
     private JobManagerConfig config
+
+    @Inject
+    @Nullable
+    private SociConfig sociConfig
 
     @Inject
     @Named(TaskExecutors.BLOCKING)
@@ -126,7 +132,7 @@ class JobManager implements GracefulShutdownCapable {
         // `maxRunningJobs` is a cluster-wide limit, not a per-replica one. It is a soft limit: the
         // length is read before launching, so replicas launching concurrently can overshoot it
         final processingQueueLen = processingQueue.length()
-        final canLaunchNewJobs = processingQueueLen < config.maxRunningJobs
+        final canLaunchNewJobs = processingQueueLen < maxRunningJobs(job)
         if( canLaunchNewJobs ) {
             final submitted = dispatcher.launchJob(job)
             if( log.isTraceEnabled() )
@@ -138,6 +144,15 @@ class JobManager implements GracefulShutdownCapable {
             log.debug "Processing queue is full (${processingQueueLen}) - delaying submission of job=$job"
         }
         return canLaunchNewJobs
+    }
+
+    /**
+     * SOCI indexing and publication are best effort, they cannot take the slots reserved to the other jobs
+     */
+    protected int maxRunningJobs(JobSpec job) {
+        return (job.type==JobSpec.Type.SociIndex || job.type==JobSpec.Type.SociPush) && sociConfig
+                ? config.maxRunningJobs - sociConfig.reservedJobs
+                : config.maxRunningJobs
     }
 
     /**

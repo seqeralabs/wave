@@ -70,7 +70,7 @@ Configure general Wave application settings.
 
 ## Feature toggles
 
-Each Wave feature is an independent toggle. Wave Lite runs with all four off, which is what the `lite` Micronaut environment applies.
+Each Wave feature is an independent toggle. Wave Lite runs with all of them off, which is what the `lite` Micronaut environment applies.
 
 `wave.build.enabled` *(optional)*
 : When `true`, Wave provisions containers with on-demand builds (default: `true`). Freeze and scanning both depend on the build pipeline and are unavailable when this is `false`.
@@ -83,6 +83,9 @@ Each Wave feature is an independent toggle. Wave Lite runs with all four off, wh
 
 `wave.blob-cache.enabled` *(optional)*
 : When `true`, Wave caches container layers in object storage (default: `false`). Requires the blob cache storage settings.
+
+`wave.soci.enabled` *(optional)*
+: When `true`, Wave accepts the `soci` container request attribute and attaches a SOCI index to the container (default: `false`). See [SOCI index](#soci-index) settings.
 
 ## Capabilities
 
@@ -490,6 +493,40 @@ Configure Kubernetes resource requirements for Wave container mirroring operatio
 
 `wave.mirror.k8s.resources.limits.memory` *(optional)*
 : Memory resource limit for mirror Kubernetes pods.
+
+## SOCI index
+
+Configure the SOCI lazy loading support, enabled by `wave.soci.enabled`. See [SOCI lazy loading](../soci.md).
+
+`wave.soci.repo` *(optional)*
+: Repository where the zTOC artifacts are stored (default: `<wave.build.repo>/soci-ztoc`). It must be on the same registry as `wave.build.repo`. Its lifecycle expiry must be longer than `wave.soci.ztoc.duration`.
+
+`wave.soci.indexer-image` *(optional)*
+: Container image of the `soci-indexer` job (default: `public.cr.seqera.io/wave/soci-indexer:v0.1.0`).
+
+`wave.soci.min-layer-size` *(optional)*
+: Layers smaller than this size in bytes are not indexed (default: `10485760`).
+
+`wave.soci.await-timeout` *(optional)*
+: How long a container manifest request is held while its layers are indexed. When the indexing does not complete in time, the container is served without SOCI index. It covers all the platforms of the image and must stay below the containerd `image_pull_progress_timeout` (default: `3m`).
+
+`wave.soci.ztoc.duration` *(optional)*
+: How long a zTOC lookup is cached (default: `30d`).
+
+`wave.soci.timeout` *(optional)*
+: Max duration of a `soci-indexer` job (default: `10m`).
+
+`wave.soci.publish-timeout` *(optional)*
+: How long the publication of the `-soci` tag of a freeze or mirror container waits for the container and its indexing (default: `30m`).
+
+`wave.soci.reserved-jobs` *(optional)*
+: Number of `wave.job-manager.max-running-jobs` slots that `soci-indexer` jobs, indexing and push, cannot take, so that SOCI does not delay builds (default: `5`).
+
+`wave.soci.failure.duration` *(optional)*
+: How long a layer that could not be indexed is not retried, the next request after it indexes the layer again. A failed publication of a `-soci` tag is retried after this duration, doubled at each consecutive failure up to one day (default: `10m`).
+
+`wave.soci.k8s.resources.requests.cpu`, `wave.soci.k8s.resources.requests.memory`, `wave.soci.k8s.resources.limits.cpu`, `wave.soci.k8s.resources.limits.memory` *(optional)*
+: Kubernetes resources of the `soci-indexer` jobs.
 
 ## Proxy cache
 

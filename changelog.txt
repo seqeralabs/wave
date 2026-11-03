@@ -1,4 +1,12 @@
 # Wave changelog
+1.43.0 - 2 Nov 2026
+- SOCI v2 index for ephemeral, freeze and mirror containers (#1227) [40279dcc9]
+- Route blob locations of repositories with more than two path segments (#1240) [a7c66be18]
+- Update dependency io.micronaut.platform:micronaut-platform to v4.10.22 (#1228) [2db804920]
+- Update public.cr.seqera.io/seqeralabs/nf-jdk docker tag to v25.0.5 (#1231) [76a9db7c4]
+- Update gradle minor and patch (#1230) [804dec124]
+- Update github actions (#1229) [81817b93b]
+
 1.42.2 - 28 Oct 2026
 - Raise the Wave CI job timeout to 45 minutes [9574aa16a]
 - Bump condasplit to v3 [21fa507b0]

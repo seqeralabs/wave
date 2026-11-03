@@ -34,6 +34,8 @@ import io.seqera.wave.service.builder.MultiBuildStateStore
 import io.seqera.wave.service.cleanup.CleanupService
 import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.scan.ScanRequest
+import io.seqera.wave.service.soci.SociIndexRequest
+import io.seqera.wave.service.soci.SociPushRequest
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -115,6 +117,20 @@ class JobServiceImpl implements JobService {
         // create the unique job id for the build
         final job = jobFactory.mirror(request)
         // launch the scan job
+        pendingQueue.submit(job)
+        return job
+    }
+
+    @Override
+    JobSpec launchSociIndex(SociIndexRequest request) {
+        final job = jobFactory.sociIndex(request)
+        pendingQueue.submit(job)
+        return job
+    }
+
+    @Override
+    JobSpec launchSociPush(SociPushRequest request) {
+        final job = jobFactory.sociPush(request)
         pendingQueue.submit(job)
         return job
     }

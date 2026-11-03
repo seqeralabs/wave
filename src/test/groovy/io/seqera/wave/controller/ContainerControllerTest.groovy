@@ -43,6 +43,8 @@ import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.config.CondaOpts
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.SociConfig
+import io.seqera.wave.service.soci.SociPushService
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
@@ -149,6 +151,56 @@ class ContainerControllerTest extends Specification {
         then:
         thrown(BadRequestException)
 
+    }
+
+    def 'should reject soci with digest-pinned ephemeral image' () {
+        given:
+        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry, sociConfig: new SociConfig())
+
+        when:
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu@sha256:a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8', soci: true)
+        controller.makeRequestData(req, PlatformId.NULL, "")
+        then:
+        def e = thrown(BadRequestException)
+        e.message == "Container requests made using a SHA256 as tag does not support the 'soci' attribute"
+    }
+
+    def 'should reject soci with singularity format' () {
+        given:
+        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry, sociConfig: new SociConfig())
+
+        when:
+        def req = new SubmitContainerTokenRequest(containerFile: 'FROM ubuntu', format: 'sif', freeze: true, soci: true)
+        controller.makeRequestData(req, PlatformId.NULL, "")
+        then:
+        def e = thrown(BadRequestException)
+        e.message == "Singularity format does not support the 'soci' attribute"
+    }
+
+    def 'should set soci only when enabled' () {
+        when:
+        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry, sociConfig: CONFIG)
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', containerPlatform: 'linux/amd64', soci: SOCI)
+        def data = controller.makeRequestData(req, PlatformId.NULL, "")
+        then:
+        data.soci == EXPECTED
+
+        where:
+        CONFIG          | SOCI  | EXPECTED
+        null            | false | false
+        new SociConfig()| false | false
+        new SociConfig()| true  | true
+    }
+
+    def 'should reject soci when not enabled' () {
+        given:
+        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry)
+
+        when:
+        controller.makeRequestData(new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', soci: true), PlatformId.NULL, "")
+        then:
+        def e = thrown(BadRequestException)
+        e.message == "SOCI index is not enabled in this Wave deployment - see 'wave.soci.enabled' setting"
     }
 
     def 'should reject pull request when container pull is disabled' () {
@@ -324,6 +376,31 @@ class ContainerControllerTest extends Specification {
         'docker.io/source/image:latest' | 'quay.io'       | 'quay.io/source/image:latest'
         'docker.io/source/image:latest' | 'quay.io/lib'   | 'quay.io/lib/source/image:latest'
         'docker.io/source/image:latest' | 'quay.io/lib/'  | 'quay.io/lib/source/image:latest'
+    }
+
+    def 'should return the soci tag of a mirrored container with its status' () {
+        given:
+        def mirrorService = Mock(ContainerMirrorService)
+        def inspectService = Mock(ContainerInspectServiceImpl)
+        def sociPush = Mock(SociPushService)
+        def controller = new ContainerController(mirrorService: mirrorService, inspectService: inspectService, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService), sociPushService: sociPush, sociConfig: new SociConfig())
+        def user = new PlatformId(new User(id: 100))
+        def req = new SubmitContainerTokenRequest(containerImage: 'docker.io/source/image:latest', containerPlatform: 'arm64', buildRepository: 'quay.io', mirror: true, soci: true)
+
+        when:
+        def data = controller.makeRequestData(req, user, "")
+        then:
+        1 * proxyRegistry.getImageDigest('docker.io/source/image:latest', user) >> 'sha256:12345'
+        1 * proxyRegistry.getImageDigest('quay.io/source/image:latest', user) >> null
+        1 * mirrorService.mirrorImage(_) >> new BuildTrack('mr-1', 'quay.io/source/image:latest', false, null)
+        and: 'the mirror is in progress'
+        1 * sociPush.sociTarget('quay.io/source/image:latest', ContainerPlatform.of('arm64'), user, null) >> RESULT
+        and:
+        data.containerImage == RESULT
+        data.soci
+
+        where:
+        RESULT << ['quay.io/source/image:latest-soci', 'quay.io/source/image:latest']
     }
 
     def 'should create build request' () {

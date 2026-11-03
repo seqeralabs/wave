@@ -30,6 +30,9 @@ import io.seqera.wave.configuration.WaveLite
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.MultiBuildRequest
 import io.seqera.wave.configuration.MirrorConfig
+import io.seqera.wave.configuration.SociConfig
+import io.seqera.wave.service.soci.SociIndexRequest
+import io.seqera.wave.service.soci.SociPushRequest
 import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.scan.ScanRequest
 import jakarta.inject.Inject
@@ -55,6 +58,10 @@ class JobFactory {
     @Inject
     @Nullable
     private MirrorConfig mirrorConfig
+
+    @Inject
+    @Nullable
+    private SociConfig sociConfig
 
     JobSpec transfer(String stateId) {
         JobSpec.transfer(
@@ -92,6 +99,28 @@ class JobFactory {
                 request.mirrorId.replace('_', '-'),
                 request.creationTime,
                 mirrorConfig.maxDuration,
+                request.workDir
+        )
+    }
+
+    JobSpec sociIndex(SociIndexRequest request) {
+        assert request.requestId.startsWith(SociIndexRequest.ID_PREFIX)
+        JobSpec.sociIndex(
+                request.key,
+                request.requestId,
+                request.creationTime,
+                sociConfig.jobTimeout,
+                request.workDir
+        )
+    }
+
+    JobSpec sociPush(SociPushRequest request) {
+        assert request.requestId.startsWith(SociPushRequest.ID_PREFIX)
+        JobSpec.sociPush(
+                request.sociImage,
+                request.requestId,
+                request.creationTime,
+                sociConfig.jobTimeout,
                 request.workDir
         )
     }
