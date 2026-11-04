@@ -1,4 +1,10 @@
 # Wave changelog
+1.44.0 - 4 Nov 2026
+- Support Pixi lock files with the conda/pixi:v1-lock template (#1246) [0b4a085c4]
+- Adopt an existing k8s job when a launch is redelivered (#1222) [d47327089]
+- Use JSON array for multi-element WAVE_ENTRY_CHAIN on freeze (#1247) [bd68f73c0]
+- Use si- and sp- prefixes for SOCI job ids (#1250) [487e244fb]
+
 1.43.0 - 2 Nov 2026
 - SOCI v2 index for ephemeral, freeze and mirror containers (#1227) [40279dcc9]
 - Route blob locations of repositories with more than two path segments (#1240) [a7c66be18]
