@@ -24,6 +24,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.blob.TransferStrategy
+import io.seqera.wave.service.job.JobHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -46,9 +47,7 @@ class DockerTransferStrategy implements TransferStrategy {
     void launchJob(String jobName, List<String> command) {
         // create a unique name for the container
         final process = createProcess(command, jobName) .start()
-        if( process.waitFor()!=0 ) {
-            throw new IllegalStateException("Unable to launch transfer container - exitCode=${process.exitValue()}; output=${process.text}")
-        }
+        JobHelper.awaitDockerLaunch(process, jobName, "transfer container")
     }
 
     protected ProcessBuilder createProcess(List<String> command, String name) {

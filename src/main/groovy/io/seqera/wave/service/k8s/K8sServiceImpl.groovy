@@ -736,10 +736,7 @@ class K8sServiceImpl implements K8sService {
     @Override
     V1Job launchSociIndexJob(String name, String containerImage, List<String> args, Path workDir, Path creds, SociConfig config, Map<String,String> nodeSelector) {
         final spec = sociIndexJobSpec(name, containerImage, args, workDir, creds, config, nodeSelector)
-        return k8sClient
-                .batchV1Api()
-                .createNamespacedJob(namespace, spec)
-                .execute()
+        return createJob(name, spec)
     }
 
     V1Job sociIndexJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, SociConfig config, Map<String,String> nodeSelector) {
