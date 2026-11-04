@@ -2,6 +2,7 @@ WAVE CLI CHANGE-LOG
 ===================
 1.10.0 - 4 Nov 2026
 - Add --soci option (#1226) [cd33237]
+- Add --soci usage example [9481b5d]
 - Update Gradle dependencies (#1230) [804dec1]
 - Update Gradle dependencies (#1215) [396787a]
 
