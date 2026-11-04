@@ -65,7 +65,7 @@ Conda builds support the following arguments:
 
 - `--conda-base-image`: A base image for installing Conda packages (default: `mambaorg/micromamba:1.5.10-noble`).
 - `--conda-channels`: A comma-separated list of Conda channels (default: `conda-forge,bioconda`).
-- `--conda-file`: A path or URL to a [Conda lock file][conda-lock].
+- `--conda-file`: A path or URL to a [Conda lock file][conda-lock]. With the `conda/pixi:v1-lock` build template, the path of a `pixi.lock` file.
 - `--conda-package`: A Conda package to install. Supports expressions such as `bioconda::samtools=1.17` or `samtools>=1.0,<1.17`. Accepts a comma-separated list or can be specified multiple times.
 - `--conda-run-command`: A Docker `RUN` command to execute during the build. Can be specified multiple times.
 - `--build-template`: A build template for the container build. See [Build a container with a build template](#build-a-container-with-a-build-template) for more details.
@@ -115,7 +115,7 @@ Multi-stage build templates offer several advantages:
 
 **Singularity builds use single-stage**
 
-When building Singularity containers (`--singularity`) with the `conda/micromamba:v2` or `conda/pixi:v1` templates, single-stage builds are used. Singularity's proot-based builder cannot preserve file permissions when transferring files across stages, so the conda/pixi environment is installed directly in a single stage using the mamba/pixi image as the base.
+When building Singularity containers (`--singularity`) with the `conda/micromamba:v2`, `conda/pixi:v1`, or `conda/pixi:v1-lock` templates, single-stage builds are used. Singularity's proot-based builder cannot preserve file permissions when transferring files across stages, so the conda/pixi environment is installed directly in a single stage using the mamba/pixi image as the base.
 
 As a result, the `baseImage` option has no effect on Singularity builds. It only applies to Docker builds. The multi-stage image size optimization is also not available for Singularity.
 
@@ -158,6 +158,14 @@ Build the same layered container using Pixi:
 wave \
   --conda-package bioconda::gatk4=4.6.2.0 \
   --build-template conda/pixi:v1-fast
+```
+
+Build a container from an existing Pixi lock file, without re-solving the environment:
+
+```bash
+wave \
+  --conda-file pixi.lock \
+  --build-template conda/pixi:v1-lock
 ```
 
 Build a Singularity container using Pixi:

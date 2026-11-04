@@ -259,8 +259,8 @@ The following attributes are nested in the `packages` object.
 | Attribute             | Description                                                                                                                                  |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `packages.type`        | The type of package builder. Options: `CONDA`, `CRAN`.                                                                                       |
-| `packages.environment` | The package environment file encoded as a base64 string, e.g., a Conda `environment.yml` file. Cannot be used with `packages.entries`.      |
-| `packages.entries`     | List of package names, e.g., `['bioconda::samtools=1.17', 'conda-forge::jq']`. Cannot be used with `packages.environment`.                 |
+| `packages.environment` | The package environment file encoded as a base64 string, e.g., a Conda `environment.yml` file. With the `conda/pixi:v1-lock` template, a Pixi `pixi.lock` file. Cannot be used with `packages.entries`.      |
+| `packages.entries`     | List of package names, e.g., `['bioconda::samtools=1.17', 'conda-forge::jq']`, or a single lock file URL: a Conda lock file with the `conda/micromamba` templates, a Pixi `pixi.lock` file with `conda/pixi:v1-lock`. Cannot be used with `packages.environment`.                 |
 | `packages.channels`    | List of Conda channels or CRAN repositories used to download packages.                                                                     |
 | `packages.condaOpts`   | Micromamba build options. See [Package build options](#package-build-options).                                                             |
 | `packages.pixiOpts`    | Pixi build options. See [Package build options](#package-build-options).                                                                  |
@@ -475,6 +475,26 @@ Get status of build against `buildId` passed as path variable
 }
 ```
 
+- Create Docker image from a Pixi lock file with the Pixi v1-lock template (multi-stage build):
+
+    **Request**
+
+    ```shell
+    curl --location 'https://wave.seqera.io/v1alpha2/container' \
+    --header 'Content-Type: application/json' \
+    --data '{
+        "containerPlatform": "linux/amd64",
+        "format": "docker",
+        "buildTemplate": "conda/pixi:v1-lock",
+        "packages":{
+            "type": "CONDA",
+            "environment": "'"$(base64 < pixi.lock | tr -d '\n')"'"
+        }
+    }'
+    ```
+
+    To build from a remote lock file, replace `environment` with `"entries": ["https://example.com/pixi.lock"]`.
+
 - Create Docker image with Pixi v1 template (multi-stage build):
 
     **Request**
@@ -686,13 +706,13 @@ Get status of build against `buildId` passed as path variable
     ```
 
 :::note
-Multi-stage build templates (`conda/pixi:v1`, `conda/pixi:v1-fast`, `conda/micromamba:v2`, and `conda/micromamba:v2-fast`) create optimized Docker container images by separating the build environment from the final runtime environment. This results in smaller container images that only contain the installed packages and runtime dependencies, without the build tools.
+Multi-stage build templates (`conda/pixi:v1`, `conda/pixi:v1-fast`, `conda/pixi:v1-lock`, `conda/micromamba:v2`, and `conda/micromamba:v2-fast`) create optimized Docker container images by separating the build environment from the final runtime environment. This results in smaller container images that only contain the installed packages and runtime dependencies, without the build tools.
 :::
 
 :::important
 **Singularity builds use single-stage**
 
-When building Singularity images (`format: "sif"`) with the `conda/pixi:v1` or `conda/micromamba:v2` build templates, single-stage builds are used. Singularity's proot-based builder cannot preserve file permissions when transferring files across stages, so the conda/pixi environment is installed directly in a single stage using the mamba/pixi image as the base.
+When building Singularity images (`format: "sif"`) with the `conda/pixi:v1`, `conda/pixi:v1-lock`, or `conda/micromamba:v2` build templates, single-stage builds are used. Singularity's proot-based builder cannot preserve file permissions when transferring files across stages, so the conda/pixi environment is installed directly in a single stage using the mamba/pixi image as the base.
 
 As a result, the `baseImage` option has no effect on Singularity builds. It only applies to Docker builds. The multi-stage image size optimization is also not available for Singularity.
 :::

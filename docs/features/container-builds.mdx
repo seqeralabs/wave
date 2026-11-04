@@ -156,7 +156,7 @@ This setup installs both Conda and PyPI packages during the build.
 
 By default, Wave builds Conda images with the `conda/micromamba:v2` template, which runs a two-stage build. The first stage installs the environment. The second stage copies only the resolved environment into a minimal base image. Multi-stage builds typically reduce image size by 30–50%. They exclude build tools from the final image and emit a lock file for reproducibility. The `conda/micromamba:v1` template runs a single-stage build instead, which bundles the package manager with the runtime environment.
 
-Six multi-stage templates are available:
+Five multi-stage templates are available:
 
 - **`conda/micromamba:v2`** uses Micromamba and produces an `environment.lock` file. This is the default template for Conda builds.
 - **`conda/micromamba:v2-fast`** builds like `conda/micromamba:v2`, then splits the environment into multiple image layers. It produces Docker images only. See [Layered Conda builds](#layered-conda-builds).
@@ -168,7 +168,7 @@ Select a template with the `buildTemplate` field on the build request, the `--bu
 
 #### CA certificates in Pixi images
 
-The `conda/pixi:v1` and `conda/pixi:v1-fast` templates copy only the Pixi environment (`/opt/wave/.pixi/envs/default`) into an `ubuntu:24.04` final image, which doesn't include system CA certificates. Conda-built tools are not affected, because the Conda `openssl` package reads the certificate bundle installed in the environment by the `ca-certificates` package. Tools that aren't built by Conda and look for the system certificates fail to verify TLS connections, for example the browser that Quarto uses for PDF export.
+The `conda/pixi:v1`, `conda/pixi:v1-fast`, and `conda/pixi:v1-lock` templates copy only the Pixi environment (`/opt/wave/.pixi/envs/default`) into an `ubuntu:24.04` final image, which doesn't include system CA certificates. Conda-built tools are not affected, because the Conda `openssl` package reads the certificate bundle installed in the environment by the `ca-certificates` package. Tools that aren't built by Conda and look for the system certificates fail to verify TLS connections, for example the browser that Quarto uses for PDF export.
 
 To fix this, add `ca-certificates` to the Conda environment file and point `SSL_CERT_FILE` to its bundle in the `variables` section:
 
@@ -183,6 +183,8 @@ variables:
 ```
 
 Pixi adds the `variables` section to the environment activation, and the image entrypoint activates the environment, so the variable is set in every container without changes to the commands you run. If the entrypoint is bypassed, for example with `singularity exec` on an image converted from a Docker image, the variable is not set. In that case, export `SSL_CERT_FILE` in the task script instead.
+
+The `conda/pixi:v1-lock` template doesn't apply the `variables` of the original Pixi project. Add `ca-certificates` to the Pixi project before creating the lock file, and set the variable with the `commands` option, for example `['ENV SSL_CERT_FILE=/opt/wave/.pixi/envs/default/ssl/cacert.pem']`.
 
 ### Layered Conda builds
 
@@ -223,7 +225,7 @@ To use Pixi, select the `conda/pixi:v1` build template, or `conda/pixi:v1-fast` 
 
 The template runs a [multi-stage build](#multi-stage-conda-builds). The final Docker image does not include Pixi.
 
-Pixi builds accept the same Conda packages and environment files as Micromamba builds, with the package type `CONDA`. Pixi builds produce a `pixi.lock` file instead of a Conda lock file. The `conda/pixi:v1` template does not accept Conda lock files as input.
+Pixi builds accept the same Conda packages and environment files as Micromamba builds, with the package type `CONDA`. Pixi builds produce a `pixi.lock` file instead of a Conda lock file. The `conda/pixi:v1` template does not accept Conda lock files as input. To build from a Pixi lock file, use the `conda/pixi:v1-lock` template, see [Pixi lock file builds](#pixi-lock-file-builds).
 
 The `conda/pixi:v1` template produces Docker and Singularity images, `conda/pixi:v1-fast` produces Docker images only. For Singularity images, Wave runs a single-stage build because Singularity's proot-based builder cannot preserve file permissions across stages. The `baseImage` option has no effect on Singularity builds.
 
@@ -235,9 +237,17 @@ Pixi support was added in Wave 1.31.0.
 
 ### Pixi lock file builds
 
-The `conda/pixi:v1-lock` template builds the image from a [Pixi](https://pixi.sh/) `pixi.lock` file instead of a Conda environment definition. Pixi installs the locked packages with `pixi install --frozen`, so the image contains exactly the package builds recorded in the lock file, regardless of when the image is built. The template produces Docker and Singularity images.
+The `conda/pixi:v1-lock` template builds the image from a [Pixi](https://pixi.sh/) `pixi.lock` file instead of a Conda environment definition. Pixi installs the locked packages with `pixi install --frozen`, so the image contains exactly the package builds recorded in the lock file, regardless of when the image is built. The template produces Docker and Singularity images. For Singularity images, Wave runs a single-stage build, as with `conda/pixi:v1`.
 
-Provide the lock file as `packages.environment` on the build request, or as a remote URL in `packages.entries`. Wave generates a minimal `pixi.toml` manifest with the channels and platforms of the lock file. Activation scripts, environment variables, and other settings of the original `pixi.toml` are not applied.
+The template accepts Pixi lock files only. Conda environment files, Conda packages, and Conda lock files are not supported. Provide the lock file as `packages.environment` on the build request, or as a remote URL in `packages.entries`:
+
+| Client    | Local lock file                                                  | Remote lock file                                  |
+| --------- | ---------------------------------------------------------------- | ------------------------------------------------- |
+| Wave API  | `packages.environment` set to the base64-encoded `pixi.lock`     | `packages.entries` set to `['<lock file URL>']`   |
+| Wave CLI  | `--conda-file pixi.lock --build-template conda/pixi:v1-lock`     | `--conda-package <lock file URL> --build-template conda/pixi:v1-lock` |
+| Nextflow  | `conda` directive set to the absolute path of the lock file, e.g., `"${moduleDir}/pixi.lock"`, and `wave.build.template = 'conda/pixi:v1-lock'` | `conda` directive set to the lock file URL, and `wave.build.template = 'conda/pixi:v1-lock'` |
+
+Wave generates a minimal `pixi.toml` manifest with the channels and platforms of the lock file. Activation scripts, environment variables, and other settings of the original `pixi.toml` are not applied. Only the `default` environment of the lock file is installed.
 
 The `which` command and the base packages (`conda-forge::procps-ng` by default) are installed with `pixi global install` under `/opt/wave/.pixi`, so the locked environment is unchanged. Add any other dependency to the Pixi project before creating the lock file.
 
