@@ -293,6 +293,11 @@ class RegistryProxyController {
     protected MutableHttpResponse<?> handleHeadDelegate0(RoutePath route, HttpRequest httpRequest) {
         final headers = httpRequest.headers.asMap() as Map<String, List<String>>
         final resp = proxyService.handleHead(route, headers)
+        if( resp.isRedirect() ) {
+            final loc = log.isTraceEnabled() ? resp.location : stripUriParams(resp.location)
+            log.debug "Forwarding blob HEAD '${route.getTargetContainer()}' to '${loc}'"
+            return fromRedirectResponse(resp)
+        }
         log.debug "Returning blob HEAD from repository: '${route.getTargetContainer()}' - status=${resp.statusCode}"
         return HttpResponse
                 .status(HttpStatus.valueOf(resp.statusCode))
@@ -301,16 +306,18 @@ class RegistryProxyController {
 
     private MutableHttpResponse fromCacheHead(DigestStore entry) {
         // do not use 'fromCacheDigest' because 'getBytes' could download the blob content
-        Map<CharSequence, CharSequence> headers = Map.of(
+        return HttpResponse
+                .ok()
+                .headers(cacheDigestHeaders(entry))
+    }
+
+    static private Map<CharSequence, CharSequence> cacheDigestHeaders(DigestStore entry) {
+        return Map.of(
                 "Content-Length", String.valueOf(entry.getSize()),
                 "Content-Type", entry.mediaType,
                 "docker-content-digest", entry.digest,
                 "etag", entry.digest,
                 "docker-distribution-api-version", "registry/2.0") as Map<CharSequence, CharSequence>
-
-        return HttpResponse
-                .ok()
-                .headers(headers)
     }
 
     MutableHttpResponse<?> handleTagList(RoutePath route, HttpRequest httpRequest) {
@@ -323,18 +330,9 @@ class RegistryProxyController {
     }
 
     private MutableHttpResponse fromCacheDigest(DigestStore entry) {
-        final size = entry.getSize()
-        final resp = entry.getBytes()
-
-        Map<CharSequence, CharSequence> headers = Map.of(
-                "Content-Length", String.valueOf(size),
-                "Content-Type", entry.mediaType,
-                "docker-content-digest", entry.digest,
-                "etag", entry.digest,
-                "docker-distribution-api-version", "registry/2.0") as Map<CharSequence, CharSequence>
-
+        final headers = cacheDigestHeaders(entry)
         return HttpResponse
-                .ok(resp)
+                .ok(entry.getBytes())
                 .headers(headers)
     }
 

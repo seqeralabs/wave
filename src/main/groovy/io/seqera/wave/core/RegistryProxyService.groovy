@@ -423,14 +423,22 @@ class RegistryProxyService {
      *
      * @param route The request route
      * @param headers The request headers
-     * @return The registry response status and headers, a redirect is returned as is to the client
+     * @return The registry response status and headers, for a redirect the location is resolved against the target registry host
      */
     DelegateResponse handleHead(RoutePath route, Map<String,List<String>> headers) {
-        final resp = client(route).head(route.path, headers)
+        final proxyClient = client(route)
+        final resp = proxyClient.head(route.path, headers)
+        final redirect = resp.headers().firstValue('Location').orElse(null)
+        final status = resp.statusCode()
+        // the redirect location can be a relative path i.e. without hostname
+        // therefore resolve it against the target registry hostname
+        final location = redirect && status in HTTP_REDIRECT_CODES
+                ? proxyClient.registry.host.resolve(redirect).toString()
+                : null
         return new DelegateResponse(
-                statusCode: resp.statusCode(),
+                statusCode: status,
                 headers: resp.headers().map(),
-                location: resp.headers().firstValue('Location').orElse(null) )
+                location: location )
     }
 
     Flux<ByteBuffer<?>> streamBlob(RoutePath route, Map<String,List<String>> headers) {
