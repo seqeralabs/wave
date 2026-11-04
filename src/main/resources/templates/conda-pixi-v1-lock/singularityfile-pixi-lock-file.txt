@@ -1,0 +1,18 @@
+BootStrap: docker
+From: {{pixi_image}}
+%files
+    {{wave_context_dir}}/conda.yml /opt/wave/pixi.lock
+%post
+    export PIXI_HOME=/opt/wave/.pixi
+    export PATH=/opt/wave/.pixi/bin:$PATH
+    cd /opt/wave
+    {{manifest_generate}}
+    pixi install --frozen
+    {{base_packages}}
+    pixi shell-hook --frozen > /shell-hook.sh
+    echo ">> CONDA_LOCK_START"
+    cat /opt/wave/pixi.lock
+    echo "<< CONDA_LOCK_END"
+%environment
+    export PATH=/opt/wave/.pixi/bin:$PATH
+    . /shell-hook.sh
