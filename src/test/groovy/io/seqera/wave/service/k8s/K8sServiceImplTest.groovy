@@ -912,15 +912,15 @@ class K8sServiceImplTest extends Specification {
         def ctx = ApplicationContext.run(PROPS)
         def k8sService = ctx.getBean(K8sServiceImpl)
         def args = ['soci-indexer', 'index', '-source', 'docker.io/library/ubuntu@sha256:a']
-        def workDir = Path.of('/build/work/soci-1')
-        def credsFile = Path.of('/build/work/soci-1/config.json')
+        def workDir = Path.of('/build/work/si-1')
+        def credsFile = Path.of('/build/work/si-1/config.json')
         def config = new SociConfig(limitsMemory: '1Gi')
 
         when:
-        def job = k8sService.sociIndexJobSpec('soci-1', 'soci-indexer:v1', args, workDir, credsFile, config, null)
+        def job = k8sService.sociIndexJobSpec('si-1', 'soci-indexer:v1', args, workDir, credsFile, config, null)
 
         then:
-        job.metadata.name == 'soci-1'
+        job.metadata.name == 'si-1'
         job.spec.template.spec.containers[0].image == 'soci-indexer:v1'
         job.spec.template.spec.containers[0].args == args
         job.spec.template.spec.containers[0].resources.limits.memory.toSuffixedString() == '1Gi'
@@ -929,7 +929,7 @@ class K8sServiceImplTest extends Specification {
         with(job.spec.template.spec.containers[0].volumeMounts[0]) {
             mountPath == '/tmp/docker/config.json'
             readOnly == true
-            subPath == 'work/soci-1/config.json'
+            subPath == 'work/si-1/config.json'
         }
 
         cleanup:
