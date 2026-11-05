@@ -1206,6 +1206,34 @@ class K8sServiceImplTest extends Specification {
         e.code == 403
     }
 
+    def 'should adopt the existing soci index job when a launch is redelivered'() {
+        given:
+        def NS = 'foo'
+        def NAME = 'si-123'
+        def WORK_DIR = Path.of('/build/work/si-123')
+        def config = new SociConfig()
+        def spec = new V1Job(metadata: new V1ObjectMeta(name: NAME))
+        def existing = new V1Job(metadata: new V1ObjectMeta(name: NAME))
+        def k8sClient = Mock(K8sClient)
+        def api = Mock(BatchV1Api)
+        def createRequest = Mock(BatchV1Api.APIcreateNamespacedJobRequest)
+        def readRequest = Mock(BatchV1Api.APIreadNamespacedJobRequest)
+        def service = Spy(new K8sServiceImpl(k8sClient: k8sClient, namespace: NS))
+
+        when:
+        def result = service.launchSociIndexJob(NAME, 'soci-indexer:v1', ['index'], WORK_DIR, null, config, null)
+
+        then:
+        1 * service.sociIndexJobSpec(NAME, 'soci-indexer:v1', ['index'], WORK_DIR, null, config, null) >> spec
+        1 * k8sClient.batchV1Api() >> api
+        1 * api.createNamespacedJob(NS, spec) >> createRequest
+        1 * createRequest.execute() >> { throw new ApiException(409, 'Conflict', null, '{"reason":"AlreadyExists"}') }
+        1 * api.readNamespacedJob(NAME, NS) >> readRequest
+        1 * readRequest.execute() >> existing
+        and:
+        result.is(existing)
+    }
+
     def 'should create scan job spec with dns config'() {
         given:
         def PROPS = [
