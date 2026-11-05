@@ -1,4 +1,8 @@
 # Wave changelog
+1.44.1 - 5 Nov 2026
+- Handle HEAD requests on blobs (#1241) [9e4bd9346]
+- Adopt existing SOCI k8s job and docker containers on launch redelivery (#1251) [5faa4dbc8]
+
 1.44.0 - 4 Nov 2026
 - Support Pixi lock files with the conda/pixi:v1-lock template (#1246) [0b4a085c4]
 - Adopt an existing k8s job when a launch is redelivered (#1222) [d47327089]
