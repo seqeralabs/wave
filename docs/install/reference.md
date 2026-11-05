@@ -502,7 +502,7 @@ Configure the SOCI lazy loading support, enabled by `wave.soci.enabled`. See [SO
 : Repository where the zTOC artifacts are stored (default: `<wave.build.repo>/soci-ztoc`). It must be on the same registry as `wave.build.repo`. Its lifecycle expiry must be longer than `wave.soci.ztoc.duration`.
 
 `wave.soci.indexer-image` *(optional)*
-: Container image of the `soci-indexer` job (default: `public.cr.seqera.io/wave/soci-indexer:v0.1.0`).
+: Container image of the `soci-indexer` job (default: `public.cr.seqera.io/wave/soci-indexer:v0.1.1`).
 
 `wave.soci.min-layer-size` *(optional)*
 : Layers smaller than this size in bytes are not indexed (default: `10485760`).
