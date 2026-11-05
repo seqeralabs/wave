@@ -84,7 +84,7 @@
     {{else}}
         <div class="error-div">
         <div class="status-alert error">
-            <p class="status-message">No Scan Record Found</p>
+            <p class="status-message">{{#if error_message}}{{error_message}}{{else}}No Scan Record Found{{/if}}</p>
         </div>
         </div>
     {{/if}}

@@ -177,6 +177,9 @@ class WaveContainerRecord {
      */
     final String scanId
 
+    /** Whether this record's metadata may be rendered by Wave's view pages; null means public */
+    final Boolean isPublic
+
     /**
      * Child scan IDs for multi-platform builds
      */
@@ -208,6 +211,7 @@ class WaveContainerRecord {
         this.fusionVersion = request?.containerConfig?.fusionVersion()?.number
         this.mirror = data.mirror
         this.scanId = data.scanId
+        this.isPublic = request.isPublic
         this.scanChildIds = data.scanChildIds
     }
 
@@ -223,6 +227,7 @@ class WaveContainerRecord {
         this.cacheRepository = that.cacheRepository
         this.fingerprint = that.fingerprint
         this.timestamp = that.timestamp
+        this.zoneId = that.zoneId
         this.ipAddress = that.ipAddress
         this.condaFile = that.condaFile
         this.containerFile = that.containerFile
@@ -235,6 +240,7 @@ class WaveContainerRecord {
         this.fusionVersion = that.fusionVersion
         this.mirror = that.mirror
         this.scanId = that.scanId
+        this.isPublic = that.isPublic
         this.scanChildIds = that.scanChildIds
         // -- digest part
         this.sourceDigest = sourceDigest
@@ -270,6 +276,7 @@ class WaveContainerRecord {
         this.fusionVersion = that.fusionVersion
         this.mirror = that.mirror
         this.scanId = that.scanId
+        this.isPublic = that.isPublic
         this.scanChildIds = that.scanChildIds
         // -- overridden expiration
         this.expiration = expiration
@@ -315,6 +322,7 @@ class WaveContainerRecord {
         this.fusionVersion = that.fusionVersion
         this.mirror = that.mirror
         this.scanId = that.scanId
+        this.isPublic = that.isPublic
         this.scanChildIds = that.scanChildIds
     }
 

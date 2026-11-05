@@ -64,6 +64,8 @@ class WaveBuildRecord {
     String buildTemplate
     ChildRefs buildChildIds
     ChildRefs scanChildIds
+    /** Whether this record's metadata may be rendered by Wave's view pages; null means public */
+    Boolean isPublic
 
     Boolean succeeded() {
         return duration != null ? (exitStatus==0) : null
@@ -104,7 +106,8 @@ class WaveBuildRecord {
                 compression: request?.compression,
                 buildTemplate: request?.buildTemplate,
                 buildChildIds: request?.buildChildIds,
-                scanChildIds: request?.scanChildIds
+                scanChildIds: request?.scanChildIds,
+                isPublic: request?.isPublic
         )
     }
     

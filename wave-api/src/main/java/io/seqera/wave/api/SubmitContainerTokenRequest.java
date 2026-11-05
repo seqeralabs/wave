@@ -171,10 +171,25 @@ public class SubmitContainerTokenRequest implements Cloneable {
      */
     public boolean soci;
 
+    /**
+     * Whether the metadata of the records produced by this request may be rendered by Wave's
+     * own view pages to anyone holding their id.
+     *
+     * Absent means public: the field is optional and older clients never send it, so the default
+     * has to preserve what they get today. Set it to {@code false} when the provenance is meant to
+     * be read somewhere that knows who is asking, such as a Seqera Platform workspace.
+     *
+     * This governs where metadata is rendered and nothing else — it does not affect how the
+     * container is built, scanned, mirrored or pulled, and it does not restrict the read API.
+     */
+    public Boolean isPublic;
+
 
     public SubmitContainerTokenRequest copyWith(Map opts) {
         try {
             final SubmitContainerTokenRequest copy = (SubmitContainerTokenRequest) this.clone();
+            if( opts.containsKey("isPublic") )
+                copy.isPublic = (Boolean)opts.get("isPublic");
             if( opts.containsKey("towerAccessToken") )
                 copy.towerAccessToken = (String)opts.get("towerAccessToken");
             if( opts.containsKey("towerRefreshToken") )
@@ -379,6 +394,11 @@ public class SubmitContainerTokenRequest implements Cloneable {
         return this;
     }
 
+    public SubmitContainerTokenRequest withIsPublic(Boolean value) {
+        this.isPublic = value;
+        return this;
+    }
+
     public boolean formatSingularity() {
         return "sif".equals(format);
     }
@@ -388,6 +408,7 @@ public class SubmitContainerTokenRequest implements Cloneable {
         return "SubmitContainerTokenRequest{" +
                 "towerAccessToken='" + ObjectUtils.redact(towerAccessToken) + '\'' +
                 ", towerRefreshToken='" + ObjectUtils.redact(towerRefreshToken) + '\'' +
+                ", isPublic=" + isPublic +
                 ", towerEndpoint='" + towerEndpoint + '\'' +
                 ", towerWorkspaceId=" + towerWorkspaceId +
                 ", containerImage='" + containerImage + '\'' +

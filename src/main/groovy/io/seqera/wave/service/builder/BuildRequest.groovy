@@ -165,6 +165,13 @@ class BuildRequest {
      */
     final ChildRefs scanChildIds
 
+    /**
+     * Whether this build's metadata may be rendered by Wave's own view pages. Null means public —
+     * the request field is optional and absent means public, so the default must preserve what
+     * clients that never send it get today.
+     */
+    final Boolean isPublic
+
     BuildRequest(
             String containerId,
             String containerFile,
@@ -184,7 +191,8 @@ class BuildRequest {
             Duration maxDuration,
             BuildCompression compression,
             String buildTemplate,
-            boolean noEmail = false
+            boolean noEmail = false,
+            Boolean isPublic = null
     )
     {
         this.containerId = containerId
@@ -207,6 +215,7 @@ class BuildRequest {
         this.compression = compression
         this.buildTemplate = buildTemplate
         this.noEmail = noEmail
+        this.isPublic = isPublic
         // NOTE: this is meant to be updated - automatically - when the request is submitted
         this.buildId = computeBuildId(containerId)
     }
@@ -233,6 +242,7 @@ class BuildRequest {
         this.format = opts.format as BuildFormat
         this.maxDuration = opts.maxDuration as Duration
         this.compression = opts.compression as BuildCompression
+        this.isPublic = opts.isPublic as Boolean
         this.buildId = opts.buildId ?: computeBuildId(containerId)
         this.buildTemplate = opts.buildTemplate
         this.noEmail = opts.noEmail as boolean
@@ -268,7 +278,8 @@ class BuildRequest {
                 buildTemplate: this.buildTemplate,
                 noEmail: this.noEmail,
                 buildChildIds: this.buildChildIds,
-                scanChildIds: scanChildIds
+                scanChildIds: scanChildIds,
+                isPublic: this.isPublic
         )
     }
 
