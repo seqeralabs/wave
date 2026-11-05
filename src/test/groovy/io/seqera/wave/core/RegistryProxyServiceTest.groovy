@@ -18,7 +18,12 @@
 
 package io.seqera.wave.core
 
+import java.net.http.HttpHeaders
+import java.net.http.HttpResponse
 import java.time.Duration
+
+import io.seqera.wave.auth.RegistryInfo
+import io.seqera.wave.proxy.ProxyClient
 
 import io.seqera.wave.proxy.DelegateResponse
 import io.seqera.wave.proxy.ProxyCache
@@ -136,6 +141,32 @@ class RegistryProxyServiceTest extends Specification {
         'accept'        | true
         'Accept'        | true
         'Content-Type'  | true
+    }
+
+    def 'should resolve the redirect location on blob head request' () {
+        given:
+        def route = RoutePath.v2path('blobs', 'quay.io', 'biocontainers/fastqc', 'sha256:a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8')
+        def headers = HttpHeaders.of(LOCATION ? ['Location': [LOCATION]] : [:], (a, b) -> true)
+        def resp = Mock(HttpResponse) { statusCode() >> STATUS; headers() >> headers }
+        def proxyClient = Mock(ProxyClient) {
+            getRegistry() >> new RegistryInfo('quay.io', new URI('https://quay.io'), null)
+            head(route.path, [:]) >> resp
+        }
+        def service = Spy(RegistryProxyService) { client(route) >> proxyClient }
+
+        when:
+        def result = service.handleHead(route, [:])
+        then:
+        result.statusCode == STATUS
+        result.location == EXPECTED
+        result.headers == headers.map()
+
+        where:
+        STATUS | LOCATION                         | EXPECTED
+        200    | null                             | null
+        307    | '/v2/blobs/sha256:abc'           | 'https://quay.io/v2/blobs/sha256:abc'
+        307    | 'https://s3.amazonaws.com/blob'  | 'https://s3.amazonaws.com/blob'
+        200    | '/v2/blobs/sha256:abc'           | null
     }
 
 }

@@ -149,7 +149,7 @@ class RegistryProxyService {
                 : result
     }
 
-    private ProxyClient client(RoutePath route) {
+    protected ProxyClient client(RoutePath route) {
         final httpClient = HttpClientFactory.neverRedirectsHttpClient()
         final registry = registryLookup.lookup(route.registry)
         final creds = getCredentials(route)
