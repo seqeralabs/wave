@@ -1,4 +1,7 @@
 # Wave changelog
+1.44.2 - 5 Nov 2026
+- Parse registry auth scheme case-insensitively (#1253) [23e6d17ef]
+
 1.44.1 - 5 Nov 2026
 - Handle HEAD requests on blobs (#1241) [9e4bd9346]
 - Adopt existing SOCI k8s job and docker containers on launch redelivery (#1251) [5faa4dbc8]
