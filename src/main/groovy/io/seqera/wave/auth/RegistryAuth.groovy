@@ -39,7 +39,20 @@ class RegistryAuth implements MoshiSerializable {
     // some registries doesn't send the service
     private static final Pattern AUTH2 = ~/(?i)(?<type>.+) realm="(?<realm>[^"]+)"/
 
-    enum Type { Basic, Bearer }
+    enum Type {
+        Basic, Bearer
+
+        /**
+         * Resolve an auth scheme name ignoring case, as RFC 7235 requires
+         * (e.g. Sonatype Nexus sends {@code BASIC})
+         */
+        static Type of(String scheme) {
+            final result = values().find { it.name().equalsIgnoreCase(scheme) }
+            if( !result )
+                throw new IllegalArgumentException("Unsupported registry auth scheme: '$scheme'")
+            return result
+        }
+    }
 
     final URI realm
     final String service
@@ -63,14 +76,14 @@ class RegistryAuth implements MoshiSerializable {
             return null
         final m1 = AUTH.matcher(auth)
         if( m1.find() ) {
-            final type = Type.valueOf(m1.group('type'))
+            final type = Type.of(m1.group('type'))
             if( m1.group("realm").startsWith("http://") || m1.group("realm").startsWith("https://") ) {
                 return new RegistryAuth(new URI(m1.group('realm')), m1.group('service'), type)
             }
         }
         final m2 = AUTH2.matcher(auth)
         if( m2.find() ) {
-            final type = Type.valueOf(m2.group('type'))
+            final type = Type.of(m2.group('type'))
             if( m2.group("realm").startsWith("http://") || m2.group("realm").startsWith("https://") ) {
                 return new RegistryAuth(new URI(m2.group('realm')), null, type)
             }

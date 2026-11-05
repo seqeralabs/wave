@@ -84,4 +84,40 @@ class RegistryAuthTest extends Specification {
         RegistryAuth.parse('foo') == null
         RegistryAuth.parse(null) == null
     }
+
+    def 'should parse auth scheme case-insensitively'() {
+        expect:
+        RegistryAuth.parse(CHALLENGE) == EXPECTED
+
+        where:
+        CHALLENGE                                   | EXPECTED
+        'BASIC realm="https://foo",service="bar"'   | new RegistryAuth(new URI('https://foo'), 'bar', RegistryAuth.Type.Basic)
+        'BEARER realm="https://foo",service="bar"'  | new RegistryAuth(new URI('https://foo'), 'bar', RegistryAuth.Type.Bearer)
+        'basic realm="https://foo"'                 | new RegistryAuth(new URI('https://foo'), null, RegistryAuth.Type.Basic)
+        'bearer realm="https://foo"'                | new RegistryAuth(new URI('https://foo'), null, RegistryAuth.Type.Bearer)
+        // Sonatype Nexus Repository Cloud: the realm is not a URL, the lookup service falls back to the endpoint
+        'BASIC realm="User-Token-Realm"'            | null
+    }
+
+    def 'should reject an unsupported auth scheme'() {
+        when:
+        RegistryAuth.parse('Negotiate realm="https://foo"')
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message == "Unsupported registry auth scheme: 'Negotiate'"
+    }
+
+    def 'should resolve auth type case-insensitively'() {
+        expect:
+        RegistryAuth.Type.of(SCHEME) == EXPECTED
+
+        where:
+        SCHEME   | EXPECTED
+        'Basic'  | RegistryAuth.Type.Basic
+        'BASIC'  | RegistryAuth.Type.Basic
+        'basic'  | RegistryAuth.Type.Basic
+        'Bearer' | RegistryAuth.Type.Bearer
+        'BEARER' | RegistryAuth.Type.Bearer
+    }
 }

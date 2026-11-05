@@ -20,6 +20,9 @@ package io.seqera.wave.auth
 
 import spock.lang.Specification
 
+import com.sun.net.httpserver.HttpExchange
+import com.sun.net.httpserver.HttpServer
+
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import jakarta.inject.Inject
 /**
@@ -74,6 +77,35 @@ class RegistryLookupServiceTest extends Specification {
         'http://foo.com'    | 'http://foo.com/v2/'
         'http://foo.com/v2' | 'http://foo.com/v2/'
         'http://foo.com/v2/'| 'http://foo.com/v2/'
+    }
+
+    def 'should fall back to the endpoint when a Basic challenge has a non-URL realm' () {
+        given:
+        def server = HttpServer.create(new InetSocketAddress('localhost', 0), 0)
+        server.createContext('/v2/', { HttpExchange exchange ->
+            exchange.responseHeaders.add('WWW-Authenticate', CHALLENGE)
+            exchange.sendResponseHeaders(401, -1)
+            exchange.close()
+        })
+        server.start()
+        def endpoint = new URI("http://localhost:${server.address.port}/v2/")
+
+        when:
+        def auth = service.lookup0(endpoint)
+
+        then:
+        auth == new RegistryAuth(endpoint, null, RegistryAuth.Type.Basic)
+
+        cleanup:
+        server?.stop(0)
+
+        where:
+        CHALLENGE << [
+                'Basic realm="Registry Realm"',
+                // Sonatype Nexus Repository Cloud
+                'BASIC realm="User-Token-Realm"',
+                'basic realm="foo"',
+        ]
     }
 
 }

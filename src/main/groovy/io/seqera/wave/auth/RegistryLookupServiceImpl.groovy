@@ -76,7 +76,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
             def authenticate = response.headers().firstValue('WWW-Authenticate').orElse(null)
             log.trace "Authority lookup => endpoint: '$endpoint' - authenticate: '$authenticate'"
             def result = RegistryAuth.parse(authenticate)
-            if( !result && authenticate?.startsWith('Basic realm=') ) {
+            if( !result && authenticate?.toLowerCase(Locale.ROOT)?.startsWith('basic realm=') ) {
                 result = new RegistryAuth(endpoint, null, RegistryAuth.Type.Basic)
             }
             return result
