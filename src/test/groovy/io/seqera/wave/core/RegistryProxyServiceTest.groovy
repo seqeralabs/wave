@@ -146,8 +146,8 @@ class RegistryProxyServiceTest extends Specification {
     def 'should resolve the redirect location on blob head request' () {
         given:
         def route = RoutePath.v2path('blobs', 'quay.io', 'biocontainers/fastqc', 'sha256:a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8')
-        def headers = HttpHeaders.of(LOCATION ? ['Location': [LOCATION]] : [:], (a, b) -> true)
-        def resp = Mock(HttpResponse) { statusCode() >> STATUS; headers() >> headers }
+        def respHeaders = HttpHeaders.of(LOCATION ? ['Location': [LOCATION]] : [:], (a, b) -> true)
+        def resp = Mock(HttpResponse) { statusCode() >> STATUS; headers() >> respHeaders }
         def proxyClient = Mock(ProxyClient) {
             getRegistry() >> new RegistryInfo('quay.io', new URI('https://quay.io'), null)
             head(route.path, [:]) >> resp
@@ -159,7 +159,7 @@ class RegistryProxyServiceTest extends Specification {
         then:
         result.statusCode == STATUS
         result.location == EXPECTED
-        result.headers == headers.map()
+        result.headers == respHeaders.map()
 
         where:
         STATUS | LOCATION                         | EXPECTED
