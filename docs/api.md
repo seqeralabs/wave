@@ -233,7 +233,7 @@ To check that an option is applied, send the request with `dryRun: true` and com
 | `format`                            | Format of the built container. Options: `docker`, `sif` (Singularity). Default: `docker`.                                                          |
 | `buildRepository`                   | Container repository where container builds should be pushed, e.g., `docker.io/user/my-image` (optional).                                            |
 | `cacheRepository`                   | Container repository used to cache build layers `docker.io/user/my-cache` (optional).                                                              |
-| `buildTemplate`                     | The build template to use for container builds. Supported values: `conda/micromamba:v1` (single-stage build using Micromamba 1.x), `conda/pixi:v1` (multi-stage build using Pixi), `conda/pixi:v1-fast` (multi-stage build using Pixi that splits the Conda environment into multiple image layers, Docker only, see [Layered Conda builds](#layered-conda-builds)), `conda/micromamba:v2` (multi-stage build using Micromamba 2.x), `conda/micromamba:v2-fast` (multi-stage build using Micromamba 2.x that splits the Conda environment into multiple image layers, Docker only, see [Layered Conda builds](#layered-conda-builds)), `cran/installr:v1` (CRAN packages). The multi-stage templates produce smaller images by excluding the package manager from the final stage (Singularity still uses a single-stage build with `conda/pixi:v1` and `conda/micromamba:v2`). Default: `conda/micromamba:v2` for `CONDA` packages, `cran/installr:v1` for `CRAN` packages. The template determines which build options are used, see [Package build options](#package-build-options). |
+| `buildTemplate`                     | The build template to use for container builds. Supported values: `conda/micromamba:v1` (single-stage build using Micromamba 1.x), `conda/pixi:v1` (multi-stage build using Pixi), `conda/pixi:v1-fast` (multi-stage build using Pixi that splits the Conda environment into multiple image layers, Docker only, see [Layered Conda builds](#layered-conda-builds)), `conda/pixi:v1-lock` (multi-stage build using Pixi that installs the environment from a Pixi lock file provided as `packages.environment` or as remote URL in `packages.entries`, without re-solving it), `conda/micromamba:v2` (multi-stage build using Micromamba 2.x), `conda/micromamba:v2-fast` (multi-stage build using Micromamba 2.x that splits the Conda environment into multiple image layers, Docker only, see [Layered Conda builds](#layered-conda-builds)), `cran/installr:v1` (CRAN packages). The multi-stage templates produce smaller images by excluding the package manager from the final stage (Singularity still uses a single-stage build with `conda/pixi:v1` and `conda/micromamba:v2`). Default: `conda/micromamba:v2` for `CONDA` packages, `cran/installr:v1` for `CRAN` packages. The template determines which build options are used, see [Package build options](#package-build-options). |
 | `buildCompression.mode`             | Compression applied to the layers of the built image. Options: `gzip`, `estargz`, `zstd` (optional).                                                |
 | `buildCompression.level`            | Compression level (optional).                                                                                                                      |
 | `buildCompression.force`            | Force recompression of layers that are already compressed (optional).                                                                              |
@@ -259,8 +259,8 @@ The following attributes are nested in the `packages` object.
 | Attribute             | Description                                                                                                                                  |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `packages.type`        | The type of package builder. Options: `CONDA`, `CRAN`.                                                                                       |
-| `packages.environment` | The package environment file encoded as a base64 string, e.g., a Conda `environment.yml` file. Cannot be used with `packages.entries`.      |
-| `packages.entries`     | List of package names, e.g., `['bioconda::samtools=1.17', 'conda-forge::jq']`. Cannot be used with `packages.environment`.                 |
+| `packages.environment` | The package environment file encoded as a base64 string, e.g., a Conda `environment.yml` file. With the `conda/pixi:v1-lock` template, a Pixi `pixi.lock` file. Cannot be used with `packages.entries`.      |
+| `packages.entries`     | List of package names, e.g., `['bioconda::samtools=1.17', 'conda-forge::jq']`, or a single lock file URL: a Conda lock file with the `conda/micromamba` templates, a Pixi `pixi.lock` file with `conda/pixi:v1-lock`. Cannot be used with `packages.environment`.                 |
 | `packages.channels`    | List of Conda channels or CRAN repositories used to download packages.                                                                     |
 | `packages.condaOpts`   | Micromamba build options. See [Package build options](#package-build-options).                                                             |
 | `packages.pixiOpts`    | Pixi build options. See [Package build options](#package-build-options).                                                                  |
@@ -273,7 +273,7 @@ Each build template reads its options from one object in `packages`. Options set
 | Build template                                                         | Options object        |
 | ---------------------------------------------------------------------- | --------------------- |
 | `conda/micromamba:v1`, `conda/micromamba:v2`, `conda/micromamba:v2-fast` | `packages.condaOpts` |
-| `conda/pixi:v1`, `conda/pixi:v1-fast`                                   | `packages.pixiOpts`  |
+| `conda/pixi:v1`, `conda/pixi:v1-fast`, `conda/pixi:v1-lock`            | `packages.pixiOpts`  |
 | `cran/installr:v1`                                                     | `packages.cranOpts`  |
 
 | Attribute                         | Description                                                                                                                                                         |
@@ -282,7 +282,7 @@ Each build template reads its options from one object in `packages`. Options set
 | `packages.condaOpts.basePackages` | Space-separated list of Conda packages installed in addition to the requested ones, e.g., `conda-forge::procps-ng conda-forge::gzip`. Default: `conda-forge::procps-ng`. |
 | `packages.condaOpts.baseImage`    | Base image of the final stage of the `conda/micromamba:v2` templates. Default: `ubuntu:24.04`. Has no effect on Singularity builds.                                 |
 | `packages.condaOpts.commands`     | Lines appended verbatim to the end of the generated build file, e.g., `['RUN echo hello']` for Docker builds. For Singularity builds, they are added to the `%post` section, e.g., `['echo hello']`.                                                                                     |
-| `packages.pixiOpts.pixiImage`     | Pixi image used to build the container. Default: `public.cr.seqera.io/wave/pixi:0.61.0-noble`.                                                                      |
+| `packages.pixiOpts.pixiImage`     | Pixi image used to build the container. Default: `public.cr.seqera.io/wave/pixi:0.61.0-noble`, or `public.cr.seqera.io/wave/pixi:0.81.0-noble` for `conda/pixi:v1-lock`.                                                                      |
 | `packages.pixiOpts.basePackages`  | Space-separated list of Conda packages installed in addition to the requested ones, e.g., `conda-forge::procps-ng conda-forge::gzip`. Default: `conda-forge::procps-ng`. |
 | `packages.pixiOpts.baseImage`     | Base image of the final stage. Default: `ubuntu:24.04`. Has no effect on Singularity builds.                                                                        |
 | `packages.pixiOpts.commands`      | Lines appended verbatim to the end of the generated build file, e.g., `['RUN echo hello']` for Docker builds. For Singularity builds, they are added to the `%post` section, e.g., `['echo hello']`.                                                                                     |
@@ -474,6 +474,26 @@ Get status of build against `buildId` passed as path variable
     "succeeded": true
 }
 ```
+
+- Create Docker image from a Pixi lock file with the Pixi v1-lock template (multi-stage build):
+
+    **Request**
+
+    ```shell
+    curl --location 'https://wave.seqera.io/v1alpha2/container' \
+    --header 'Content-Type: application/json' \
+    --data '{
+        "containerPlatform": "linux/amd64",
+        "format": "docker",
+        "buildTemplate": "conda/pixi:v1-lock",
+        "packages":{
+            "type": "CONDA",
+            "environment": "'"$(base64 < pixi.lock | tr -d '\n')"'"
+        }
+    }'
+    ```
+
+    To build from a remote lock file, replace `environment` with `"entries": ["https://example.com/pixi.lock"]`.
 
 - Create Docker image with Pixi v1 template (multi-stage build):
 
@@ -686,13 +706,13 @@ Get status of build against `buildId` passed as path variable
     ```
 
 :::note
-Multi-stage build templates (`conda/pixi:v1`, `conda/pixi:v1-fast`, `conda/micromamba:v2`, and `conda/micromamba:v2-fast`) create optimized Docker container images by separating the build environment from the final runtime environment. This results in smaller container images that only contain the installed packages and runtime dependencies, without the build tools.
+Multi-stage build templates (`conda/pixi:v1`, `conda/pixi:v1-fast`, `conda/pixi:v1-lock`, `conda/micromamba:v2`, and `conda/micromamba:v2-fast`) create optimized Docker container images by separating the build environment from the final runtime environment. This results in smaller container images that only contain the installed packages and runtime dependencies, without the build tools.
 :::
 
 :::important
 **Singularity builds use single-stage**
 
-When building Singularity images (`format: "sif"`) with the `conda/pixi:v1` or `conda/micromamba:v2` build templates, single-stage builds are used. Singularity's proot-based builder cannot preserve file permissions when transferring files across stages, so the conda/pixi environment is installed directly in a single stage using the mamba/pixi image as the base.
+When building Singularity images (`format: "sif"`) with the `conda/pixi:v1`, `conda/pixi:v1-lock`, or `conda/micromamba:v2` build templates, single-stage builds are used. Singularity's proot-based builder cannot preserve file permissions when transferring files across stages, so the conda/pixi environment is installed directly in a single stage using the mamba/pixi image as the base.
 
 As a result, the `baseImage` option has no effect on Singularity builds. It only applies to Docker builds. The multi-stage image size optimization is also not available for Singularity.
 :::
