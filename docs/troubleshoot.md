@@ -79,3 +79,33 @@ spec:
 
 For more on Bottlerocket settings, see the [Bottlerocket FAQs](https://bottlerocket.dev/en/faq/).
 
+
+## SOCI lazy loading
+
+These issues affect containers requested with [SOCI lazy loading](features/soci.mdx).
+
+### Request rejected with HTTP 400
+
+Wave rejects a request with `soci: true` when:
+
+- SOCI is not enabled on the Wave instance. On self-hosted Wave, set `wave.soci.enabled` to `true`. See [SOCI index](install/reference.md#soci-index).
+- The container format is Singularity. SOCI supports Docker images only.
+- An ephemeral container is requested by digest. Wave can't change a manifest pinned by digest. Request the image by tag, or use `--freeze`.
+
+### Image pulls in full instead of lazily
+
+The host pulls the whole image when it can't use the SOCI index:
+
+- **The client doesn't run the SOCI snapshotter.** Docker, containerd, Podman, and Apptainer ignore the SOCI index unless the snapshotter is configured. Docker with the SOCI snapshotter and nerdctl 2.0 load the image lazily.
+- **The client doesn't pass the snapshotter labels.** nerdctl 2.1 and later and `ctr` fall back to a full pull.
+- **Indexing failed or timed out on the first pull.** Wave caches the manifest for the container token, so later pulls with that token also get no SOCI index. Request a new container token once the layers are indexed.
+- **No layer is eligible.** Wave indexes only gzip layers of at least 10 MiB.
+
+### No `-soci` tag for a freeze or mirror container
+
+Wave returns the original tag when:
+
+- **The `-soci` tag doesn't exist yet.** The first request for a container always returns the original tag. Request the container again once the layers are indexed.
+- **The image has no eligible layers.** Wave pushes no `-soci` tag.
+- **A mirror is requested by digest.** The mirror keeps the digest reference, so Wave pushes no `-soci` tag. A freeze by digest gets a `-soci` tag.
+- **The target registry rejects the SOCI index.** The registry must accept OCI image indexes with artifact manifests.
