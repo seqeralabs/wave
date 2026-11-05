@@ -41,7 +41,7 @@ class RoutePath implements ContainerPath {
 
     static final private List<String> ALLOWED_TYPES = ['manifests','blobs','tags']
 
-    static final private Pattern REGEX = ~/([^:\\/]+(?::[0-9]+)?)?\\/v2\\/([a-z0-9][a-z0-9_.-]+(?:\\/[a-z0-9][a-z0-9_.-]+)?(?:\[a-zA-Z0-9][a-zA-Z0-9_.-]+)*)\\/(manifests|blobs)\\/(.+)/
+    static final private Pattern REGEX = ~/([^:\\/]+(?::[0-9]+)?)?\\/v2\\/([a-z0-9][a-z0-9_.-]+(?:\\/[a-z0-9][a-z0-9_.-]+)*)\\/(manifests|blobs)\\/(.+)/
 
     /**
      * Route type, either {@code manifests} or {@code blobs}

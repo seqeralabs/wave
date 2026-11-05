@@ -14,8 +14,15 @@ micronaut:
     # it is unused at the moment by the wave project. See https://micronaut-projects.github.io/micronaut-discovery-client/latest/guide/#introduction
     discovery-client :
       enabled : false
+  lifecycle:
+    # drain the job queues and in-flight HTTP requests before the application beans are destroyed.
+    # the grace period must exceed `wave.job-manager.drain-timeout` (15s) and stay within the pod
+    # `terminationGracePeriodSeconds` (30s by default), leaving time for the beans teardown
+    graceful-shutdown:
+      enabled: true
+      grace-period: 20s
   server:
-    port: 9090
+    port: "${WAVE_SERVER_PORT:9090}"
     # https://docs.micronaut.io/latest/guide/#atBlocking
     thread-selection: AUTO
     # note this should be >= the build timeout (which is 15 minutes) see below
@@ -32,6 +39,14 @@ micronaut:
         paths: 'classpath:io/seqera/wave/assets'
         mapping: '/assets/**'
         enabled: true
+      openapi:
+        paths: 'classpath:public/openapi'
+        mapping: '/openapi/**'
+        enabled: true
+      webjars:
+        paths: 'classpath:META-INF/resources/webjars'
+        mapping: '/webjars/**'
+        enabled: true
 # http client configuration
 # https://docs.micronaut.io/latest/guide/configurationreference.html#io.micronaut.http.client.DefaultHttpClientConfiguration
   http:
@@ -47,7 +62,19 @@ micronaut:
           - isAnonymous()
 ---
 wave:
-  allowAnonymous: true
+  # installation-level capability toggles; all default to `true` (permissive).
+  # See the `strict` environment (application-strict.yml) to lock them all down.
+  capabilities:
+    # when false, anonymous (unauthenticated) users cannot access the Wave server
+    # (legacy alias: wave.allowAnonymous)
+    anonymous-access: ${wave.allowAnonymous:true}
+    # when false, disable the ephemeral container pull/augmentation path; requests must use "freeze" mode
+    ephemeral-token: true
+    # when false, Wave does not broker registry credentials on the proxy pull path;
+    # images are pulled directly from the target registry with the caller's own credentials
+    credentials-federation: true
+    # when false, the HTML view pages under /view/** are disabled globally (return 404)
+    web-views: true
   server:
       url: "${WAVE_SERVER_URL:`http://localhost:9090`}"
   security:
@@ -62,9 +89,11 @@ wave:
       permissions-policy: "camera=(), microphone=(), geolocation=()"
       content-security-policy: "default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-ancestors 'none'"
   build:
-    buildkit-image: "public.cr.seqera.io/wave/buildkit:v0.25.2-rootless"
+    buildkit-image: "public.cr.seqera.io/wave/buildkit:v0.33.1-rootless"
     singularity-image: "public.cr.seqera.io/wave/singularity:v4.2.1-r4"
     singularity-image-init: "public.cr.seqera.io/wave/busybox:latest"
+    # image providing the `condasplit` tool used by the `conda/micromamba:v2-fast` and `conda/pixi:v1-fast` build templates
+    condasplit-image: "public.cr.seqera.io/wave/condasplit:v3"
     # note changing this should be matching the micronaut.server.idle-timeout (see above)
     timeout: 900s
     status:

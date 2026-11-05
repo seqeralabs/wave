@@ -1,0 +1,55 @@
+---
+title: Security scanning
+description: Scan container images for known vulnerabilities with Trivy and generate SBOMs.
+date: 2026-04-22
+tags: [security, vulnerability, trivy, sbom, scanning, oras]
+---
+
+Security scanning identifies known vulnerabilities and outdated packages in container images. Wave uses [Trivy](https://trivy.dev/) to scan images. It can also produce a software bill of materials (SBOM) in SPDX format.
+
+Wave scans both Wave-built and external images asynchronously. Container requests do not block on scan completion. You can request scans from Nextflow, the Wave CLI, or the Wave API. Seqera Containers scans every image it builds and surfaces results in the build details view.
+
+Wave also scans Nextflow plugin artifacts in OCI (Open Container Initiative) registries. It uses [ORAS](https://oras.land/) to retrieve the artifact and runs Trivy's filesystem scanner against it.
+
+Scans expire after one week and re-run on next access. If vulnerabilities exceed a client-configured threshold, Wave clients fail the container request or halt pipeline execution.
+
+## Use cases
+
+Use cases for security scanning include:
+
+- **Secure workflows**: Prevent vulnerable containers from running so that workloads meet internal security and compliance requirements.
+- **Audit and compliance**: Generate vulnerability reports and SBOMs as compliance evidence.
+- **Dynamic environments**: Use containers from varied sources and maintain a consistent security bar. Block or halt execution when new vulnerabilities are identified in an image that is in use.
+- **SBOM generation**: Attach an SPDX SBOM to each build for provenance and supply-chain visibility.
+
+## How it works
+
+The scan flow runs as follows:
+
+1. A Wave client submits a container request. Wave clients include Nextflow, the Wave CLI, and the Wave API.
+2. Wave authenticates the caller. If the request includes a Seqera Platform access token, Wave verifies it. If the Wave deployment permits anonymous access and no token is supplied, Wave processes the request anonymously.
+3. Wave builds or resolves the requested image and returns a container URI to the client.
+4. Wave triggers an asynchronous Trivy scan of the image.
+5. When the scan completes, Trivy returns a vulnerability report and SBOM to Wave. Wave stores the results and exposes them through the Wave API. The Seqera Platform Containers UI links to the report.
+6. The client fetches the scan result through the Wave API. If vulnerabilities exceed the client-configured threshold, the client fails the container request or halts pipeline execution.
+
+```mermaid
+sequenceDiagram
+    participant Client as Client<br/>(Nextflow, Wave CLI, or API)
+    participant Wave
+    participant Platform as Seqera Platform
+    participant Trivy
+
+    Client->>Wave: Container request
+    opt Token provided
+        Wave->>Platform: Authenticate user
+        Platform-->>Wave: Identity confirmed
+    end
+    Wave->>Wave: Build or resolve image
+    Wave-->>Client: Return container URI
+    Wave->>Trivy: Trigger scan (async)
+    Trivy-->>Wave: Scan report and SBOM
+    Client->>Wave: Fetch scan report
+    Wave-->>Client: Scan result
+    Note over Client: Client enforces threshold policy<br/>(fail request or halt execution)
+```

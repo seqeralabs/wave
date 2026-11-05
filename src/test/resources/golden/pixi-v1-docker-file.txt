@@ -1,0 +1,33 @@
+FROM public.cr.seqera.io/wave/pixi:0.61.0-noble AS build
+
+COPY conda.yml /opt/wave/conda.yml
+WORKDIR /opt/wave
+
+RUN pixi init --import /opt/wave/conda.yml \
+    && pixi add conda-forge::which \
+    && pixi add conda-forge::procps-ng \
+    && pixi shell-hook > /shell-hook.sh \
+    && echo 'exec "$@"' >> /shell-hook.sh \
+    && echo ">> CONDA_LOCK_START" \
+    && cat /opt/wave/pixi.lock \
+    && echo "<< CONDA_LOCK_END"
+
+FROM ubuntu:24.04 AS final
+
+# copy the pixi environment in the final container
+COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default
+COPY --from=build /shell-hook.sh /shell-hook.sh
+
+# set user and environment variables for Python compatibility
+USER root
+ENV USER=root
+
+# add the env binaries to PATH for when the entrypoint is bypassed (e.g. 'singularity exec' on an OCI-converted image)
+ENV PATH="/opt/wave/.pixi/envs/default/bin:${PATH}"
+
+# set the entrypoint to the shell-hook script (activate the environment and run the command)
+# no more pixi needed in the final container
+ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]
+
+# Default command for "docker run"
+CMD ["/bin/bash"]

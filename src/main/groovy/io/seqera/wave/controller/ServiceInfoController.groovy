@@ -60,11 +60,6 @@ class ServiceInfoController {
                 : HttpResponse.badRequest()
     }
 
-    @Get("/openapi")
-    HttpResponse getOpenAPI() {
-        HttpResponse.redirect(URI.create("/openapi/"))
-    }
-
     @Get(uri = "/favicon.ico", produces = MediaType.IMAGE_X_ICON)
     HttpResponse getFavicon() {
         final inputStream = getClass().getResourceAsStream("/io/seqera/wave/assets/wave.ico");

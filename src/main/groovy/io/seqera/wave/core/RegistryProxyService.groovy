@@ -18,6 +18,7 @@
 
 package io.seqera.wave.core
 
+
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
@@ -27,19 +28,25 @@ import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
+import io.micronaut.context.BeanProvider
 import io.micronaut.context.annotation.Context
+import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.core.io.buffer.ByteBuffer
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.reactor.http.client.ReactorStreamingHttpClient
 import io.micronaut.scheduling.TaskExecutors
+import io.seqera.cache.tiered.AbstractTieredCache
+import io.seqera.util.retry.Retryable
 import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.WaveDefault
-import io.seqera.cache.tiered.AbstractTieredCache
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
+import io.seqera.wave.configuration.SociConfig
+import io.seqera.wave.service.soci.SociIndexService
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.proxy.DelegateResponse
@@ -47,12 +54,12 @@ import io.seqera.wave.proxy.ProxyCache
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.RegHelper
-import io.seqera.util.retry.Retryable
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -83,6 +90,16 @@ class RegistryProxyService {
     private RegistryCredentialsProvider credentialsProvider
 
     /**
+     * When {@code true} (default) Wave brokers the resolved registry credentials on the proxy pull
+     * path (credentials federation). When {@code false} no credentials are injected, so images are
+     * expected to be pulled directly from the target registry using the caller's own credentials
+     * (for example an EC2 instance profile or IAM role). Build, inspect and augmentation flows are
+     * unaffected.
+     */
+    @Value('${wave.capabilities.credentials-federation:true}')
+    private boolean credentialsFederation
+
+    /**
      * Service to query credentials stored into tower
      */
     @Inject
@@ -111,13 +128,28 @@ class RegistryProxyService {
     @Named(TaskExecutors.IO)
     private ExecutorService httpClientExecutor
 
+    // note: lazy provider because the SOCI index service depends on this service
+    @Inject
+    private BeanProvider<SociIndexService> sociIndexService
+
+    @Inject
+    @Nullable
+    private SociConfig sociConfig
+
     private ContainerAugmenter scanner(ProxyClient proxyClient) {
         return new ContainerAugmenter()
                 .withStorage(storage)
                 .withClient(proxyClient)
     }
 
-    private ProxyClient client(RoutePath route) {
+    private ContainerAugmenter scanner(ProxyClient proxyClient, RoutePath route) {
+        final result = scanner(proxyClient)
+        return route.request?.soci && sociIndexService.isPresent()
+                ? result.withSoci(sociIndexService.get(), sociConfig)
+                : result
+    }
+
+    protected ProxyClient client(RoutePath route) {
         final httpClient = HttpClientFactory.neverRedirectsHttpClient()
         final registry = registryLookup.lookup(route.registry)
         final creds = getCredentials(route)
@@ -130,6 +162,10 @@ class RegistryProxyService {
     }
 
     protected RegistryCredentials getCredentials(RoutePath route) {
+        if( !credentialsFederation ) {
+            log.debug "Credentials federation disabled - skipping credentials for route path=${route.targetContainer}"
+            return null
+        }
         final result = credentialsProvider.getCredentials(route, route.identity)
         log.debug "Credentials for route path=${route.targetContainer}; identity=${route.identity} => ${result}"
         return result
@@ -138,7 +174,7 @@ class RegistryProxyService {
     DigestStore handleManifest(RoutePath route, Map<String,List<String>> headers){
         ProxyClient proxyClient = client(route)
 
-        final digest = scanner(proxyClient).resolve(route, headers)
+        final digest = scanner(proxyClient, route).resolve(route, headers)
         if( digest == null )
             throw new IllegalStateException("Missing digest for request: $route")
 
@@ -235,15 +271,26 @@ class RegistryProxyService {
         final key = route.getTargetPath()
         return cache.getOrCompute(key,(String k)-> {
             final resp = handleRequest0(route, headers)
-            // when the response is not cacheable, return null as TTL
-            final ttl = route.isDigest() && resp.isCacheable() ? cache.duration : null
-            return new AbstractTieredCache.Pair<>(resp, ttl)
+            return new AbstractTieredCache.Pair<>(resp, cacheTtl(route, resp))
         })
+    }
+
+    /**
+     * The TTL for caching a blob response, or {@code null} when it must not be cached.
+     * A partial content (206) response is never cached, because the cache key does not
+     * include the {@code Range} header and a later request would get a truncated blob
+     */
+    protected Duration cacheTtl(RoutePath route, DelegateResponse resp) {
+        if( !route.isDigest() || !resp.isCacheable() )
+            return null
+        if( resp.statusCode==206 )
+            return null
+        return cache.duration
     }
 
     @TraceElapsedTime(thresholdMillis = '${wave.trace.proxy-service.threshold:1000}')
     protected DelegateResponse handleRequest0(RoutePath route, Map<String,List<String>> headers) {
-        log.debug "Request processing ${route}"
+        log.trace "Request processing ${route}"
         ProxyClient proxyClient = client(route)
         final resp1 = proxyClient.getStream(route.path, headers, false)
         final redirect = resp1.headers().firstValue('Location').orElse(null)
@@ -335,6 +382,63 @@ class RegistryProxyService {
             log.warn "Unable to retrieve digest for image '$image' -- response status=${resp.statusCode()}; headers:\n${RegHelper.dumpHeaders(resp)}"
         }
         return result
+    }
+
+    /**
+     * Fetch the content of a manifest
+     *
+     * @param image The image reference, by tag or digest e.g. {@code docker.io/library/ubuntu:24.04}
+     * @param identity The identity used to resolve the registry credentials, or {@code null} for Wave own ones
+     * @return The manifest content or {@code null} when it does not exist
+     */
+    String getManifestContent(String image, PlatformId identity) {
+        final coords = ContainerCoordinates.parse(image)
+        final route = RoutePath.v2manifestPath(coords, identity)
+        final resp = client(route).getString(route.path, WaveDefault.ACCEPT_HEADERS)
+        if( resp.statusCode()==404 )
+            return null
+        if( resp.statusCode()!=200 )
+            throw new IllegalStateException("Unable to fetch manifest for image '${image}' - response status=${resp.statusCode()}")
+        return resp.body()
+    }
+
+    /**
+     * Fetch the content of a (small) blob e.g. an image config
+     *
+     * @param image The blob reference e.g. {@code docker.io/library/ubuntu@sha256:...}
+     * @param identity The identity used to resolve the registry credentials
+     * @return The blob content
+     */
+    String getBlobContent(String image, PlatformId identity) {
+        final coords = ContainerCoordinates.parse(image)
+        final route = RoutePath.v2path('blobs', coords.registry, coords.image, coords.reference, identity!=null ? ContainerRequest.of(identity) : null)
+        final resp = client(route).getString(route.path, Map.<String,List<String>>of())
+        if( resp.statusCode()!=200 )
+            throw new IllegalStateException("Unable to fetch blob '${image}' - response status=${resp.statusCode()}")
+        return resp.body()
+    }
+
+    /**
+     * Forward a {@code HEAD} request to the target registry
+     *
+     * @param route The request route
+     * @param headers The request headers
+     * @return The registry response status and headers, for a redirect the location is resolved against the target registry host
+     */
+    DelegateResponse handleHead(RoutePath route, Map<String,List<String>> headers) {
+        final proxyClient = client(route)
+        final resp = proxyClient.head(route.path, headers)
+        final redirect = resp.headers().firstValue('Location').orElse(null)
+        final status = resp.statusCode()
+        // the redirect location can be a relative path i.e. without hostname
+        // therefore resolve it against the target registry hostname
+        final location = redirect && status in HTTP_REDIRECT_CODES
+                ? proxyClient.registry.host.resolve(redirect).toString()
+                : null
+        return new DelegateResponse(
+                statusCode: status,
+                headers: resp.headers().map(),
+                location: location )
     }
 
     Flux<ByteBuffer<?>> streamBlob(RoutePath route, Map<String,List<String>> headers) {

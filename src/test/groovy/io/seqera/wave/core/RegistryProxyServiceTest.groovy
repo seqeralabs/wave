@@ -18,6 +18,15 @@
 
 package io.seqera.wave.core
 
+import java.net.http.HttpHeaders
+import java.net.http.HttpResponse
+import java.time.Duration
+
+import io.seqera.wave.auth.RegistryInfo
+import io.seqera.wave.proxy.ProxyClient
+
+import io.seqera.wave.proxy.DelegateResponse
+import io.seqera.wave.proxy.ProxyCache
 import spock.lang.Requires
 import spock.lang.Shared
 import spock.lang.Specification
@@ -104,6 +113,23 @@ class RegistryProxyServiceTest extends Specification {
         k6 == null
     }
 
+    def 'should not cache partial blob responses' () {
+        given:
+        def cache = Mock(ProxyCache) { getDuration() >> Duration.ofMinutes(10) }
+        def service = new RegistryProxyService(cache: cache)
+        def route = RoutePath.v2path('blobs', 'docker.io', 'library/ubuntu', 'sha256:a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8')
+
+        expect:
+        service.cacheTtl(route, new DelegateResponse(statusCode: STATUS, body: BODY, location: LOCATION)) == EXPECTED
+
+        where:
+        STATUS | BODY          | LOCATION          | EXPECTED
+        200    | 'x'.bytes     | null              | Duration.ofMinutes(10)
+        206    | 'x'.bytes     | null              | null
+        307    | null          | 'https://s3/blob' | Duration.ofMinutes(10)
+        200    | null          | null              | null
+    }
+
     def 'check is cacheable header' () {
         expect:
         RegistryProxyService.isCacheableHeader(KEY) == EXPECTED
@@ -115,6 +141,32 @@ class RegistryProxyServiceTest extends Specification {
         'accept'        | true
         'Accept'        | true
         'Content-Type'  | true
+    }
+
+    def 'should resolve the redirect location on blob head request' () {
+        given:
+        def route = RoutePath.v2path('blobs', 'quay.io', 'biocontainers/fastqc', 'sha256:a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8a12d24a5d8')
+        def respHeaders = HttpHeaders.of(LOCATION ? ['Location': [LOCATION]] : [:], (a, b) -> true)
+        def resp = Mock(HttpResponse) { statusCode() >> STATUS; headers() >> respHeaders }
+        def proxyClient = Mock(ProxyClient) {
+            getRegistry() >> new RegistryInfo('quay.io', new URI('https://quay.io'), null)
+            head(route.path, [:]) >> resp
+        }
+        def service = Spy(RegistryProxyService) { client(route) >> proxyClient }
+
+        when:
+        def result = service.handleHead(route, [:])
+        then:
+        result.statusCode == STATUS
+        result.location == EXPECTED
+        result.headers == respHeaders.map()
+
+        where:
+        STATUS | LOCATION                         | EXPECTED
+        200    | null                             | null
+        307    | '/v2/blobs/sha256:abc'           | 'https://quay.io/v2/blobs/sha256:abc'
+        307    | 'https://s3.amazonaws.com/blob'  | 'https://s3.amazonaws.com/blob'
+        200    | '/v2/blobs/sha256:abc'           | null
     }
 
 }

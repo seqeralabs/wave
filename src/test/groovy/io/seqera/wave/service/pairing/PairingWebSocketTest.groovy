@@ -92,7 +92,7 @@ class PairingWebSocketTest extends Specification {
         given:
         def pairingService = Mock(PairingService)
         def channel = Mock(PairingChannel)
-        def session = Mock(WebSocketSession)
+        def session = Mock(WebSocketSession) { getId() >> 'sess-1' }
         and:
         def existingRecord = new PairingRecord(
                 service: 'tower',

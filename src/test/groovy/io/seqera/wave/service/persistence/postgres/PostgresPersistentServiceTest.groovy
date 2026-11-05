@@ -55,7 +55,7 @@ import org.apache.commons.lang3.RandomStringUtils
  */
 @MicronautTest(environments = 'postgres', startApplication = true, transactional = false)
 @Property(name = "datasources.default.driver-class-name", value = "org.testcontainers.jdbc.ContainerDatabaseDriver")
-@Property(name = "datasources.default.url", value = "jdbc:tc:postgresql:///db")
+@Property(name = "datasources.default.url", value = "jdbc:tc:postgresql:16.14:///db")
 class PostgresPersistentServiceTest extends Specification {
 
     @Inject
@@ -246,6 +246,18 @@ class PostgresPersistentServiceTest extends Specification {
         and:
         updated.waveDigest == '222'
         updated.waveImage == request.waveImage
+
+        // should roll the expiration forward in place (watcher renewal)
+        when:
+        def newExp = Instant.now().plusSeconds(7200)
+        persistentService.updateContainerExpirationAsync(TOKEN, newExp) .join()
+        then:
+        def rolled = persistentService.loadContainerRequest(TOKEN)
+        and:
+        rolled.expiration == newExp
+        and: 'other fields are left untouched'
+        rolled.waveDigest == '222'
+        rolled.waveImage == request.waveImage
     }
 
 

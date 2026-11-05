@@ -12,6 +12,9 @@ on:
       - '*.md'
       - .github/workflows/website_preview.yml
       - .github/workflows/website_deploy.yml
+      - 'wave-cli/**'
+      - .github/workflows/build-wave-cli.yml
+      - .github/workflows/security-submit-dependecy-graph-wave-cli.yml
   pull_request:
     types: [opened, reopened, synchronize]
     paths-ignore:
@@ -20,37 +23,97 @@ on:
       - '*.md'
       - .github/workflows/website_preview.yml
       - .github/workflows/website_deploy.yml
+      - 'wave-cli/**'
+      - .github/workflows/build-wave-cli.yml
+      - .github/workflows/security-submit-dependecy-graph-wave-cli.yml
 
 jobs:
   build:
     name: Build Wave
     if: "github.event == 'push' || github.repository != github.event.pull_request.head.repo.full_name"
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    runs-on: sched/run=${{ github.run_id }}-build-${{ matrix.java_version }}/cpu=8/mem=32/type=m7a+m7i/spot=true
+    # includes the condasplit image build on a release, ~6 minutes when the tag is new, plus headroom
+    # for registry stalls: a release cancelled on timeout publishes nothing and must be pushed again
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
-        java_version: [21]
+        java_version: [25]
     permissions:
       contents: write
+      id-token: write
 
     steps:
       - name: Environment
         run: env | sort
 
       - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           fetch-depth: 1
           submodules: true
 
+      - name: Detect release commit
+        id: detect-release
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          REF: ${{ github.ref }}
+        run: |
+          # Only direct pushes whose first line tags `[release]` or `[preview]` build an image.
+          # Squash merges append "(#NNN)" and merge commits start with "Merge pull request #NNN" —
+          # both must be excluded so a PR body mentioning the tag does not trigger anything.
+          first_line=$(printf '%s\n' "$COMMIT_MSG" | head -n1)
+
+          has_tag() {
+            [[ "$first_line" == *"$1"* ]] \
+              && [[ ! "$first_line" =~ \(#[0-9]+\)$ ]] \
+              && [[ ! "$first_line" =~ ^Merge\ pull\ request\ #[0-9]+ ]]
+          }
+
+          is_release=false
+          is_preview=false
+          has_tag "[release]" && is_release=true
+          has_tag "[preview]" && is_preview=true
+
+          # [release] is the production path: it publishes to the customer-facing enterprise repo,
+          # maven, a git tag and a GitHub release. Those require the wave-ecr-pusher /
+          # MavenPublisherRole OIDC roles, which only trust master and release-* (infrastructure
+          # central-container-registry/iam.tf + management/iam), and we only want quality-bar
+          # builds reaching customer-deployed locations. So [release] only publishes from
+          # master or a release-* branch.
+          is_publish=false
+          if [[ "$is_release" == "true" && ( "$REF" == "refs/heads/master" || "$REF" == refs/heads/release-* ) ]]; then
+            is_publish=true
+          elif [[ "$is_release" == "true" ]]; then
+            echo "::warning::[release] on non-release branch $REF will not publish to the enterprise repo. Use [preview] to push a dev image from a feature branch."
+          fi
+
+          # [preview] mirrors [release] but only pushes to the internal (dev) ECR, from any branch,
+          # so features can be built and validated without surfacing in customer-deployed locations.
+          # Build the image once whenever we are going to push it somewhere.
+          do_build=false
+          if [[ "$is_preview" == "true" || "$is_publish" == "true" ]]; then
+            do_build=true
+          fi
+
+          echo "release=$is_release preview=$is_preview publish=$is_publish build=$do_build ref=$REF"
+          echo "is_preview=$is_preview" >> "$GITHUB_OUTPUT"
+          echo "is_publish=$is_publish" >> "$GITHUB_OUTPUT"
+          echo "do_build=$do_build" >> "$GITHUB_OUTPUT"
+
       - name: Setup Java ${{ matrix.java_version }}
-        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           java-version: ${{matrix.java_version}}
-          distribution: 'temurin'
+          distribution: 'corretto'
           architecture: x64
           cache: gradle
+
+      # processResources builds the TypeSpec API with npm, which the sched runner image lacks
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24.22.0'
 
       - name: Compile
         run: make compile
@@ -63,6 +126,10 @@ jobs:
           make check
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
+          # Testcontainers sees it runs in a container (the sched runner) and picks the Docker gateway IP
+          # as the container host; the runner's dockerd publishes ports on localhost, which the tests
+          # expect (e.g. BlobCacheServiceImplTest2). On GitHub-hosted runners localhost is the default.
+          TESTCONTAINERS_HOST_OVERRIDE: localhost
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{secrets.TOWER_CI_AWS_ACCESS}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.TOWER_CI_AWS_SECRET}}
@@ -79,16 +146,130 @@ jobs:
         run: |
           sudo rm -rf /home/runner/work/wave/wave/build-workspace
 
-      - name: Release
-        if: "contains(github.event.head_commit.message, '[release]')"
+      # A [preview] pushes the image to the internal (dev) ECR below; a [release] on master/release-*
+      # promotes it to the enterprise repo + maven. The image is built and pushed by `jib` directly to
+      # the registry: `jibDockerBuild` loads a single-platform image into the local daemon, which
+      # would drop the arm64 variant declared in build.gradle.
+      - name: Resolve wave server image tag
+        id: build
+        if: "steps.detect-release.outputs.do_build == 'true'"
+        run: echo "tag=v$(cat VERSION)" >> "$GITHUB_OUTPUT"
+
+      # --- condasplit image: [release] on master/release-* only, before anything is published ---
+      # Wave defaults to the condasplit/VERSION tag (`wave.build.condasplit-image` in application.yml), so
+      # the tag must be published before the Wave release: a failure here stops it. `make release` skips the build
+      # when the tag is already published with the same sources.
+      - name: Docker Login to Seqera public CR
+        if: "steps.detect-release.outputs.is_publish == 'true'"
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: public.cr.seqera.io
+          username: ${{ vars.SEQERA_PUBLIC_CR_USERNAME }}
+          password: ${{ secrets.SEQERA_PUBLIC_CR_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        if: "steps.detect-release.outputs.is_publish == 'true'"
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Publish condasplit image
+        if: "steps.detect-release.outputs.is_publish == 'true'"
+        run: make -C condasplit release registry=public.cr.seqera.io/wave
+
+      # the `wave.soci.indexer-image` default names the soci-indexer/VERSION tag, see SociConfig
+      - name: Publish soci-indexer image
+        if: "steps.detect-release.outputs.is_publish == 'true'"
+        run: make -C soci-indexer release registry=public.cr.seqera.io/wave
+
+      # --- Internal (dev) ECR push: [preview] only, any branch ---
+      # Lets features be built from any branch and pulled into dev/testing without reaching a
+      # customer-deployed location. Inlined from seqeralabs/actions/push because that action is
+      # private and wave is public (SEC-1409). Two-step role chain: gha-seqeralabs-action-role ->
+      # gha-generic-internal-pusher. The repository is carried from the OIDC claim into a session
+      # tag by the role trust, so the chained role may only push to internal/<org>/<repo>/*.
+      - name: Configure AWS credentials for internal action role
+        if: "steps.detect-release.outputs.is_preview == 'true'"
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          aws-region: eu-west-2
+          role-to-assume: arn:aws:iam::232933512461:role/gha-seqeralabs-action-role
+          role-session-name: GitHubActions-${{ github.run_id }}
+
+      - name: Configure AWS credentials for internal pusher
+        if: "steps.detect-release.outputs.is_preview == 'true'"
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          aws-region: eu-west-2
+          role-to-assume: arn:aws:iam::232933512461:role/gha-generic-internal-pusher
+          role-session-name: ${{ github.event.repository.name }}
+          role-chaining: true
+
+      - name: Login to internal Amazon ECR
+        id: login-ecr-internal
+        if: "steps.detect-release.outputs.is_preview == 'true'"
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
+
+      - name: Push image to internal ECR
+        if: "steps.detect-release.outputs.is_preview == 'true'"
         run: |
-          bash publish.sh wave-api
-          bash publish.sh wave-utils
-          bash tag-and-push.sh
+          set -euo pipefail
+          TAG=${{ steps.build.outputs.tag }}
+          # Tag preview images by commit so previews from different branches/PRs do not
+          # collide on the same VERSION tag and each build is individually pullable.
+          PREVIEW_TAG=${TAG}-${GITHUB_SHA::7}
+          REMOTE=${{ steps.login-ecr-internal.outputs.registry }}/internal/${{ github.repository }}/server:$PREVIEW_TAG
+          ./gradlew -PjibRepo="$REMOTE" jib
+          echo "Pushed preview image: $REMOTE"
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
-          AWS_ACCESS_KEY_ID: ${{secrets.TOWER_CI_AWS_ACCESS}}
-          AWS_SECRET_ACCESS_KEY: ${{secrets.TOWER_CI_AWS_SECRET}}
+
+      # --- Enterprise repo + maven publish + git tag + GitHub release: master / release-* only ---
+      - name: Configure AWS credentials for platform pusher
+        if: "steps.detect-release.outputs.is_publish == 'true'"
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          aws-region: eu-west-2
+          role-to-assume: arn:aws:iam::232933512461:role/wave-ecr-pusher
+          role-session-name: GitHubActions-${{ github.run_id }}
+
+      - name: Login to enterprise Amazon ECR
+        if: "steps.detect-release.outputs.is_publish == 'true'"
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
+
+      - name: Configure AWS credentials for maven publish
+        if: "steps.detect-release.outputs.is_publish == 'true'"
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          aws-region: eu-west-1
+          role-to-assume: arn:aws:iam::195996028523:role/MavenPublisherRole
+          role-session-name: GitHubActions-${{ github.run_id }}-maven-publish
+
+      - name: Promote release to enterprise repo and maven
+        id: release
+        if: "steps.detect-release.outputs.is_publish == 'true'"
+        run: |
+          set -e
+          set -x
+          bash publish.sh wave-api
+          bash publish.sh wave-utils
+
+          TAG=${{ steps.build.outputs.tag }}
+
+          # Tag repo
+          REMOTE=https://oauth:$GITHUB_TOKEN@github.com/${GITHUB_REPOSITORY}.git
+          git tag $TAG
+          git push $REMOTE $TAG
+
+          # Build and push the multi-arch image to enterprise ECR (new central registry)
+          ENTERPRISE_ECR=232933512461.dkr.ecr.eu-west-2.amazonaws.com
+          ./gradlew -PjibRepo=$ENTERPRISE_ECR/wave/server:$TAG jib
+
+          # Create GitHub release (draft for alpha/beta/RC tags)
+          grep -Ei '.*-(A[0-9]+|B[0-9]+|RC[0-9]+)$' VERSION &>/dev/null && DRAFT='--draft' || DRAFT=''
+          gh release create $TAG --generate-notes $DRAFT
+
+          echo "version=$TAG" >> $GITHUB_OUTPUT
+        env:
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false'
           AWS_JAVA_V1_DISABLE_DEPRECATION_ANNOUNCEMENT: true
           AWS_DEFAULT_REGION: 'eu-west-1'
           PUBLISH_REPO_URL: "s3://maven.seqera.io/releases"
@@ -99,16 +280,16 @@ jobs:
 
       - name: Publish tests report
         if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: test-reports-jdk-${{ matrix.java_version }}
           path: |
             **/build/reports/tests/test
 
-      - name : Publish code coverage report
+      - name: Publish code coverage report
         if: success()
-        uses : actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with :
-          name : code-coverage-reports-jdk-${{ matrix.java_version }}
-          path : |
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: code-coverage-reports-jdk-${{ matrix.java_version }}
+          path: |
             **/build/reports/jacoco/test

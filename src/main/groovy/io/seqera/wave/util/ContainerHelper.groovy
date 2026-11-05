@@ -35,7 +35,10 @@ import io.seqera.wave.service.request.TokenData
 import org.yaml.snakeyaml.Yaml
 import static io.seqera.wave.api.BuildTemplate.CONDA_MICROMAMBA_V1
 import static io.seqera.wave.api.BuildTemplate.CONDA_MICROMAMBA_V2
+import static io.seqera.wave.api.BuildTemplate.CONDA_MICROMAMBA_V2_FAST
 import static io.seqera.wave.api.BuildTemplate.CONDA_PIXI_V1
+import static io.seqera.wave.api.BuildTemplate.CONDA_PIXI_V1_FAST
+import static io.seqera.wave.api.BuildTemplate.CONDA_PIXI_V1_LOCK
 import static io.seqera.wave.api.BuildTemplate.CRAN_INSTALLR_V1
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static DockerHelper.condaEnvironmentToCondaYaml
@@ -54,21 +57,35 @@ class ContainerHelper {
      * Dispatches to the appropriate helper based on build template and package type.
      *
      * @param req The container token request
+     * @param condasplitImage The image providing the {@code condasplit} tool used by the {@code conda/micromamba:v2-fast} and {@code conda/pixi:v1-fast} templates
      * @return The generated container file content
      */
-    static String containerFileFromRequest(SubmitContainerTokenRequest req) {
+    static String containerFileFromRequest(SubmitContainerTokenRequest req, String condasplitImage) {
         final singularity = req.formatSingularity()
         final spec = req.packages
 
         // Default templates based on package type (when no explicit template)
-        if( spec.type == PackagesSpec.Type.CONDA && (!req.buildTemplate || req.buildTemplate==CONDA_MICROMAMBA_V1) ) {
-            return CondaHelper.containerFile(spec, singularity)
-        }
-        if( req.buildTemplate == CONDA_MICROMAMBA_V2 ) {
+        if( spec.type == PackagesSpec.Type.CONDA && (!req.buildTemplate || req.buildTemplate==CONDA_MICROMAMBA_V2) ) {
             return CondaHelper.containerFileV2(spec, req.containerImage, singularity)
+        }
+        if( req.buildTemplate == CONDA_MICROMAMBA_V2_FAST ) {
+            if( singularity )
+                throw new BadRequestException("Build template '${CONDA_MICROMAMBA_V2_FAST}' does not support Singularity format")
+            return CondaHelper.containerFileV2Fast(spec, req.containerImage, condasplitImage)
+        }
+        if( req.buildTemplate == CONDA_MICROMAMBA_V1 ) {
+            return CondaHelper.containerFile(spec, singularity)
         }
         if( req.buildTemplate == CONDA_PIXI_V1 ) {
             return PixiHelper.containerFile(spec, req.containerImage, singularity)
+        }
+        if( req.buildTemplate == CONDA_PIXI_V1_FAST ) {
+            if( singularity )
+                throw new BadRequestException("Build template '${CONDA_PIXI_V1_FAST}' does not support Singularity format")
+            return PixiHelper.containerFileV1Fast(spec, req.containerImage, condasplitImage)
+        }
+        if( req.buildTemplate == CONDA_PIXI_V1_LOCK ) {
+            return PixiHelper.containerFileV1Lock(spec, req.containerImage, singularity)
         }
         if( spec.type == PackagesSpec.Type.CRAN && (!req.buildTemplate || req.buildTemplate == CRAN_INSTALLR_V1) ) {
             return CranHelper.containerFile(spec, singularity)
@@ -83,6 +100,13 @@ class ContainerHelper {
 
         if( req.packages.type != PackagesSpec.Type.CONDA )
             return null
+
+        if( req.buildTemplate == CONDA_PIXI_V1_LOCK ) {
+            // the pixi lock file is used verbatim, i.e. without appending the base packages
+            return req.packages.environment
+                    ? decodeBase64OrFail(req.packages.environment, 'packages.environment')
+                    : null
+        }
 
         if( req.packages.environment ) {
             // parse the attribute as a conda file path *and* append the base packages if any
@@ -116,7 +140,9 @@ class ContainerHelper {
     }
 
     static SubmitContainerTokenResponse makeResponseV1(ContainerRequest data, TokenData token, String waveImage) {
-        final target = waveImage
+        // freeze/mirror images are published to the target registry and must be pulled
+        // directly from there - the Wave proxy token path does not serve them (see RouteHandler)
+        final target = data.durable() ? data.containerImage : waveImage
         final build = data.buildNew ? data.buildId : null
         return new SubmitContainerTokenResponse(data.requestId, token.value, target, token.expiration, data.containerImage, build, null, null, null, null, null)
     }

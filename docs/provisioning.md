@@ -73,7 +73,7 @@ Notable parts of this workflow include:
 - The container images are stored permanently unless the repository owner deletes them.
 
 :::note
-When Nextflow is the Wave client, additional resources may be bundled as container layers, such as module resources and the workflow or module `bin/` directories. Changes to these bundled files will affect the container fingerprint and trigger a rebuild. See [Bundling pipeline scripts](./nextflow/bundle-scripts.md) for details.
+When Nextflow is the Wave client, additional resources may be bundled as container layers, such as module resources and the workflow or module `bin/` directories. Changes to these bundled files will affect the container fingerprint and trigger a rebuild. See [Bundling pipeline scripts](./guides/bundle-scripts.md) for details.
 :::
 
 ## Container provisioning capability matrix

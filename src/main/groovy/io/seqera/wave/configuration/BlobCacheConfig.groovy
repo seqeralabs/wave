@@ -40,7 +40,7 @@ class BlobCacheConfig {
     /**
      * The time interval every when the status of the blob transfer is checked
      */
-    @Value('${wave.blobCache.status.delay:2s}')
+    @Value('${wave.blob-cache.status.delay:2s}')
     Duration statusDelay
 
     /**
@@ -51,64 +51,64 @@ class BlobCacheConfig {
         return statusDelay.multipliedBy(3)
     }
 
-    @Value('${wave.blobCache.timeout:10m}')
+    @Value('${wave.blob-cache.timeout:10m}')
     Duration transferTimeout
 
-    @Value('${wave.blobCache.status.duration:1h}')
+    @Value('${wave.blob-cache.status.duration:1h}')
     Duration statusDuration
 
-    @Value('${wave.blobCache.storage.bucket}')
+    @Value('${wave.blob-cache.storage.bucket}')
     String storageBucket
 
     @Nullable
-    @Value('${wave.blobCache.storage.endpoint}')
+    @Value('${wave.blob-cache.storage.endpoint}')
     String storageEndpoint
 
-    @Value('${wave.blobCache.storage.region}')
+    @Value('${wave.blob-cache.storage.region}')
     String storageRegion
 
     @Nullable
-    @Value('${wave.blobCache.storage.accessKey}')
+    @Value('${wave.blob-cache.storage.access-key}')
     String storageAccessKey
 
     @Nullable
-    @Value('${wave.blobCache.storage.secretKey}')
+    @Value('${wave.blob-cache.storage.secret-key}')
     String storageSecretKey
 
     @Nullable
-    @Value('${wave.blobCache.baseUrl}')
+    @Value('${wave.blob-cache.base-url}')
     String baseUrl
 
-    @Value('${wave.blobCache.s5cmdImage}')
+    @Value('${wave.blob-cache.s5cmd-image}')
     String s5Image
 
     @Nullable
-    @Value('${wave.blobCache.k8s.resources.requests.cpu}')
+    @Value('${wave.blob-cache.k8s.resources.requests.cpu}')
     String requestsCpu
 
     @Nullable
-    @Value('${wave.blobCache.k8s.resources.requests.memory}')
+    @Value('${wave.blob-cache.k8s.resources.requests.memory}')
     String requestsMemory
 
-    @Value('${wave.blobCache.k8s.resources.limits.cpu}')
+    @Value('${wave.blob-cache.k8s.resources.limits.cpu}')
     @Nullable
     String limitsCpu
 
-    @Value('${wave.blobCache.k8s.resources.limits.memory}')
+    @Value('${wave.blob-cache.k8s.resources.limits.memory}')
     @Nullable
     String limitsMemory
 
     @Nullable
-    @Value('${wave.blobCache.url-signature-duration:30m}')
+    @Value('${wave.blob-cache.url-signature-duration:30m}')
     Duration urlSignatureDuration
 
-    @Value('${wave.blobCache.retry-attempts:3}')
+    @Value('${wave.blob-cache.retry-attempts:3}')
     Integer retryAttempts
 
-    @Value('${wave.blobCache.k8s.pod.delete.timeout:20s}')
+    @Value('${wave.blob-cache.k8s.pod.delete.timeout:20s}')
     Duration podDeleteTimeout
 
-    @Value('${wave.blobCache.transfer.executor-shutdown-timeout:20s}')
+    @Value('${wave.blob-cache.transfer.executor-shutdown-timeout:20s}')
     Duration transferExecutorShutdownTimeout
 
     Map<String,String> getEnvironment() {

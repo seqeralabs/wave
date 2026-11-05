@@ -37,6 +37,7 @@ import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.ACCEPT_HEADERS
+import static io.seqera.wave.model.ContentType.DOCKER_MANIFEST_V2_TYPE
 import static io.seqera.wave.model.ContentType.OCI_IMAGE_INDEX_V1
 import static io.seqera.wave.model.ContentType.OCI_IMAGE_MANIFEST_V1
 /**
@@ -72,8 +73,14 @@ class ManifestAssembler {
     void createAndPushManifestList(String targetImage, List<Map> platformEntries, PlatformId identity) {
         log.debug "Creating manifest list for targetImage=$targetImage from platformEntries=$platformEntries"
 
-        // 1. Fetch each platform manifest
-        final manifests = platformEntries.collect { Map entry -> fetchPlatformManifest(entry.image as String, entry.platform as ContainerPlatform, identity) }
+        // 1. Fetch each platform manifest and normalise it to an OCI image manifest when needed.
+        // Note: the normalised manifests must be pushed *before* the index, because registries
+        // validate that all children referenced by an index already exist in the repository.
+        final manifests = platformEntries.collect { Map entry ->
+            final image = entry.image as String
+            final descriptor = fetchPlatformManifest(image, entry.platform as ContainerPlatform, identity)
+            return normalizePlatformManifest(image, descriptor, identity)
+        }
 
         // 2. Build the OCI Image Index JSON
         final indexJson = buildImageIndex(manifests)
@@ -103,8 +110,68 @@ class ManifestAssembler {
             mediaType: contentType,
             digest: digest,
             size: size,
-            platform: [architecture: platform.arch, os: platform.os]
+            platform: [architecture: platform.arch, os: platform.os],
+            body: bodyBytes
         ]
+    }
+
+    /**
+     * Rewrite a Docker v2 manifest JSON as an OCI image manifest JSON. Everything else
+     * — schema version, config, layers and any annotation — is preserved verbatim; only
+     * the top-level {@code mediaType} attribute is replaced.
+     *
+     * @param body The raw manifest JSON bytes
+     * @return The rewritten manifest JSON bytes
+     */
+    static byte[] rewriteAsOciManifest(byte[] body) {
+        final manifest = new JsonSlurper().parse(body) as Map
+        manifest.put('mediaType', OCI_IMAGE_MANIFEST_V1)
+        return JsonOutput.toJson(manifest).bytes
+    }
+
+    /**
+     * Normalise a platform manifest descriptor to an OCI image manifest. Tools such as
+     * {@code singularity push} upload the artifact using a Docker v2 manifest, which cannot be
+     * referenced by an OCI image index. When that's the case the manifest JSON is rewritten as
+     * an OCI image manifest and re-pushed by digest. No blob is copied — the config and layer
+     * blobs are already in the repository and are left untouched, as is the original tag.
+     *
+     * @param image The platform-specific image the manifest belongs to
+     * @param descriptor The descriptor returned by {@link #fetchPlatformManifest}
+     * @param identity The platform identity for credentials lookup
+     * @return The descriptor to be referenced by the image index
+     */
+    protected Map normalizePlatformManifest(String image, Map descriptor, PlatformId identity) {
+        if( descriptor.mediaType != DOCKER_MANIFEST_V2_TYPE )
+            return descriptor
+
+        final newBytes = rewriteAsOciManifest(descriptor.body as byte[])
+        final newDigest = RegHelper.digest(newBytes)
+        pushOciManifest(image, newBytes, newDigest, identity)
+        if( log.isTraceEnabled() )
+            log.trace "Normalised Docker v2 manifest for '$image' to OCI manifest digest=$newDigest; json=${new String(newBytes)}"
+        else
+            log.debug "Normalised Docker v2 manifest for '$image' to OCI manifest digest=$newDigest"
+
+        return [
+            mediaType: OCI_IMAGE_MANIFEST_V1,
+            digest: newDigest,
+            size: newBytes.length,
+            platform: descriptor.platform
+        ]
+    }
+
+    protected void pushOciManifest(String image, byte[] body, String digest, PlatformId identity) {
+        final coords = ContainerCoordinates.parse(image)
+        final route = RoutePath.v2manifestPath(coords, identity)
+        final client = createClient(route, identity, true)
+
+        final path = "/v2/${coords.image}/manifests/${digest}"
+        final resp = client.put(path, body, OCI_IMAGE_MANIFEST_V1)
+
+        if( resp.statusCode() != 201 && resp.statusCode() != 200 ) {
+            throw new IllegalStateException("Failed to PUT OCI manifest for '$image' — status: ${resp.statusCode()}, body: ${resp.body()}")
+        }
     }
 
     static String buildImageIndex(List<Map> manifests) {

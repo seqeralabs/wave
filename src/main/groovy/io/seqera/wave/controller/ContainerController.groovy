@@ -48,6 +48,7 @@ import io.seqera.wave.api.ScanMode
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
@@ -69,6 +70,8 @@ import io.seqera.wave.service.inclusion.ContainerInclusionService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.mirror.ContainerMirrorService
 import io.seqera.wave.service.mirror.MirrorRequest
+import io.seqera.wave.service.soci.SociIndexService
+import io.seqera.wave.service.soci.SociPushService
 import io.seqera.service.pairing.PairingService
 import io.seqera.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
@@ -124,8 +127,18 @@ class ContainerController {
     private JwtAuthStore jwtAuthStore
 
     @Inject
-    @Value('${wave.allowAnonymous}')
+    @Value('${wave.capabilities.anonymous-access}')
     private Boolean allowAnonymous
+
+    /**
+     * When {@code false} the ephemeral-token capability is disabled, i.e. the container pull path
+     * (on-the-fly augmentation and pass-through proxying of an existing image) is turned off, and
+     * requests must use "freeze" mode to provision a container via an actual image build. Useful for
+     * locked-down deployments where Wave must not act as an augmenting/pass-through pull proxy.
+     */
+    @Inject
+    @Value('${wave.capabilities.ephemeral-token:true}')
+    private Boolean ephemeralToken
 
     @Inject
     @Value('${wave.server.url}')
@@ -174,6 +187,18 @@ class ContainerController {
     @Inject
     @Nullable
     private ContainerMirrorService mirrorService
+
+    @Inject
+    @Nullable
+    private SociConfig sociConfig
+
+    @Inject
+    @Nullable
+    private SociIndexService sociIndexService
+
+    @Inject
+    @Nullable
+    private SociPushService sociPushService
 
     @Inject
     private ContainerStatusService statusService
@@ -263,7 +288,7 @@ class ContainerController {
 
         if( v2 && req.packages ) {
             // generate the container file required to assemble the container
-            final generated = containerFileFromRequest(req)
+            final generated = containerFileFromRequest(req, buildConfig?.condasplitImage)
             req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
         }
         // make sure container platform is defined
@@ -277,8 +302,6 @@ class ContainerController {
                 throw new BadRequestException("Only linux/amd64,linux/arm64 multi-platform combination is currently supported")
             if( !req.containerFile && !req.packages )
                 throw new BadRequestException("Multi-platform builds require either 'containerFile' or 'packages' attribute")
-            if( req.formatSingularity() )
-                throw new BadRequestException("Multi-platform builds are not supported for Singularity format")
             if( !multiPlatformBuildService )
                 throw new UnsupportedBuildServiceException()
         }
@@ -297,6 +320,9 @@ class ContainerController {
         // persist request
         storeContainerRequest0(req, data, token, target, ip)
         scanService?.scanOnRequest(data)
+        // index the container layers ahead of the pull
+        if( data.soci && data.isContainer() && !data.dryRun )
+            sociIndexService?.requestIndex(data.containerImage, data.platform, identity)
         // log the response
         log.debug "New container request fulfilled - token=$token.value; expiration=$token.expiration; container=$data.containerImage; build=$resp.buildId; identity=$identity"
         // return response
@@ -492,6 +518,12 @@ class ContainerController {
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
         if( req.scanMode && !scanService )
             throw new UnsupportedScanServiceException()
+        if( req.soci && !sociConfig )
+            throw new BadRequestException("SOCI index is not enabled in this Wave deployment - see 'wave.soci.enabled' setting")
+        if( req.soci && req.formatSingularity() )
+            throw new BadRequestException("Singularity format does not support the 'soci' attribute")
+        if( req.soci && req.containerImage?.contains('@sha256:') && !req.freeze && !req.mirror )
+            throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'soci' attribute")
 
         // expand inclusions
         inclusionService.addContainerInclusions(req, identity)
@@ -559,6 +591,12 @@ class ContainerController {
             type = ContainerRequest.Type.Mirror
         }
         else if( req.containerImage ) {
+            // the container pull path (augmentation / pass-through) may be disabled in locked-down
+            // deployments; such requests must instead use "freeze" mode to build the container.
+            // note: a freeze request never reaches this branch because it has already been rewritten
+            // into a container build request by freezeService.freezeBuildRequest(..) above
+            if( ephemeralToken == Boolean.FALSE )
+                throw new BadRequestException("Ephemeral container provisioning is not enabled in this Wave deployment - use 'freeze' mode to provision this container")
             // normalize container image
             final coords = ContainerCoordinates.parse(req.containerImage)
             targetImage = coords.getTargetContainer()
@@ -573,6 +611,10 @@ class ContainerController {
         }
         else
             throw new IllegalStateException("Specify either 'containerImage' or 'containerFile' attribute")
+
+        // a durable container is pulled from its registry, return its SOCI-enabled tag when published
+        if( req.soci && sociPushService && (req.freeze || req.mirror) && !req.dryRun )
+            targetImage = sociPushService.sociTarget(targetImage, ContainerPlatform.of(req.containerPlatform), identity, succeeded)
 
         ContainerRequest.create(
                 type,
@@ -591,7 +633,8 @@ class ContainerController {
                 req.scanLevels,
                 req.dryRun,
                 succeeded,
-                Instant.now()
+                Instant.now(),
+                req.soci && sociConfig!=null
         )
     }
 
@@ -750,7 +793,7 @@ class ContainerController {
         final data = containerService.loadContainerRecord(requestId)
         if( !data )
             return HttpResponse.notFound()
-        return HttpResponse.ok(data)
+        return HttpResponse.ok(data.withUserIdOnly())
     }
 
     @Get('/v1alpha2/container/{requestId}/status')

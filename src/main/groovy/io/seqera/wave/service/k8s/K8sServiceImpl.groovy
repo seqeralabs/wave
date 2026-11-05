@@ -26,6 +26,7 @@ import javax.annotation.PostConstruct
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.custom.Quantity
+import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.models.V1ContainerBuilder
 import io.kubernetes.client.openapi.models.V1EmptyDirVolumeSourceBuilder
 import io.kubernetes.client.openapi.models.V1EnvVar
@@ -56,6 +57,8 @@ import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.MirrorConfig
+import io.seqera.wave.configuration.SociConfig
+import io.seqera.wave.service.soci.strategy.SociIndexStrategy
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.service.scan.Trivy
 import jakarta.inject.Inject
@@ -88,11 +91,11 @@ class K8sServiceImpl implements K8sService {
     @Value('${wave.build.k8s.debug:false}')
     private boolean debug
 
-    @Value('${wave.build.k8s.storage.claimName}')
+    @Value('${wave.build.k8s.storage.claim-name}')
     @Nullable
     private String storageClaimName
 
-    @Value('${wave.build.k8s.storage.mountPath}')
+    @Value('${wave.build.k8s.storage.mount-path}')
     @Nullable
     private String storageMountPath
 
@@ -404,6 +407,33 @@ class K8sServiceImpl implements K8sService {
     }
 
     /**
+     * Create a K8s Job, adopting the existing one when it was already created by a previous
+     * launch attempt. Job queues are at-least-once: a launch can be redelivered after the Job
+     * was created but before the queue entry was acknowledged, and the deterministic Job name
+     * makes the second creation fail with a 409 conflict.
+     *
+     * @param name The deterministic name of the job
+     * @param spec The Job specification to submit
+     * @return The submitted job or the already existing one
+     */
+    protected V1Job createJob(String name, V1Job spec) {
+        final api = k8sClient.batchV1Api()
+        try {
+            return api
+                    .createNamespacedJob(namespace, spec)
+                    .execute()
+        }
+        catch (ApiException e) {
+            if( e.code != 409 )
+                throw e
+            log.warn "K8s job=$name already exists - adopting the running job"
+            return api
+                    .readNamespacedJob(name, namespace)
+                    .execute()
+        }
+    }
+
+    /**
      * Create a Job for blob transfer
      *
      * @param name
@@ -421,10 +451,7 @@ class K8sServiceImpl implements K8sService {
     V1Job launchTransferJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig, Map<String,String> nodeSelector) {
         final spec = createTransferJobSpec(name, containerImage, args, blobConfig, nodeSelector)
 
-        return k8sClient
-                .batchV1Api()
-                .createNamespacedJob(namespace, spec)
-                .execute()
+        return createJob(name, spec)
     }
 
     protected V1PodDNSConfig dnsConfig() {
@@ -499,10 +526,7 @@ class K8sServiceImpl implements K8sService {
     @TraceElapsedTime(thresholdMillis = '${wave.trace.k8s.threshold:200}')
     V1Job launchBuildJob(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, Map<String,String> nodeSelector) {
         final spec = buildJobSpec(name, containerImage, args, workDir, creds, timeout, nodeSelector)
-        return k8sClient
-                .batchV1Api()
-                .createNamespacedJob(namespace, spec)
-                .execute()
+        return createJob(name, spec)
     }
 
     V1Job buildJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, Duration timeout, Map<String,String> nodeSelector) {
@@ -627,10 +651,7 @@ class K8sServiceImpl implements K8sService {
     @Override
     V1Job launchScanJob(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
         final spec = scanJobSpec(name, containerImage, args, workDir, creds, scanConfig, nodeSelector)
-        return k8sClient
-                .batchV1Api()
-                .createNamespacedJob(namespace, spec)
-                .execute()
+        return createJob(name, spec)
     }
 
     V1Job scanJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig, Map<String,String> nodeSelector) {
@@ -703,13 +724,44 @@ class K8sServiceImpl implements K8sService {
     @Override
     V1Job launchMirrorJob(String name, String containerImage, List<String> args, Path workDir, Path creds, MirrorConfig config, Map<String,String> nodeSelector) {
         final spec = mirrorJobSpec(name, containerImage, args, workDir, creds, config, nodeSelector)
-        return k8sClient
-                .batchV1Api()
-                .createNamespacedJob(namespace, spec)
-                .execute()
+        return createJob(name, spec)
     }
 
     V1Job mirrorJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, MirrorConfig config, Map<String,String> nodeSelector) {
+        final resources = resources(config.requestsCpu, config.requestsMemory, config.limitsCpu, config.limitsMemory)
+        final env = new V1EnvVar().name("REGISTRY_AUTH_FILE").value("/tmp/config.json")
+        return toolJobSpec(name, containerImage, args, workDir, credsFile, '/tmp/config.json', resources, env, nodeSelector)
+    }
+
+    @Override
+    V1Job launchSociIndexJob(String name, String containerImage, List<String> args, Path workDir, Path creds, SociConfig config, Map<String,String> nodeSelector) {
+        final spec = sociIndexJobSpec(name, containerImage, args, workDir, creds, config, nodeSelector)
+        return createJob(name, spec)
+    }
+
+    V1Job sociIndexJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, SociConfig config, Map<String,String> nodeSelector) {
+        final resources = resources(config.requestsCpu, config.requestsMemory, config.limitsCpu, config.limitsMemory)
+        final env = new V1EnvVar().name("DOCKER_CONFIG").value(SociIndexStrategy.DOCKER_CONFIG_DIR)
+        return toolJobSpec(name, containerImage, args, workDir, credsFile, "${SociIndexStrategy.DOCKER_CONFIG_DIR}/config.json", resources, env, nodeSelector)
+    }
+
+    protected static V1ResourceRequirements resources(String requestsCpu, String requestsMemory, String limitsCpu, String limitsMemory) {
+        final requests = new V1ResourceRequirements()
+        if( requestsCpu )
+            requests.putRequestsItem('cpu', new Quantity(requestsCpu))
+        if( requestsMemory )
+            requests.putRequestsItem('memory', new Quantity(requestsMemory))
+        if( limitsCpu )
+            requests.putLimitsItem('cpu', new Quantity(limitsCpu))
+        if( limitsMemory )
+            requests.putLimitsItem('memory', new Quantity(limitsMemory))
+        return requests
+    }
+
+    /**
+     * Spec of a job running a registry tool (skopeo, soci-indexer) with the docker auth file mounted at {@code credsPath}
+     */
+    protected V1Job toolJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, String credsPath, V1ResourceRequirements requests, V1EnvVar env, Map<String,String> nodeSelector) {
 
         // required volumes
         final mounts = new ArrayList<V1VolumeMount>(5)
@@ -719,7 +771,7 @@ class K8sServiceImpl implements K8sService {
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
         if( credsFile ){
-            mounts.add(0, mountHostPath(credsFile, storageMountPath, '/tmp/config.json'))
+            mounts.add(0, mountHostPath(credsFile, storageMountPath, credsPath))
         }
 
         V1JobBuilder builder = new V1JobBuilder()
@@ -745,16 +797,6 @@ class K8sServiceImpl implements K8sService {
                 .withDnsPolicy(dnsPolicy)
                 .withNodeSelector(nodeSelector)
 
-        final requests = new V1ResourceRequirements()
-        if( config.requestsCpu )
-            requests.putRequestsItem('cpu', new Quantity(config.requestsCpu))
-        if( config.requestsMemory )
-            requests.putRequestsItem('memory', new Quantity(config.requestsMemory))
-        if( config.limitsCpu )
-            requests.putLimitsItem('cpu', new Quantity(config.limitsCpu))
-        if( config.limitsMemory )
-            requests.putLimitsItem('memory', new Quantity(config.limitsMemory))
-
         // container section
         final container = new V1ContainerBuilder()
                 .withName(name)
@@ -762,7 +804,7 @@ class K8sServiceImpl implements K8sService {
                 .withArgs(args)
                 .withVolumeMounts(mounts)
                 .withResources(requests)
-                .withEnv(new V1EnvVar().name("REGISTRY_AUTH_FILE").value("/tmp/config.json"))
+                .withEnv(env)
 
         // spec section
         spec.withContainers(container.build()).endSpec().endTemplate().endSpec()

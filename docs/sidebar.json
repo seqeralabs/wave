@@ -3,45 +3,73 @@
     {
       "type": "category",
       "label": "Wave",
-      "collapsed": false,
+      "link": {
+        "type": "doc",
+        "id": "index"
+      },
+      "collapsed": true,
       "items": [
-        "index",
-        "get-started",
-        "wave-lite",
-        "provisioning"
+        "how-wave-works",
+        {
+          "type": "category",
+          "label": "Features",
+          "link": {
+            "type": "doc",
+            "id": "features/index"
+          },
+          "collapsed": true,
+          "items": [
+            "features/augmentation",
+            "features/inspection",
+            "features/authentication",
+            "features/container-builds",
+            "features/container-freezes",
+            "features/mirroring",
+            "features/security"
+          ]
+        },
+        "seqera-containers"
       ]
     },
     {
       "type": "category",
-      "label": "Installation",
+      "label": "Self-hosted Wave",
+      "link": {
+        "type": "doc",
+        "id": "install/index"
+      },
       "collapsed": false,
       "items": [
-        "install/docker-compose",
-        "install/kubernetes"
-      ]
-    },
-    {
-      "type": "category",
-      "label": "Configuration",
-      "collapsed": false,
-      "items": [   
-        "wave-lite",     
+        {
+          "type": "category",
+          "label": "Wave Lite",
+          "collapsed": false,
+          "items": [
+            "install/docker-compose",
+            "install/kubernetes-lite"
+          ]
+        },
+        "install/post-install",
+        "install/aws-build",
         "install/configure-wave",
-        "install/configure-wave-build"
+        "install/reference"
       ]
     },
-    "nextflow",
+    "nextflow/index",
     {
       "type": "category",
       "label": "Developer tools",
-      "collapsed": false,
+      "collapsed": true,
       "items": [
         "cli/index",
-        "cli/reference",
+        "cli/installation",
+        "cli/use-cases",
         "api"
       ]
     },
+    "soci",
     "faq",
+    "troubleshoot",
     {
       "type": "link",
       "label": "Changelog",

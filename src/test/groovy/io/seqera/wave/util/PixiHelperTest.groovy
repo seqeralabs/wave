@@ -48,6 +48,7 @@ class PixiHelperTest extends Specification {
         result.contains('pixi shell-hook > /shell-hook.sh')
         result.contains('FROM ubuntu:24.04 AS final')
         result.contains('COPY --from=build /opt/wave/.pixi/envs/default /opt/wave/.pixi/envs/default')
+        result.contains('ENV PATH="/opt/wave/.pixi/envs/default/bin:${PATH}"')
         result.contains('ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]')
     }
 
@@ -68,6 +69,8 @@ class PixiHelperTest extends Specification {
         result.contains('%files')
         result.contains('%post')
         result.contains('%environment')
+        result.contains('. /shell-hook.sh')
+        !result.contains('MAMBA_ROOT_PREFIX')
     }
 
     def 'should use custom base image'() {
@@ -131,5 +134,199 @@ class PixiHelperTest extends Specification {
         then:
         def ex = thrown(BadRequestException)
         ex.message.contains("Conda lock file is not supported by 'conda/pixi:v1' template")
+    }
+
+    def 'should create v1-fast docker file with packages'() {
+        given:
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['bwa=0.7.15', 'salmon=1.1.1'], channels: ['conda-forge'])
+
+        when:
+        def result = PixiHelper.containerFileV1Fast(packages, 'base/custom:1.0', 'public.cr.seqera.io/wave/condasplit:v1')
+
+        then:
+        result == TemplateUtils.condaFileToDockerFileUsingPixiV1Fast(new PixiOpts(baseImage: 'base/custom:1.0'), 'public.cr.seqera.io/wave/condasplit:v1')
+        result.startsWith('# syntax=public.cr.seqera.io/wave/condasplit:v1\n')
+        result.contains('FROM base/custom:1.0 AS final')
+    }
+
+    def 'should use custom base image in v1-fast'() {
+        given:
+        def PIXI_OPTS = new PixiOpts([baseImage: 'debian:12'])
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['bwa=0.7.15'], channels: ['conda-forge'], pixiOpts: PIXI_OPTS)
+
+        expect:
+        PixiHelper.containerFileV1Fast(packages, CONTAINER_IMAGE, 'public.cr.seqera.io/wave/condasplit:v1').contains("FROM ${EXPECTED} AS final")
+
+        where:
+        CONTAINER_IMAGE     | EXPECTED
+        null                | 'debian:12'       // base image from pixiOpts
+        'ubuntu:22.04'      | 'ubuntu:22.04'    // container image takes precedence
+    }
+
+    def 'should use custom pixiOpts and layers image in v1-fast'() {
+        given:
+        def CHANNELS = ['conda-forge']
+        def PIXI_OPTS = new PixiOpts([
+                pixiImage: 'ghcr.io/prefix-dev/pixi:0.47.0-jammy',
+                baseImage: 'debian:12',
+                basePackages: 'foo::one bar::two',
+                commands: ['RUN apt-get update']
+        ])
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['bwa=0.7.15'], channels: CHANNELS, pixiOpts: PIXI_OPTS)
+
+        when:
+        def result = PixiHelper.containerFileV1Fast(packages, null, 'my.registry.io/wave/condasplit:v2@sha256:1234')
+
+        then:
+        result == TemplateUtils.condaFileToDockerFileUsingPixiV1Fast(PIXI_OPTS, 'my.registry.io/wave/condasplit:v2@sha256:1234')
+        result.contains('FROM ghcr.io/prefix-dev/pixi:0.47.0-jammy AS build')
+        result.contains('pixi add foo::one bar::two')
+        result.contains('RUN --mount=type=bind,from=my.registry.io/wave/condasplit:v2@sha256:1234,source=/,target=/opt/wave-tools')
+        result.contains('FROM debian:12 AS final')
+        result.contains('RUN apt-get update')
+    }
+
+    def 'should reject non-CONDA package type and lock file with v1-fast'() {
+        when:
+        PixiHelper.containerFileV1Fast(PACKAGES, null, 'public.cr.seqera.io/wave/condasplit:v1')
+
+        then:
+        def ex = thrown(BadRequestException)
+        ex.message == MESSAGE
+
+        where:
+        PACKAGES                                                                                                    | MESSAGE
+        new PackagesSpec(type: PackagesSpec.Type.CRAN, entries: ['dplyr'])                                          | "Package type 'CRAN' not supported by 'conda/pixi:v1-fast' build template"
+        new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['https://foo.com/lock.yml'], channels: ['conda-forge'])  | "Conda lock file is not supported by 'conda/pixi:v1-fast' template"
+    }
+
+    def 'should create docker file from remote lock URL with v1-lock'() {
+        given:
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['https://foo.com/pixi.lock'])
+
+        when:
+        def result = PixiHelper.containerFileV1Lock(packages, null, false)
+
+        then:
+        result.contains('FROM public.cr.seqera.io/wave/pixi:0.81.0-noble AS build')
+        result.contains('ADD https://foo.com/pixi.lock /opt/wave/pixi.lock')
+        result.contains('pixi install --frozen')
+        result.contains('pixi shell-hook --frozen > /shell-hook.sh')
+        result.contains('FROM ubuntu:24.04 AS final')
+        result.contains('ENV PIXI_HOME=/opt/wave/.pixi')
+        result.contains('ENV PATH="/opt/wave/.pixi/bin:${PATH}"')
+        result.contains('COPY --from=build /opt/wave/.pixi /opt/wave/.pixi')
+        !result.contains('/root/.pixi')
+        result.contains('pixi global install conda-forge::which conda-forge::procps-ng')
+        result.contains('ENTRYPOINT ["/bin/bash", "/shell-hook.sh"]')
+        !result.contains('pixi add')
+        result.contains('>> CONDA_LOCK_START')
+        result.contains('<< CONDA_LOCK_END')
+    }
+
+    def 'should create singularity file from remote lock URL with v1-lock'() {
+        given:
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['https://foo.com/pixi.lock'])
+
+        when:
+        def result = PixiHelper.containerFileV1Lock(packages, null, true)
+
+        then:
+        result.contains('BootStrap: docker')
+        result.contains('From: public.cr.seqera.io/wave/pixi:0.81.0-noble')
+        result.contains('pixi exec --spec curl -- curl -fsSL https://foo.com/pixi.lock -o pixi.lock')
+        result.contains('pixi install --frozen')
+        result.contains('pixi shell-hook --frozen > /shell-hook.sh')
+        result.contains('%post')
+        result.contains('export PIXI_HOME=/opt/wave/.pixi')
+        result.contains('pixi global install conda-forge::which conda-forge::procps-ng')
+        result.contains('%environment')
+        result.contains('export PATH=/opt/wave/.pixi/bin:$PATH')
+        result.contains('. /shell-hook.sh')
+        !result.contains('/root/.pixi')
+    }
+
+    def 'should reject non-CONDA package type with v1-lock'() {
+        when:
+        PixiHelper.containerFileV1Lock(PACKAGES, null, false)
+
+        then:
+        def ex = thrown(BadRequestException)
+        ex.message == MESSAGE
+
+        where:
+        PACKAGES                                                                    | MESSAGE
+        new PackagesSpec(type: PackagesSpec.Type.CRAN, entries: ['dplyr'])          | "Package type 'CRAN' not supported by 'conda/pixi:v1-lock' build template"
+        new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['bwa=0.7.15'])    | "Build template 'conda/pixi:v1-lock' requires a Pixi lock file"
+    }
+
+    def 'should use custom pixi opts with v1-lock'() {
+        given:
+        def opts = new PixiOpts([
+                pixiImage: 'ghcr.io/prefix-dev/pixi:0.47.0-jammy-cuda-12.8.1',
+                baseImage: 'base/image',
+                basePackages: null
+        ])
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: 'ZW52', pixiOpts: opts)
+
+        when:
+        def result = PixiHelper.containerFileV1Lock(packages, null, false)
+
+        then:
+        result.contains('FROM ghcr.io/prefix-dev/pixi:0.47.0-jammy-cuda-12.8.1 AS build')
+        result.contains('COPY conda.yml /opt/wave/pixi.lock')
+        result.contains('pixi install --frozen')
+        result.contains('FROM base/image AS final')
+        !result.contains('pixi add')
+        result.contains('&& pixi global install conda-forge::which \\\n')
+    }
+
+    def 'should install base packages via pixi global with v1-lock'() {
+        given:
+        def opts = new PixiOpts([
+                pixiImage: 'ghcr.io/prefix-dev/pixi:0.47.0-jammy-cuda-12.8.1',
+                baseImage: 'base/image',
+                basePackages: 'foo::one bar::two'
+        ])
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: 'ZW52', pixiOpts: opts)
+
+        when:
+        def result = PixiHelper.containerFileV1Lock(packages, null, false)
+
+        then:
+        result.contains('pixi install --frozen')
+        result.contains('pixi global install conda-forge::which foo::one bar::two')
+        result.contains('COPY --from=build /opt/wave/.pixi /opt/wave/.pixi')
+        result.contains('ENV PATH="/opt/wave/.pixi/envs/default/bin:/opt/wave/.pixi/bin:${PATH}"')
+        !result.contains('pixi add')
+    }
+
+    def 'should use container image as base image with v1-lock'() {
+        given:
+        def opts = new PixiOpts([baseImage: 'base/image', basePackages: null])
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: 'ZW52', pixiOpts: opts)
+
+        when:
+        def result = PixiHelper.containerFileV1Lock(packages, 'override/base:2.0', false)
+
+        then:
+        result.contains('FROM public.cr.seqera.io/wave/pixi:0.81.0-noble AS build')
+        result.contains('FROM override/base:2.0 AS final')
+        !result.contains('FROM base/image AS final')
+    }
+
+    def 'should use the v1-lock default pixi image unless a custom one is given'() {
+        given:
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: 'ZW52', pixiOpts: OPTS)
+
+        expect:
+        PixiHelper.containerFileV1Lock(packages, null, false).startsWith("FROM ${EXPECTED} AS build")
+
+        where:
+        OPTS                                                    | EXPECTED
+        null                                                    | PixiOpts.DEFAULT_PIXI_LOCK_IMAGE
+        new PixiOpts()                                          | PixiOpts.DEFAULT_PIXI_LOCK_IMAGE
+        new PixiOpts(pixiImage: PixiOpts.DEFAULT_PIXI_IMAGE)    | PixiOpts.DEFAULT_PIXI_LOCK_IMAGE
+        new PixiOpts(pixiImage: 'my/pixi:1.0')                  | 'my/pixi:1.0'
     }
 }

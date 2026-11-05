@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.k8s
 
+import java.time.Duration
+
 import io.micronaut.core.annotation.Nullable
 
 import groovy.transform.CompileStatic
@@ -41,7 +43,7 @@ import jakarta.inject.Singleton
  */
 @Slf4j
 @CompileStatic
-@Requires(property = 'wave.build.k8s.configPath')
+@Requires(property = 'wave.build.k8s.config-path')
 @Singleton
 class K8sConfigClient implements K8sClient {
 
@@ -49,12 +51,15 @@ class K8sConfigClient implements K8sClient {
     @Nullable
     private String context
 
-    @Value('${wave.build.k8s.configPath}')
+    @Value('${wave.build.k8s.config-path}')
     private String kubeConfigPath
+
+    @Value('${wave.build.k8s.read-timeout:50s}')
+    private Duration readTimeout
 
     @Memoized
     ApiClient apiClient() {
-        log.info "Creating K8s config with path: $kubeConfigPath -- context: '$context'"
+        log.info "Creating K8s config with path: $kubeConfigPath -- context: '$context'; read-timeout: $readTimeout"
 
         // load config
         final config = KubeConfig.loadKubeConfig(new FileReader(kubeConfigPath))
@@ -65,6 +70,7 @@ class K8sConfigClient implements K8sClient {
         // loading the out-of-cluster config, a kubeconfig from file-system
         return ClientBuilder
                 .kubeconfig(config)
+                .setReadTimeout(readTimeout)
                 .build()
     }
 

@@ -1,4 +1,163 @@
 # Wave changelog
+1.44.1 - 5 Nov 2026
+- Handle HEAD requests on blobs (#1241) [9e4bd9346]
+- Adopt existing SOCI k8s job and docker containers on launch redelivery (#1251) [5faa4dbc8]
+
+1.44.0 - 4 Nov 2026
+- Support Pixi lock files with the conda/pixi:v1-lock template (#1246) [0b4a085c4]
+- Adopt an existing k8s job when a launch is redelivered (#1222) [d47327089]
+- Use JSON array for multi-element WAVE_ENTRY_CHAIN on freeze (#1247) [bd68f73c0]
+- Use si- and sp- prefixes for SOCI job ids (#1250) [487e244fb]
+
+1.43.0 - 2 Nov 2026
+- SOCI v2 index for ephemeral, freeze and mirror containers (#1227) [40279dcc9]
+- Route blob locations of repositories with more than two path segments (#1240) [a7c66be18]
+- Update dependency io.micronaut.platform:micronaut-platform to v4.10.22 (#1228) [2db804920]
+- Update public.cr.seqera.io/seqeralabs/nf-jdk docker tag to v25.0.5 (#1231) [76a9db7c4]
+- Update gradle minor and patch (#1230) [804dec124]
+- Update github actions (#1229) [81817b93b]
+
+1.42.2 - 28 Oct 2026
+- Raise the Wave CI job timeout to 45 minutes [9574aa16a]
+- Bump condasplit to v3 [21fa507b0]
+- Update module github.com/moby/buildkit to v0.34.1 (#1213) [d608edcb1]
+- Request the minimal workflow record and stop renewing on any 4xx lookup reply (#1209) [5e016009c]
+- Stop copying the release image to the legacy ECR (#1216) [f1b42ed8d]
+- Use public.cr.seqera.io/seqeralabs/nf-jdk base image (#1207) [d4b9a35de]
+- Update nf-jdk base image digest to 15e35e9 (#1212) [67a0522e5]
+- Update gradle minor and patch (#1215) [396787ae9]
+
+1.42.1 - 20 Oct 2026
+- Publish work queue metrics for the job queues (#1203) [4001b8eae]
+- Pull nf-jdk base image from public.cr.seqera.io (#1200) [c162e2d00]
+
+1.42.0 - 20 Oct 2026
+- Move job queues to lib-data-workqueue, fix duplicate job processing and drain on shutdown (#1201) [60d327e19]
+- Update postgres docker tag to v16.15 (#1198) [7cf0fa273]
+- Update npm minor and patch (#1197) [1f5a2a871]
+- Update github actions (#1195) [5d57cc8a7]
+
+1.41.0 - 18 Oct 2026
+- Match registry credentials by repository path (#1165) [937c765e0]
+- Keep only the platform's Fusion snapshot layer in multi-arch images (#1191) [841582c0e]
+- Drop the other platform's layers from frozen multi-arch container files (#1193) [4dc0e98e6]
+- Disable SSRF protection by default (#1192) [8dea8f578]
+- Fix stray leading blank line in extracted conda lock file (#1082) [cfd7a5629]
+- Publish condasplit with the Wave release and check its default matches VERSION (#1188) [731e30b97]
+- Bump condasplit to v2 and check the VERSION bump on pull requests (#1187) [7fd08af18]
+- Override the vulnerable jackson on the Gradle plugins classpath (#1194) [2929baf00]
+
+1.40.4 - 15 Oct 2026
+- Re-release of 1.40.3: the 1.40.3 image was not published to the legacy ECR
+
+1.40.3 - 15 Oct 2026
+- Fix token watcher head-of-line blocking on slow Platform endpoints (#1181) [fa56deaf7]
+- Bump lib-pairing to 1.2.0 to close pairing sessions that stop sending heartbeats (#1184) [db02cdaf4]
+- Bump lib-cache-tiered-redis to 1.1.1 to coalesce concurrent cache misses (#1182) [bbbbc2beb]
+- Publish multi-arch Wave image on release and preview (#1180) [7fee8756b]
+- Bump condasplit frontend github.com/moby/go-archive to v0.3.0 [security] (#1177) [9645160de]
+
+1.40.2 - 12 Oct 2026
+- Bump buildkit to v0.33.1 (#1152) [bc7cb0a2e]
+
+1.40.1 - 12 Oct 2026
+- Bump Micronaut to 4.10.21 (#1171, #1176) [b964a699b, ced2ce56f]
+- Override vulnerable transitive JVM dependencies (#1175) [c8c71206e]
+- Bump logback to 1.5.34 (#1174) [46949fd60]
+- Bump nf-jdk base image to v25.0.4 (#1166) [91ce624b9]
+- Bump condasplit frontend Go dependencies to fix vulnerabilities (#1172) [018564437]
+- fix(deps): pin @typespec/openapi to 1.16.0 (#1173) [f6254fe43]
+
+1.40.0 - 5 Oct 2026
+- Add conda/pixi:v1-fast template with layered conda builds (#1153) [c260aff3a]
+
+1.39.0 - 2 Oct 2026
+- Add multi-architecture Singularity (SIF) build support (#1140) [0f9a23d93]
+- Add conda/micromamba:v2-fast template with layered conda builds (#1146, #1151) [5ffc92ca4, 2296d4ba7]
+- fix(deps): upgrade lib-pairing to 1.1.1 to accept large pairing messages (#1144) [0d74fc264]
+- fix(deps): upgrade typespec to 1.16.0 (COMP-2378) (#1143) [b8198f57b]
+- fix(deps): upgrade bouncycastle to 1.85 (COMP-2551) (#1141) [31dbcc5a4]
+- fix(deps): upgrade micronaut platform to 4.10.19 (COMP-2257) (#1142) [2878cf5f5]
+
+1.38.0 - 15 Sep 2026
+- Upgrade jib plugin to 3.5.4 for Java 25 class file support (#1136) [ad179698b]
+- Support an authenticating egress proxy via shared lib-util-net ProxyConfig (#1125) [a992c7003]
+- Fix PATH in Pixi Docker template for OCI-to-SIF converted images (#1131) [3a521bf4e]
+- fix: report K8s builds as succeeded on Kubernetes 1.36+ (COMP-2368) (#1128) [2fe030260]
+- fix: surface transfer errors when caching blobs (COMP-2142) (#1100) [bfaea6c0d]
+- fix(deps): upgrade io.netty:netty-bom to 4.2.17.Final (COMP-2376) (#1135) [6fc9e5029]
+- fix(deps): upgrade org.postgresql:postgresql to 42.7.12 (COMP-2149) (#1112) [b8ae1a76c]
+- build(java): align toolchain and runtime to Java 25 (bytecode 17) (#1077) [252916094]
+- ci(claude): let the review agent submit approving PR reviews (#1105) [fdde438d6]
+- docs: Refresh self install (#1106) [9fcd286c2]
+
+1.37.0 - 23 Jul 2026
+- feature: consolidate capability toggles under wave.capabilities.* (#1098) [ca2d0ede2]
+- fix: gate wave release on master and release-* branches DEVOPS-1531 (#1072) [794dcc0eb]
+- fix(deps): upgrade Micronaut to 4.10.17 to patch jackson-databind (COMP-1957) (#1091) [ceb77640f]
+- Bugfix: do not serve freeze/mirror images via the Wave proxy token path (#1087) [979fbd02e]
+- feature: disable the ability for wave to "pull" images directly (#1089) [e8b52817e]
+- Quieten expected Platform-connectivity errors in the token watcher (#1085) [a4c6176df]
+- docs: document workflow-bound ephemeral token lifecycle (#1084) [1bfc55c30]
+
+1.36.0 - 15 Jul 2026
+- Progressive container expiration extension (#782) [a4517091a]
+- Reduce response contents to remove unneeded fields (#1073) [0718f702a]
+- chore: pin postgres containers + bump test containers (#1080) [4e5cfe271]
+
+1.35.1 - 13 Jul 2026
+- fix: make `which` available for R (bioconda) post-links in conda v2 builds (#1070) [417e43a72]
+
+1.35.0 - 1 Jul 2026
+- fix: use micromamba 2 image for conda/micromamba:v2 builds (#1065) [ddd1e8d10]
+- feat: add waveBuildNotification user preference for build email notifications (#1069) [b7822a098]
+- Use lib-util-net for SSRF host validation (#1061) [783ee2735]
+
+1.34.0 - 15 Jun 2026
+- Rename WAVE_LOG_STDOUT_PATTERN env var to WAVE_LOG_PATTERN [ff23adc78]
+- fix(deps): define netty version in gradle.properties and bump to 4.2.15.Final [5cd415188]
+- Use micromamba/v2 as default build template for conda packages (#1024) [584dd702e]
+- feat(ci): use OIDC role for maven publish DEVOPS-1455 (#1059) [75576fdf2]
+- fix(deps): upgrade io.netty:netty-bom to 4.2.13.Final (COMP-1718) (#1053) [1b4ecad54]
+- chore(ci): remove legacy wave/app ECR push DEVOPS-1453 (#1057) [6bf2b5673]
+- chore(ci): remove git tag --force from Wave release CI DEVOPS-1454 (#1056) [225a1b7d4]
+- Make STDOUT log pattern configurable via WAVE_LOG_STDOUT_PATTERN (#1055) [15ab7552d]
+- fix: port wave CI release flow with non-enterprise jibRepo fix SEC-1395 (#1046) [1a570db65]
+- feat: Make server listening port configurable via WAVE_SERVER_PORT mn env var (#1029)
+
+1.33.6 - 21 May 2026
+- Demote 'Request processing' log to trace in RegistryProxyService (#1047) [3881377c0]
+
+1.33.5 - 17 May 2026
+- Use addIfLess for JWT refresh timer scheduling (#1045) [e80058ca4]
+- Embed OpenAPI spec and Swagger UI in main Wave container (#1043) [b9c0daf91]
+- Bump pgjdbc to 42.7.11 and Bouncy Castle to 1.84 to patch CVEs [83ffa4ea5]
+- Gate CI release steps on first-line `[release]` and exclude PR merges [ff8c7af80]
+- Update dependency node to v24 (#1023) [00231d138]
+- Port wave CI to push to internal ECR SEC-1395 (#1039) [9df3340a8]
+
+1.33.4 - 8 May 2026
+- Truncate verbose DEBUG log payloads to reduce heap pressure (#1041) [ac708f08a]
+- Minor compiler syntax fix [214266462]
+
+1.33.3 - 28 Apr 2026
+- Revert Gradle build files and dependencies to v1.33.0 [087a85935]
+- Add lib-util-time dependency [d894f5ca9]
+- Add micromamba clean to v2 templates to reduce image size (#1038) [6d57360a6]
+- Fix pixi Singularity template PATH environment (#1036) [a199953e5]
+- Update third-party dependency versions to latest stable (#1037) [03cc67e4c]
+- Minor clarity suggestions (#1034) [c862ee670]
+- Reduce wave resource requirements in installation manifests (#1028) [a2f670990]
+- Refine Docker Compose setup for Wave Lite (#1033) [00a7c8537]
+- Add BuildEnabled in MultiPlatformBuildService (#1030) [88bff95aa]
+- Add missing configuration documentation (#1025) [ec29df888]
+
+1.33.2 - 15 Apr 2026
+- Fix conda builds for packages requiring __cuda virtual package (#1027) [67542ce25]
+- Fix build error with --build-template conda/micromamba:v2 for singularity (#972) [17273e544]
+- Upgrade third-party dependencies to latest stable versions (#998) [3396554d0]
+- Pin dependencies (#1012) [7e1a05ee4]
+
 1.33.1 - 30 Mar 2026
 - Update token cache duration and clarify public-repo docs (#1007) [2e47f9bd5]
 - Bump Netty to 4.2.10.Final and Micronaut to 4.10.10 (#1001) [970ec3876]

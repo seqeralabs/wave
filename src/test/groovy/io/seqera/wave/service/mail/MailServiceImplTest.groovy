@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2023-2026, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -22,20 +22,30 @@ import spock.lang.Specification
 
 import java.time.Instant
 
+import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.mail.impl.MailServiceImpl
+import io.seqera.wave.service.mail.impl.MailSpoolerImpl
+import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.User
+import io.seqera.wave.tower.WaveBuildNotification
 import jakarta.inject.Inject
-/**
- *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
- */
+
 @MicronautTest(environments = 'mail')
 class MailServiceImplTest extends Specification {
 
     @Inject MailServiceImpl service
+
+    @Inject
+    MailSpooler spooler
+
+    @MockBean(MailSpoolerImpl)
+    MailSpooler mockSpooler() {
+        Mock(MailSpooler)
+    }
 
     def 'should create build mail' () {
         given:
@@ -80,5 +90,43 @@ class MailServiceImplTest extends Specification {
         null                         | null
         'foo'                        | 'foo'
         'www.host.com/this/that'     | 'www&#8203;.host&#8203;.com/this/that'
+    }
+
+    def 'sendCompletionEmail respects waveBuildNotification preference'() {
+        given:
+        def user = new User(id: 1L, userName: 'testuser', email: 'test@example.com',
+                waveBuildNotification: pref)
+        def identity = new PlatformId(user)
+        def request = Stub(BuildRequest) {
+            getIdentity()      >> identity
+            getIp()            >> '1.2.3.4'
+            getOffsetId()      >> 'UTC'
+            getTargetImage()   >> 'wave/build:test'
+            getFormat()        >> null
+            getCompression()   >> null
+            getPlatform()      >> ContainerPlatform.DEFAULT
+            getBuildTemplate() >> null
+            getContainerFile() >> 'FROM ubuntu'
+            getCondaFile()     >> null
+        }
+        def result = BuildResult.completed('bd-test_0', exitCode, 'logs', Instant.now(),
+                exitCode == 0 ? 'sha256:abc' : null)
+
+        when:
+        service.sendCompletionEmail(request, result)
+
+        then:
+        expectedCalls * spooler.sendMail(_)
+
+        where:
+        pref                             | exitCode | expectedCalls
+        null                             | 0        | 1
+        null                             | 1        | 1
+        WaveBuildNotification.ALWAYS_ON  | 0        | 1
+        WaveBuildNotification.ALWAYS_ON  | 1        | 1
+        WaveBuildNotification.ON_ERROR   | 0        | 0
+        WaveBuildNotification.ON_ERROR   | 1        | 1
+        WaveBuildNotification.ALWAYS_OFF | 0        | 0
+        WaveBuildNotification.ALWAYS_OFF | 1        | 0
     }
 }

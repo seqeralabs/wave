@@ -69,9 +69,46 @@ Wave requires several environment variables for registry authentication:
 - Rate limiting is implemented using Spillway library
 - All async operations use Reactor pattern with Micronaut Reactor
 
+## Wave CLI
+
+The `wave-cli/` directory contains the Wave command line tool. It is an independent Gradle build (own
+`settings.gradle`, wrapper, `VERSION` and `changelog.txt`) not included in the Wave server build, built and released
+by `.github/workflows/build-wave-cli.yml`. See `wave-cli/CLAUDE.md`.
+
 ## Release Process
 
-1. Update the `VERSION` file with a semantic version
-2. Update the `changelog.txt file with changes against previous release
-3. Commit VERSION and changelog.txt file adding the tag `[release]` in the commit comment first line.
-4. Git push to upstream master branch.
+Wave (server) and Wave CLI are versioned and released independently, the condasplit image is released with Wave. Both use a `[release]` commit pushed to
+master: which one is released depends only on the files the commit touches. A release commit must never mix
+the two, otherwise both releases are triggered.
+
+### Wave
+
+1. Update the root `VERSION` file with a semantic version
+2. Update the root `changelog.txt` file with changes against previous release (tag `v<VERSION>`)
+3. Commit `VERSION` and `changelog.txt` adding the tag `[release]` in the commit comment first line.
+   The commit must not touch any file in `wave-cli/`.
+4. Git push to upstream master branch. The `build.yml` workflow publishes the condasplit image (when its tag is
+   missing), then the Wave image and the `v<VERSION>` release. A failed condasplit build stops the release.
+
+### Condasplit
+
+The `condasplit/` image has its own immutable tag, set in `condasplit/VERSION`, and no release commit of its own.
+
+1. In the pull request that changes `condasplit/`, bump `condasplit/VERSION` (e.g. `v2` -> `v3`) and set the
+   `wave.build.condasplit-image` default to `public.cr.seqera.io/wave/condasplit:<VERSION>` in
+   `src/main/resources/application.yml` and in the `@Value` fallback of `BuildConfig`. The `check-version` job of
+   `build-condasplit.yml` fails when the sources change without a bump or the default doesn't match the tag.
+2. The next Wave release publishes the tag, see step 4 of the Wave release. Until then, builds from master
+   default to an unpublished tag: the conda `-fast` builds fail on them.
+
+### Wave CLI
+
+1. Update the `wave-cli/VERSION` file with a semantic version
+2. Update the `wave-cli/changelog.txt` file with changes against previous release. Use
+   `git log --oneline cli-v<PREVIOUS VERSION>..HEAD -- wave-cli` to find them. This entry is used as GitHub release notes.
+3. Commit `wave-cli/VERSION` and `wave-cli/changelog.txt` adding the tag `[release]` in the commit comment first line.
+   The commit must only touch files in `wave-cli/` (Wave CI ignores those paths, so no
+   Wave release is triggered). The `[release]` tag must be in the first line of a direct push: squash and merge
+   commits never trigger a release.
+4. Git push to upstream master branch. The `build-wave-cli.yml` workflow builds the native binaries and publishes
+   the `cli-v<VERSION>` release and the Homebrew formula.

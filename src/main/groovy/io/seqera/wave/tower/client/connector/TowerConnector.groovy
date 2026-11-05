@@ -52,6 +52,7 @@ import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import static io.seqera.random.LongRndKey.rndHex
+import static io.seqera.wave.util.StringUtils.trunc
 /**
  * Implements an abstract client that allows to connect Tower service either
  * via HTTP client or a WebSocket-based client
@@ -66,16 +67,16 @@ abstract class TowerConnector {
     @Inject
     private JwtAuthStore jwtAuthStore
 
-    @Value('${wave.pairing.channel.maxAttempts:6}')
+    @Value('${wave.pairing.channel.max-attempts:6}')
     private int maxAttempts
 
-    @Value('${wave.pairing.channel.retryBackOffBase:3}')
+    @Value('${wave.pairing.channel.retry-back-off-base:3}')
     private int retryBackOffBase
 
-    @Value('${wave.pairing.channel.retryBackOffDelay:325}')
+    @Value('${wave.pairing.channel.retry-back-off-delay:325}')
     private int retryBackOffDelay
 
-    @Value('${wave.pairing.channel.retryMaxDelay:40s}')
+    @Value('${wave.pairing.channel.retry-max-delay:40s}')
     private Duration retryMaxDelay
 
     @Inject
@@ -229,7 +230,7 @@ abstract class TowerConnector {
                     if( resp.status==200 )
                         log.trace "Tower response: GET '${uri}' => ${resp}"
                     else
-                        log.debug "Tower response: GET '${uri}' => ${resp}"
+                        log.debug "Tower response: GET '${uri}' => msgId=${resp?.msgId}; status=${resp?.status}; body=${trunc(resp?.body, 500)}"
                     return CompletableFuture.completedFuture(resp)
                 }, ioExecutor)
         // when accessing unauthorised resources, token refresh is not needed
@@ -277,7 +278,10 @@ abstract class TowerConnector {
                 .thenApplyAsync({ resp ->
                     if( resp==null )
                         throw new HttpResponseException(500, "Missing Tower response refreshing JWT token: ${request.uri}")
-                    log.debug "Tower Refresh '$uri' response; msgId=${msgId}\n- status : ${resp.status}\n- headers: ${RegHelper.dumpHeaders(resp.headers)}\n- content: ${resp.body}"
+                    if( log.isTraceEnabled() )
+                        log.trace "Tower Refresh '$uri' response; msgId=${msgId}\n- status : ${resp.status}\n- headers: ${RegHelper.dumpHeaders(resp.headers)}\n- content: ${resp.body}"
+                    else
+                        log.debug "Tower Refresh '$uri' response; msgId=${msgId}; status=${resp.status}; body=${trunc(resp.body, 500)}"
                     if ( resp.status >= 400 ) {
                         final msg = "Unexpected Tower response refreshing JWT token: ${request.uri}"
                         throw new HttpResponseException(resp.status, msg, resp.body)

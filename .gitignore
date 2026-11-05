@@ -28,6 +28,17 @@ build-workspace/
 scan-workspace/
 /k8s/dev/config-k3d.yml
 /.wave-test
+/misc
+/notes
+# other files 
+/r2.sh 
+/redis.sh
+/postgres.sh
+/clean-tags.sh
+/copy.sh 
+/inspect.sh
+/copy-containers.sh
+/singularity-build
 
 # Docs
 .vercel

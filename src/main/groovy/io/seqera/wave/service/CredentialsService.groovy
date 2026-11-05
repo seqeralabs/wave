@@ -27,6 +27,16 @@ import io.seqera.wave.tower.PlatformId
  */
 interface CredentialsService {
 
-    ContainerRegistryKeys findRegistryCreds(String registryName, PlatformId identity)
+    /**
+     * Find the container registry credentials for the given repository
+     *
+     * @param repository
+     *      The target repository e.g. {@code docker.io/library/ubuntu}, or a bare registry name e.g. {@code docker.io}
+     * @param identity
+     *      The platform identity of the user submitting the request
+     * @return
+     *      The matching {@link ContainerRegistryKeys} or {@code null} when no credentials match
+     */
+    ContainerRegistryKeys findRegistryCreds(String repository, PlatformId identity)
 
 }

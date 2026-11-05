@@ -23,9 +23,11 @@ import java.util.regex.Pattern
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.event.ApplicationEventPublisher
 
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.core.ContainerPlatform
@@ -44,6 +46,7 @@ import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.ContainerHelper.makeContainerId
 import static io.seqera.wave.util.ContainerHelper.makeTargetImage
+import static io.seqera.wave.util.RegHelper.layerDir
 /**
  * Orchestrates multi-platform container builds by fanning out
  * two single-platform builds (linux/amd64 + linux/arm64) and
@@ -55,6 +58,7 @@ import static io.seqera.wave.util.ContainerHelper.makeTargetImage
 @Singleton
 @Named('MultiBuild')
 @CompileStatic
+@Requires(bean = BuildEnabled)
 class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
 
     @Inject
@@ -193,7 +197,7 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
                 final List<Map> platformEntries = [
                     [image: request.amd64TargetImage, platform: PLATFORM_AMD64],
                     [image: request.arm64TargetImage, platform: PLATFORM_ARM64]
-                ]
+                ] as List<Map>
                 manifestAssembler.createAndPushManifestList(request.targetImage, platformEntries, request.identity)
                 log.info "Multi-platform manifest list assembled for ${request.targetImage}"
 
@@ -254,7 +258,8 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
         }
     }
 
-    static final private Pattern FUSION_LAYER_ARCH = Pattern.compile('.*/fusion-(\\w+)\\.tar\\.gz$')
+    // matches both the fusion layer (fusion-amd64.tar.gz) and the snapshot layer (fusion-snapshot-amd64.tgz)
+    static final private Pattern FUSION_LAYER_ARCH = Pattern.compile('.*/fusion(?:-[\\w-]+)?-(amd64|arm64)\\.(?:tar\\.gz|tgz)$')
 
     /**
      * Filter container config layers to only include fusion layers matching the target platform arch.
@@ -275,11 +280,32 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
         return new ContainerConfig(config.entrypoint, config.cmd, config.env, config.workingDir, filtered)
     }
 
+    /**
+     * Remove from a frozen container file the lines adding the layers dropped by {@link #filterLayersForPlatform}.
+     * Freeze mode adds every layer to the container file before the multi-platform split, while only the
+     * platform's layers are copied into the build context.
+     */
+    static String removeDroppedLayers(String containerFile, ContainerConfig config, ContainerConfig filtered) {
+        if( !containerFile || !config?.layers )
+            return containerFile
+        final dropped = (config.layers - filtered.layers)
+                .findAll { ContainerLayer it -> it.gzipDigest }
+                .collect { ContainerLayer it -> layerDir(it) }
+        if( !dropped )
+            return containerFile
+        // split after each newline to keep the original line terminators
+        return containerFile
+                .split(/(?<=\n)/)
+                .findAll { String line -> !dropped.any { String it -> line.contains(it) } }
+                .join('')
+    }
+
     protected BuildRequest createPlatformRequest(BuildRequest template, ContainerPlatform platform, String suffix) {
         final repo = ContainerCoordinates.parse(template.targetImage).repository
         final containerConfig = filterLayersForPlatform(template.containerConfig, platform)
+        final containerFile = removeDroppedLayers(template.containerFile, template.containerConfig, containerConfig)
         final platformId = makeContainerId(
-                template.containerFile,
+                containerFile,
                 template.condaFile,
                 platform,
                 repo,
@@ -290,7 +316,7 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
 
         return new BuildRequest(
                 platformId,
-                template.containerFile,
+                containerFile,
                 template.condaFile,
                 template.workspace,
                 platformImage,

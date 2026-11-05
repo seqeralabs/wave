@@ -18,12 +18,16 @@
 
 package io.seqera.wave.service.job
 
+import io.seqera.data.workqueue.MessageLease
 import io.seqera.wave.configuration.JobManagerConfig
+import io.seqera.wave.configuration.SociConfig
 import spock.lang.Specification
 
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.TimeUnit
+import java.util.function.BooleanSupplier
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
@@ -32,6 +36,21 @@ import com.github.benmanes.caffeine.cache.Caffeine
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 class JobManagerTest extends Specification {
+
+    def 'should keep the reserved slots out of the SOCI jobs'() {
+        given:
+        def config = new JobManagerConfig(maxRunningJobs: 20)
+        def manager = new JobManager(config: config, sociConfig: new SociConfig(reservedJobs: 5))
+        and:
+        def soci = JobSpec.sociIndex('si-1', 'si-1', Instant.now(), Duration.ofMinutes(10), Path.of('/work'))
+        def push = JobSpec.sociPush('sp-2', 'sp-2', Instant.now(), Duration.ofMinutes(10), Path.of('/work'))
+        def build = JobSpec.build('bd-1', 'bd-1', Instant.now(), Duration.ofMinutes(10), Path.of('/work'))
+
+        expect:
+        manager.maxRunningJobs(soci) == 15
+        manager.maxRunningJobs(push) == 15
+        manager.maxRunningJobs(build) == 20
+    }
 
     def 'processJob should handle valid TransferJobSpec'() {
         given:
@@ -174,5 +193,33 @@ class JobManagerTest extends Specification {
         result == FAILED
         cache.getIfPresent('1') == null
 
+    }
+
+    def 'should keep the lease alive while the consumer runs'() {
+        given:
+        def lease = Mock(MessageLease)
+        BooleanSupplier probe = null
+
+        when:
+        JobManager.keepAlive(lease)
+        then:
+        1 * lease.bindLiveness(_) >> { args -> probe = args[0] as BooleanSupplier }
+        and:
+        probe.getAsBoolean()
+    }
+
+    def 'should close the job queues on graceful shutdown'() {
+        given:
+        def pendingQueue = Mock(JobPendingQueue)
+        def processingQueue = Mock(JobProcessingQueue)
+        def config = new JobManagerConfig(drainTimeout: Duration.ofSeconds(5))
+        def manager = new JobManager(config: config, pendingQueue: pendingQueue, processingQueue: processingQueue)
+
+        when:
+        manager.shutdownGracefully().toCompletableFuture().get(5, TimeUnit.SECONDS)
+
+        then:
+        1 * pendingQueue.close(Duration.ofSeconds(5))
+        1 * processingQueue.close(Duration.ofSeconds(5))
     }
 }

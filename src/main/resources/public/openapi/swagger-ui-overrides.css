@@ -1,0 +1,27 @@
+html {
+    box-sizing: border-box;
+    overflow: -moz-scrollbars-vertical;
+    overflow-y: scroll;
+}
+
+*, *:before, *:after {
+    box-sizing: inherit;
+}
+
+body {
+    margin: 0;
+    background: #fafafa;
+}
+
+/* Hide Swagger branding */
+.swagger-ui .topbar {
+    display: none;
+}
+
+.swagger-ui .info hgroup.main a {
+    display: none;
+}
+
+.swagger-ui .info .title small {
+    display: none;
+}

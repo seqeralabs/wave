@@ -1,11 +1,11 @@
 ---
 title: Use cases
-description: Learn how to use Wave CLI for building Docker and Singularity containers from various sources
-date: "2024-08-22"
-tags: [wave cli, use cases, containers, docker, singularity]
+description: Build Docker and Singularity containers from Dockerfiles, Conda packages, and other recipes with the Wave CLI
+date: 2024-08-22
+tags: [wave cli, use cases]
 ---
 
-The Wave CLI enables you to build Docker and Singularity containers from various sources, including Dockerfiles, Singularity definition files, file system directories, and Conda packages. The following sections describe several common use cases.
+Use the Wave CLI to build Docker and Singularity containers from Dockerfiles, Singularity definition files, file system directories, and Conda packages.
 
 :::tip
 To get started with an example Nextflow pipeline that uses Wave CLI, see [Wave CLI][start].
@@ -22,8 +22,8 @@ The Wave CLI supports container augmentation with a specified directory. You can
 
 Directory builds support the following arguments:
 
-- `--layer`: Specifies a directory containing layer content.
-- `--image`, `-i`: Specifies an existing container image (default: `docker.io`). Accepts image names (e.g., `alpine:latest`) or image URLs (e.g., `public.ecr.aws/docker/library/busybox`).
+- `--layer`: A directory containing layer content.
+- `--image`, `-i`: An existing container image (default: `docker.io`). Accepts image names (e.g., `alpine:latest`) or image URLs (e.g., `public.ecr.aws/docker/library/busybox`).
 
 **Limitations**
 
@@ -63,12 +63,12 @@ The Wave CLI supports building a container from a list of [Conda][conda] package
 
 Conda builds support the following arguments:
 
-- `--conda-base-image`: Specifies the base image for installing Conda packages (default: `mambaorg/micromamba:1.5.10-noble`).
-- `--conda-channels`: Specifies one or more comma-separated channels (default: `seqera,bioconda,conda-forge,defaults`).
-- `--conda-file`: Specifies a [Conda lock file][conda-lock] path or URL.
-- `--conda-package`: Specifies Conda packages to install. Supports expressions such as `bioconda::samtools=1.17` or `samtools>=1.0,<1.17`. Accepts a comma-separated list or can be specified multiple times.
-- `--conda-run-command`: Specifies a Docker `RUN` command to execute during the build. Can be specified multiple times.
-- `--build-template`: Specifies the build template to use. See [Build a container with a build template](#build-a-container-with-a-build-template) for more details.
+- `--conda-base-image`: A base image for installing Conda packages (default: `mambaorg/micromamba:1.5.10-noble`).
+- `--conda-channels`: A comma-separated list of Conda channels (default: `conda-forge,bioconda`).
+- `--conda-file`: A path or URL to a [Conda lock file][conda-lock]. With the `conda/pixi:v1-lock` build template, the path of a `pixi.lock` file.
+- `--conda-package`: A Conda package to install. Supports expressions such as `bioconda::samtools=1.17` or `samtools>=1.0,<1.17`. Accepts a comma-separated list or can be specified multiple times.
+- `--conda-run-command`: A Docker `RUN` command to execute during the build. Can be specified multiple times.
+- `--build-template`: A build template for the container build. See [Build a container with a build template](#build-a-container-with-a-build-template) for more details.
 
 **Example usage**
 
@@ -92,15 +92,18 @@ The Wave CLI supports build templates for creating container images from Conda p
 
 | Template              | Description                                                                                                      |
 |-----------------------|------------------------------------------------------------------------------------------------------------------|
-| `conda/micromamba:v1` | Single-stage build using Micromamba v1 (default). The final image includes the package manager.                  |
-| `conda/micromamba:v2` | Multi-stage build using Micromamba 2.x. Produces smaller images by excluding the package manager from the final stage (Singularity still uses a single-stage build). |
+| `conda/micromamba:v1` | Single-stage build using Micromamba v1. The final image includes the package manager.                  |
+| `conda/micromamba:v2` | Multi-stage build using Micromamba 2.x (default). Produces smaller images by excluding the package manager from the final stage (Singularity still uses a single-stage build). |
+| `conda/micromamba:v2-fast` | Multi-stage build using Micromamba 2.x that splits the Conda environment into multiple layers of at most 500 MB each before compression, with rare exceptions. Docker only. |
 | `conda/pixi:v1`       | Multi-stage build using [Pixi][pixi] package manager. Produces smaller images with faster dependency resolution (Singularity still uses a single-stage build). |
+| `conda/pixi:v1-fast`  | Multi-stage build using [Pixi][pixi] that splits the Conda environment into multiple layers of at most 500 MB each before compression, with rare exceptions. Docker only. |
+| `conda/pixi:v1-lock`  | Multi-stage build using [Pixi][pixi] that installs the environment from a `pixi.lock` file without re-solving it. See [Pixi lock file builds](../features/container-builds.mdx#pixi-lock-file-builds). |
 
 **Related CLI arguments**
 
 Build template selection supports the following argument:
 
-- `--build-template`: Specifies the build template to use for container builds.
+- `--build-template`: A build template for container builds.
 
 **Benefits of multi-stage templates**
 
@@ -112,9 +115,15 @@ Multi-stage build templates offer several advantages:
 
 **Singularity builds use single-stage**
 
-When building Singularity containers (`--singularity`) with the `conda/micromamba:v2` or `conda/pixi:v1` templates, single-stage builds are used. Singularity's proot-based builder cannot preserve file permissions when transferring files across stages, so the conda/pixi environment is installed directly in a single stage using the mamba/pixi image as the base.
+When building Singularity containers (`--singularity`) with the `conda/micromamba:v2`, `conda/pixi:v1`, or `conda/pixi:v1-lock` templates, single-stage builds are used. Singularity's proot-based builder cannot preserve file permissions when transferring files across stages, so the conda/pixi environment is installed directly in a single stage using the mamba/pixi image as the base.
 
-As a result, the `baseImage` option has no effect on Singularity builds — it only applies to Docker builds. The multi-stage image size optimization is also not available for Singularity.
+As a result, the `baseImage` option has no effect on Singularity builds. It only applies to Docker builds. The multi-stage image size optimization is also not available for Singularity.
+
+**Layered Conda builds**
+
+The `conda/micromamba:v2-fast` and `conda/pixi:v1-fast` templates install the environment like `conda/micromamba:v2` and `conda/pixi:v1`, then split it into multiple image layers grouped by Conda package. Large packages get their own layer, small packages are grouped together, and every layer holds at most 500 MB of files before compression, so compressed layers stay under 512 MB. The only exceptions are a single file larger than 500 MB, which gets a layer to itself, and layers merged when the environment needs more than 32 layers. The build log shows a warning in both cases. Use it when your registry or proxy rejects large layers, or to speed up image pulls. The build log shows which packages went into each layer, unless the build reuses the environment install step from the build cache.
+
+These templates build Docker images only. Wave rejects requests that combine them with `--singularity`. See [Layered Conda builds](../features/container-builds.mdx#layered-conda-builds) for more details.
 
 **Example usage**
 
@@ -133,6 +142,30 @@ wave \
   --conda-package samtools=1.17 \
   --conda-package bwa=0.7.15 \
   --build-template conda/micromamba:v2
+```
+
+Build a container with the Conda environment split into multiple layers using the `conda/micromamba:v2-fast` template:
+
+```bash
+wave \
+  --conda-package bioconda::gatk4=4.6.2.0 \
+  --build-template conda/micromamba:v2-fast
+```
+
+Build the same layered container using Pixi:
+
+```bash
+wave \
+  --conda-package bioconda::gatk4=4.6.2.0 \
+  --build-template conda/pixi:v1-fast
+```
+
+Build a container from an existing Pixi lock file, without re-solving the environment:
+
+```bash
+wave \
+  --conda-file pixi.lock \
+  --build-template conda/pixi:v1-lock
 ```
 
 Build a Singularity container using Pixi:
@@ -171,10 +204,9 @@ Container builds support the following arguments:
 
 Build a container that installs several packages from a `Dockerfile`:
 
-1. Create a Dockerfile:
+1. Create a `Dockerfile`:
 
-    ```bash
-    cat << EOF > ./Dockerfile
+    ```dockerfile title="Dockerfile"
     FROM alpine
 
     RUN apk update && apk add bash cowsay \
@@ -182,7 +214,6 @@ Build a container that installs several packages from a `Dockerfile`:
             --repository https://alpine.global.ssl.fastly.net/alpine/edge/community \
             --repository https://alpine.global.ssl.fastly.net/alpine/edge/main \
             --repository https://dl-3.alpinelinux.org/alpine/edge/testing
-    EOF
     ```
 
 1. Build and run the container:
@@ -194,13 +225,11 @@ Build a container that installs several packages from a `Dockerfile`:
 
 Build a container from a Dockerfile with a local build context:
 
-1. Create a Dockerfile that references a local file:
+1. Create a `Dockerfile` that references a local file:
 
-    ```bash
-    cat << EOF > ./Dockerfile
+    ```dockerfile title="Dockerfile"
     FROM alpine
     ADD hello.sh /usr/local/bin/
-    EOF
     ```
 
 1. Create the shell script in the build context directory:
@@ -229,36 +258,63 @@ The Wave CLI supports building [Singularity][singularity] containers. A target b
 
 Singularity container builds support the following arguments:
 
-- `--build-repo`: Specifies the target repository to save the built container.
+- `--build-repo`: A target repository for the built container.
 - `--freeze`: Enables container freeze mode.
+- `--platform`: A target platform. Accepts `linux/amd64`, `linux/arm64`, or `linux/amd64,linux/arm64` for a multi-architecture build.
 - `--singularity`, `-s`: Enables Singularity container builds.
-- `--tower-token`: Specifies a Seqera access token to access private registry credentials stored in Platform (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
-- `--tower-workspace-id`: Specifies a Seqera workspace ID (e.g., `1234567890`) where credentials are stored. Requires `--tower-token` flag or `TOWER_ACCESS_TOKEN` environment variable to be set.
+- `--tower-token`: A Seqera access token for accessing private registry credentials stored in Platform (env: `TOWER_ACCESS_TOKEN`).
+- `--tower-workspace-id`: A Seqera workspace ID where credentials are stored (e.g., `1234567890`). Requires `--tower-token` or `TOWER_ACCESS_TOKEN` to be set.
 
 **Limitations**
 
 The following limitations apply:
 
-- The `linux/arm64` platform is not currently supported.
+- Singularity containers are not scanned for security vulnerabilities.
+- Multi-architecture builds (`--platform linux/amd64,linux/arm64`) require a client that resolves the architecture from an OCI image index over `oras://`. Apptainer 1.5.0 or later does this (earlier versions always fetch the `linux/amd64` image); SingularityCE does not yet support platform selection for `oras://` sources and fails to pull a multi-architecture URI rather than falling back to a single architecture.
 
 **Example usage**
 
 Augment a Docker base image and save it as a Singularity container:
 
 ```bash
-wave -i alpine --layer context-dir/ --build-repo docker.io/user/repo
+wave -i alpine \
+  --layer context-dir/ \
+  --build-repo docker.io/user/repo
 ```
 
 Build a Singularity container from a SingularityCE definition (`.def`) file:
 
 ```bash
-wave -f hello-world.def --singularity --freeze --build-repo docker.io/user/repo
+wave -f hello-world.def \
+  --singularity \
+  --freeze \
+  --build-repo docker.io/user/repo
 ```
 
 Build a Singularity container from Conda packages:
 
 ```bash
-wave --conda-package bamtools=2.5.2 --conda-package samtools=1.17 --freeze --singularity --build-repo docker.io/user/repo
+wave --conda-package bamtools=2.5.2 \
+  --conda-package samtools=1.17 \
+  --freeze \
+  --singularity \
+  --build-repo docker.io/user/repo
+```
+
+Build a multi-architecture Singularity container from Conda packages. Wave builds one SIF per architecture and returns a single `oras://` URI backed by an OCI image index:
+
+```bash
+wave --conda-package bwa=0.7.15 \
+  --platform linux/amd64,linux/arm64 \
+  --freeze \
+  --singularity \
+  --build-repo docker.io/user/repo
+```
+
+Pull it with Apptainer 1.5.0 or later. Apptainer fetches the image that matches the host architecture:
+
+```bash
+apptainer pull oras://docker.io/user/repo:bwa-0.7.15--<hash>
 ```
 
 </details>
@@ -282,18 +338,56 @@ Ensure the following conditions are met:
 
 Container freeze builds support the following arguments:
 
-- `--build-repo`: Specifies the target repository to save the built container.
+- `--build-repo`: A target repository for the built container.
 - `--freeze`: Enables container freeze mode.
-- `--tower-token`: Specifies a Seqera access token for accessing private registry credentials (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
-- `--tower-workspace-id`: Specifies a Seqera workspace ID (e.g., `1234567890`) where credentials are stored.
+- `--tower-token`: A Seqera access token for accessing private registry credentials (env: `TOWER_ACCESS_TOKEN`).
+- `--tower-workspace-id`: A Seqera workspace ID where credentials are stored (e.g., `1234567890`).
 
 **Example usage**
 
 Freeze the `alpine` container image to a private Docker Hub registry:
 
 ```bash
-wave -i alpine --freeze \
-  --build-repo docker.io/<USER>/repo --tower-token <TOWER_TOKEN>
+wave -i alpine \
+  --freeze \
+  --build-repo docker.io/<user>/repo \
+  --tower-token <tower-access-token>
+```
+
+</details>
+
+## Scan a container for security vulnerabilities
+
+Wave automatically scans successfully built containers for vulnerabilities using the [Trivy](https://trivy.dev/) security scanner.
+
+<details open>
+<summary>**Scan a container for security vulnerabilities**</summary>
+
+**Prerequisites**
+
+Specify a Seqera access token via either the `TOWER_ACCESS_TOKEN` environment variable or the `--tower-token` Wave command-line option to receive an email link to the scan result.
+
+**Related CLI arguments**
+
+Container scans support the following arguments:
+
+- `--scan-mode`: A scan mode. Accepts `none`, `async`, or `required`.
+- `--scan-level`: A vulnerability severity level allowed in the container. Accepts `low`, `medium`, `high`, or `critical`. Can be specified multiple times.
+- `--await`: Waits for the build and scan to complete before returning.
+
+**Limitations**
+
+- Singularity containers are not currently scanned.
+
+**Example usage**
+
+Build the `bamtools` container and require a scan that only allows `low` and `medium` severity vulnerabilities:
+
+```bash
+wave --conda-package bamtools=2.5.2 \
+  --scan-mode required \
+  --scan-level low,medium \
+  --await
 ```
 
 </details>
@@ -318,16 +412,18 @@ Ensure the following conditions are met:
 Container mirroring supports the following arguments:
 
 - `--mirror`: Enables container mirror mode.
-- `--build-repo`: Specifies the target repository to save the mirrored container.
-- `--tower-token`: Specifies a Seqera access token to access private registry credentials stored in Platform (not required if the `TOWER_ACCESS_TOKEN` environment variable is set).
+- `--build-repo`: A target repository for the mirrored container.
+- `--tower-token`: A Seqera access token for accessing private registry credentials stored in Platform (env: `TOWER_ACCESS_TOKEN`).
 
 **Example usage**
 
 Mirror the [`samtools:0.1.16--2`][samtools] container image to a private Docker Hub registry:
 
 ```bash
-wave -i quay.io/biocontainers/samtools:0.1.16--2 --mirror \
-  --build-repo docker.io/<USER>/containers --tower-token <TOWER_TOKEN>
+wave -i quay.io/biocontainers/samtools:0.1.16--2 \
+  --mirror \
+  --build-repo docker.io/<user>/containers \
+  --tower-token <tower-access-token>
 ```
 
 </details>
@@ -340,3 +436,23 @@ wave -i quay.io/biocontainers/samtools:0.1.16--2 --mirror \
 [singularity]: https://docs.sylabs.io/guides/latest/user-guide/introduction.html
 [singularityce]: https://docs.sylabs.io/guides/latest/user-guide/definition_files.html
 [start]: /wave_docs/wave_repo/docs/tutorials/wave-cli.mdx
+
+## Enable SOCI lazy loading
+
+Attach a [SOCI](../soci.md) index to a container, so that hosts running the SOCI snapshotter start it before the image is fully downloaded:
+
+```bash
+wave -i rocker/r-ver:4.4.1 --platform linux/arm64 --soci
+```
+
+Wave indexes the container layers when the container is requested. A pull made before the indexing completes waits for it, up to 3 minutes by default, and gets the plain image if the indexing fails or times out.
+
+With `--freeze` or `--mirror`, Wave publishes the SOCI-enabled image to the sibling tag `<tag>-soci`, and returns it once it exists:
+
+```bash
+wave -i ubuntu:24.04 --freeze --build-repo <repo> --tower-token <token> --soci
+```
+
+An image specified by digest (`image@sha256:…`) gets a SOCI index only with `--freeze`. A mirror keeps the digest reference, so no `-soci` tag is published for it.
+
+- `--soci`: Attaches a SOCI index (index manifest v2) to the container.

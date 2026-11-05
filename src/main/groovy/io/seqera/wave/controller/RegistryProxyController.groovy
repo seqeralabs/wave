@@ -99,7 +99,7 @@ class RegistryProxyController {
     @Nullable
     private BlobCacheService blobCacheService
 
-    @Value('${wave.cache.digestStore.maxWeightMb:350}')
+    @Value('${wave.cache.digest-store.max-weight-mb:350}')
     private int cacheMaxWeightMb
 
     @Error
@@ -257,6 +257,9 @@ class RegistryProxyController {
 
     MutableHttpResponse<?> handleHead(RoutePath route, HttpRequest httpRequest) {
 
+        if( route.blob )
+            return handleHeadBlob(route, httpRequest)
+
         if ( !route.manifest ) {
             throw new DockerRegistryException("Invalid request HEAD '$httpRequest.path'", 400, 'UNKNOWN')
         }
@@ -269,6 +272,54 @@ class RegistryProxyController {
         return fromCacheDigest(entry)
     }
 
+    /**
+     * Handle a blob {@code HEAD} request, used by clients such as the SOCI snapshotter
+     * to find out the layer size before fetching it lazily
+     */
+    protected MutableHttpResponse<?> handleHeadBlob(RoutePath route, HttpRequest httpRequest) {
+        final entry = storage.getBlob(route.getTargetPath()).orElse(null)
+        String location
+        if( location=dockerRedirection(entry) ) {
+            log.debug "Blob HEAD found in the cache [docker]: ${route.path} ==> mapping to: ${location}"
+            return handleHeadDelegate0(RoutePath.parse(location, route.identity), httpRequest)
+        }
+        if( entry ) {
+            log.trace "Blob HEAD found in the cache [digest]: ${route.path} ==> entry: ${entry}"
+            return fromCacheHead(entry)
+        }
+        return handleHeadDelegate0(route, httpRequest)
+    }
+
+    protected MutableHttpResponse<?> handleHeadDelegate0(RoutePath route, HttpRequest httpRequest) {
+        final headers = httpRequest.headers.asMap() as Map<String, List<String>>
+        final resp = proxyService.handleHead(route, headers)
+        if( resp.isRedirect() ) {
+            final loc = log.isTraceEnabled() ? resp.location : stripUriParams(resp.location)
+            log.debug "Forwarding blob HEAD '${route.getTargetContainer()}' to '${loc}'"
+            return fromRedirectResponse(resp)
+        }
+        log.debug "Returning blob HEAD from repository: '${route.getTargetContainer()}' - status=${resp.statusCode}"
+        return HttpResponse
+                .status(HttpStatus.valueOf(resp.statusCode))
+                .headers(toMutableHeaders(resp.headers))
+    }
+
+    private MutableHttpResponse fromCacheHead(DigestStore entry) {
+        // do not use 'fromCacheDigest' because 'getBytes' could download the blob content
+        return HttpResponse
+                .ok()
+                .headers(cacheDigestHeaders(entry))
+    }
+
+    static private Map<CharSequence, CharSequence> cacheDigestHeaders(DigestStore entry) {
+        return Map.of(
+                "Content-Length", String.valueOf(entry.getSize()),
+                "Content-Type", entry.mediaType,
+                "docker-content-digest", entry.digest,
+                "etag", entry.digest,
+                "docker-distribution-api-version", "registry/2.0") as Map<CharSequence, CharSequence>
+    }
+
     MutableHttpResponse<?> handleTagList(RoutePath route, HttpRequest httpRequest) {
         final headers = httpRequest.headers.asMap() as Map<String, List<String>>
         final resp = proxyService.handleRequest(route, headers)
@@ -279,18 +330,9 @@ class RegistryProxyController {
     }
 
     private MutableHttpResponse fromCacheDigest(DigestStore entry) {
-        final size = entry.getSize()
-        final resp = entry.getBytes()
-
-        Map<CharSequence, CharSequence> headers = Map.of(
-                "Content-Length", String.valueOf(size),
-                "Content-Type", entry.mediaType,
-                "docker-content-digest", entry.digest,
-                "etag", entry.digest,
-                "docker-distribution-api-version", "registry/2.0") as Map<CharSequence, CharSequence>
-
+        final headers = cacheDigestHeaders(entry)
         return HttpResponse
-                .ok(resp)
+                .ok(entry.getBytes())
                 .headers(headers)
     }
 

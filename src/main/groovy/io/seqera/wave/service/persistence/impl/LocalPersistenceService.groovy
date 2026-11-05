@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.persistence.impl
 
+import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
@@ -95,6 +96,15 @@ class LocalPersistenceService implements PersistenceService {
         final data = requestStore.get(token)
         if( data ) {
             requestStore.put(token, new WaveContainerRecord(data, digest.source, digest.target))
+        }
+        CompletableFuture.<Void>completedFuture(null)
+    }
+
+    @Override
+    CompletableFuture<Void> updateContainerExpirationAsync(String token, Instant expiration) {
+        final data = requestStore.get(token)
+        if( data ) {
+            requestStore.put(token, data.withExpiration(expiration))
         }
         CompletableFuture.<Void>completedFuture(null)
     }

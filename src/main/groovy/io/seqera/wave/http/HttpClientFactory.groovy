@@ -26,6 +26,7 @@ import java.util.concurrent.locks.ReentrantLock
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.util.net.ProxyConfig
 import io.seqera.wave.util.CustomThreadFactory
 /**
  * Java HttpClient factory
@@ -48,6 +49,15 @@ class HttpClientFactory {
 
     private static HttpClient client2
 
+    private static volatile ProxyConfig proxyConfig
+
+    /**
+     * Set the egress proxy applied to the clients created by this factory. Resolved once at
+     * bootstrap by {@link io.seqera.wave.configuration.HttpClientConfig}, before any client is built.
+     */
+    static void setProxyConfig(ProxyConfig config) {
+        proxyConfig = config
+    }
 
     static HttpClient followRedirectsHttpClient() {
         if( client1!=null )
@@ -80,25 +90,36 @@ class HttpClientFactory {
     }
 
     static private HttpClient followRedirectsHttpClient0() {
-        final result = HttpClient.newBuilder()
+        final result = applyProxy(HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .connectTimeout(timeout)
-                .executor(threadPool)
+                .executor(threadPool))
                 .build()
         log.debug "Creating new followRedirectsHttpClient: $result"
         return result
     }
 
     static private HttpClient neverRedirectsHttpClient0() {
-        final result = HttpClient.newBuilder()
+        final result = applyProxy(HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NEVER)
                 .connectTimeout(timeout)
-                .executor(threadPool)
+                .executor(threadPool))
                 .build()
         log.debug "Creating new neverRedirectsHttpClient: $result"
         return result
+    }
+
+    static private HttpClient.Builder applyProxy(HttpClient.Builder builder) {
+        final proxy = proxyConfig
+        if( proxy ) {
+            builder.proxy(proxy.toProxySelector())
+            final auth = proxy.toAuthenticator()
+            if( auth )
+                builder.authenticator(auth)
+        }
+        return builder
     }
 
 }
