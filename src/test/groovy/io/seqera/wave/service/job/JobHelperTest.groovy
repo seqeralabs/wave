@@ -42,11 +42,30 @@ class JobHelperTest extends Specification {
     }
 
     def 'should adopt the existing container when a launch is redelivered'() {
+        given:
+        GroovySpy(JobHelper, global: true)
+
         when:
         JobHelper.awaitDockerLaunch(run(CONFLICT, 125), 'bd-123', 'build container')
 
         then:
+        1 * JobHelper.startIfCreated('bd-123', 'build container') >> null
         noExceptionThrown()
+    }
+
+    def 'should not start an adopted container already started'() {
+        given:
+        GroovySpy(JobHelper, global: true)
+
+        when:
+        JobHelper.startIfCreated('bd-123', 'build container')
+
+        then:
+        1 * JobHelper.dockerContainerStatus('bd-123') >> STATUS
+        noExceptionThrown()
+
+        where:
+        STATUS << ['running', 'exited', null]
     }
 
     def 'should propagate a docker launch failure other than a name conflict'() {

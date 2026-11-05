@@ -51,10 +51,31 @@ class JobHelper {
             return
         final output = process.text
         if( isDockerNameConflict(output) ) {
-            log.warn "Docker container=$name already exists - adopting the running container"
+            log.warn "Docker container=$name already exists - adopting the existing container"
+            startIfCreated(name, what)
             return
         }
         throw new IllegalStateException("Unable to launch ${what} - exitCode=${process.exitValue()}; output=${output}")
+    }
+
+    /**
+     * Start the adopted container when the previous launch attempt created it but did not start it,
+     * otherwise it would stay in the {@code created} state, reported as pending, until the job times out.
+     * Containers in any other state are left as they are.
+     */
+    static protected void startIfCreated(String name, String what) {
+        if( dockerContainerStatus(name)!='created' )
+            return
+        log.warn "Docker container=$name was created but never started - starting it"
+        final process = new ProcessBuilder('docker', 'start', name).redirectErrorStream(true).start()
+        if( process.waitFor()!=0 )
+            throw new IllegalStateException("Unable to start ${what} - exitCode=${process.exitValue()}; output=${process.text}")
+    }
+
+    static protected String dockerContainerStatus(String name) {
+        final process = new ProcessBuilder('docker', 'inspect', '--format', '{{.State.Status}}', name).redirectErrorStream(true).start()
+        final output = process.text.trim()
+        return process.waitFor()==0 ? output : null
     }
 
     static protected boolean isDockerNameConflict(String output) {
