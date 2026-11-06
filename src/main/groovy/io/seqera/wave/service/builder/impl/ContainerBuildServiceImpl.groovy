@@ -55,7 +55,6 @@ import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
-import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.scan.ContainerScanService
@@ -120,9 +119,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
 
     @Inject
     private PersistenceService persistenceService
-
-    @Inject
-    private MetricsService metricsService
 
     @Inject
     private RegistryProxyService proxyService
@@ -228,10 +224,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
             buildStore.removeBuild(request.targetImage)
             throw e
         }
-
-        //increment metrics
-        CompletableFuture
-                .runAsync(() -> metricsService.incrementBuildsCounter(request.identity, request.platform.arch), executor)
 
         // launch the build async
         CompletableFuture
