@@ -1,14 +1,10 @@
 name: Test condasplit
 
-# the image is published by the Wave release, see the `Publish condasplit image` step in build.yml
+# the image is published by the Wave release, see the `Publish condasplit image` step in build.yml.
+# It runs on every pull request, without a paths filter, because check-version is a required check:
+# a required check skipped by a paths filter stays pending and blocks the merge
 on:
   pull_request:
-    paths:
-      - 'condasplit/**'
-      - '.github/workflows/build-condasplit.yml'
-      # the `wave.build.condasplit-image` default, see the check-version job
-      - 'src/main/resources/application.yml'
-      - 'src/main/groovy/io/seqera/wave/configuration/BuildConfig.groovy'
 
 permissions:
   contents: read
@@ -32,7 +28,7 @@ jobs:
           cd frontend && go vet ./... && go test ./...
 
   # fails when the sources change without a VERSION bump, otherwise the next Wave release fails
-  # to publish the image, see `make check`
+  # to publish the image, see `make check`. Required by the master branch protection
   check-version:
     runs-on: ubuntu-latest
     steps:
