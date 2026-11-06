@@ -839,6 +839,21 @@ class ContainerHelperTest extends Specification {
                     && echo ">> CONDA_LOCK_START" \\
                     && cat environment.lock \\
                     && echo "<< CONDA_LOCK_END"
+                # combine conda 'activate.d' env hooks into a single script, since the prod stage below never runs
+                # `micromamba activate` to trigger them
+                RUN mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d" \\
+                    && printf '%s\\n' \\
+                        '#!/bin/bash' \\
+                        'case $- in *u*) __wave_nounset=1 ;; esac' \\
+                        'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
+                        'set +u' \\
+                        > "$MAMBA_ROOT_PREFIX/etc/conda/activate.d/.wave-combined-activate.sh" \\
+                    && (cat "$MAMBA_ROOT_PREFIX"/etc/conda/activate.d/*.sh 2>/dev/null || true) \\
+                        >> "$MAMBA_ROOT_PREFIX/etc/conda/activate.d/.wave-combined-activate.sh" \\
+                    && printf '%s\\n' \\
+                        '[ -n "${__wave_nounset:-}" ] && set -u' \\
+                        'unset __wave_nounset' \\
+                        >> "$MAMBA_ROOT_PREFIX/etc/conda/activate.d/.wave-combined-activate.sh"
 
                 FROM ubuntu:24.04 AS prod
                 ARG MAMBA_ROOT_PREFIX="/opt/conda"
@@ -846,6 +861,7 @@ class ContainerHelperTest extends Specification {
                 COPY --from=build "$MAMBA_ROOT_PREFIX" "$MAMBA_ROOT_PREFIX"
                 USER root
                 ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                ENV BASH_ENV="$MAMBA_ROOT_PREFIX/etc/conda/activate.d/.wave-combined-activate.sh"
                 '''.stripIndent()
     }
 
@@ -881,6 +897,21 @@ class ContainerHelperTest extends Specification {
                     && echo ">> CONDA_LOCK_START" \\
                     && cat environment.lock \\
                     && echo "<< CONDA_LOCK_END"
+                # combine conda 'activate.d' env hooks into a single script, since the prod stage below never runs
+                # `micromamba activate` to trigger them
+                RUN mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d" \\
+                    && printf '%s\\n' \\
+                        '#!/bin/bash' \\
+                        'case $- in *u*) __wave_nounset=1 ;; esac' \\
+                        'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
+                        'set +u' \\
+                        > "$MAMBA_ROOT_PREFIX/etc/conda/activate.d/.wave-combined-activate.sh" \\
+                    && (cat "$MAMBA_ROOT_PREFIX"/etc/conda/activate.d/*.sh 2>/dev/null || true) \\
+                        >> "$MAMBA_ROOT_PREFIX/etc/conda/activate.d/.wave-combined-activate.sh" \\
+                    && printf '%s\\n' \\
+                        '[ -n "${__wave_nounset:-}" ] && set -u' \\
+                        'unset __wave_nounset' \\
+                        >> "$MAMBA_ROOT_PREFIX/etc/conda/activate.d/.wave-combined-activate.sh"
 
                 FROM ubuntu:24.04 AS prod
                 ARG MAMBA_ROOT_PREFIX="/opt/conda"
@@ -888,6 +919,7 @@ class ContainerHelperTest extends Specification {
                 COPY --from=build "$MAMBA_ROOT_PREFIX" "$MAMBA_ROOT_PREFIX"
                 USER root
                 ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                ENV BASH_ENV="$MAMBA_ROOT_PREFIX/etc/conda/activate.d/.wave-combined-activate.sh"
                 '''.stripIndent()
     }
 
@@ -928,6 +960,21 @@ class ContainerHelperTest extends Specification {
                     && echo ">> CONDA_LOCK_START" \\
                     && cat environment.lock \\
                     && echo "<< CONDA_LOCK_END"
+                # combine conda 'activate.d' env hooks into a single script, since the prod stage below never runs
+                # `micromamba activate` to trigger them
+                RUN mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d" \\
+                    && printf '%s\\n' \\
+                        '#!/bin/bash' \\
+                        'case $- in *u*) __wave_nounset=1 ;; esac' \\
+                        'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
+                        'set +u' \\
+                        > "$MAMBA_ROOT_PREFIX/etc/conda/activate.d/.wave-combined-activate.sh" \\
+                    && (cat "$MAMBA_ROOT_PREFIX"/etc/conda/activate.d/*.sh 2>/dev/null || true) \\
+                        >> "$MAMBA_ROOT_PREFIX/etc/conda/activate.d/.wave-combined-activate.sh" \\
+                    && printf '%s\\n' \\
+                        '[ -n "${__wave_nounset:-}" ] && set -u' \\
+                        'unset __wave_nounset' \\
+                        >> "$MAMBA_ROOT_PREFIX/etc/conda/activate.d/.wave-combined-activate.sh"
 
                 FROM debian:12 AS prod
                 ARG MAMBA_ROOT_PREFIX="/opt/conda"
@@ -935,6 +982,7 @@ class ContainerHelperTest extends Specification {
                 COPY --from=build "$MAMBA_ROOT_PREFIX" "$MAMBA_ROOT_PREFIX"
                 USER root
                 ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                ENV BASH_ENV="$MAMBA_ROOT_PREFIX/etc/conda/activate.d/.wave-combined-activate.sh"
                 '''.stripIndent()
     }
 
@@ -969,6 +1017,21 @@ class ContainerHelperTest extends Specification {
                     && echo ">> CONDA_LOCK_START" \\
                     && cat environment.lock \\
                     && echo "<< CONDA_LOCK_END"
+                # combine conda 'activate.d' env hooks into a single script, since the prod stage below never runs
+                # `micromamba activate` to trigger them
+                RUN mkdir -p "$MAMBA_ROOT_PREFIX/etc/conda/activate.d" \\
+                    && printf '%s\\n' \\
+                        '#!/bin/bash' \\
+                        'case $- in *u*) __wave_nounset=1 ;; esac' \\
+                        'export CONDA_PREFIX="${CONDA_PREFIX:-$MAMBA_ROOT_PREFIX}"' \\
+                        'set +u' \\
+                        > "$MAMBA_ROOT_PREFIX/etc/conda/activate.d/.wave-combined-activate.sh" \\
+                    && (cat "$MAMBA_ROOT_PREFIX"/etc/conda/activate.d/*.sh 2>/dev/null || true) \\
+                        >> "$MAMBA_ROOT_PREFIX/etc/conda/activate.d/.wave-combined-activate.sh" \\
+                    && printf '%s\\n' \\
+                        '[ -n "${__wave_nounset:-}" ] && set -u' \\
+                        'unset __wave_nounset' \\
+                        >> "$MAMBA_ROOT_PREFIX/etc/conda/activate.d/.wave-combined-activate.sh"
 
                 FROM ubuntu:24.04 AS prod
                 ARG MAMBA_ROOT_PREFIX="/opt/conda"
@@ -976,6 +1039,7 @@ class ContainerHelperTest extends Specification {
                 COPY --from=build "$MAMBA_ROOT_PREFIX" "$MAMBA_ROOT_PREFIX"
                 USER root
                 ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                ENV BASH_ENV="$MAMBA_ROOT_PREFIX/etc/conda/activate.d/.wave-combined-activate.sh"
                 '''.stripIndent()
     }
 
