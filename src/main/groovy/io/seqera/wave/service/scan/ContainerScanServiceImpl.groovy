@@ -47,7 +47,6 @@ import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
-import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.mirror.MirrorEntry
 import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.persistence.PersistenceService
@@ -93,9 +92,6 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
 
     @Inject
     private ContainerInspectService inspectService
-
-    @Inject
-    private MetricsService metricsService
 
     @Inject
     private CleanupService cleanupService
@@ -218,7 +214,6 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
 
     protected void launch(ScanRequest request) {
         try {
-            incrScanMetrics(request)
             jobService.launchScan(request)
         }
         catch (Throwable e){
@@ -227,16 +222,6 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
         }
     }
 
-    protected void incrScanMetrics(ScanRequest request) {
-        try {
-            //increment metrics
-            if (request.platform)
-                metricsService.incrementScansCounter(request.identity, request.platform.arch)
-        }
-        catch (Throwable e) {
-            log.warn "Enable to increase scan metrics - cause: ${e.cause}", e
-        }
-    }
     
     protected ScanRequest fromBuild(BuildRequest request) {
         return fromBuild(request, request.scanId, request.platform)
