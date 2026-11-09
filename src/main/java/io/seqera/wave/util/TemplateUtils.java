@@ -123,6 +123,22 @@ public class TemplateUtils {
         return condaFileTemplate1("/templates/conda-pixi-v1-fast/dockerfile-conda-file.txt", opts, Map.of("layers_image", layersImage));
     }
 
+    static public String pixiLockUrlToDockerFile(String lockUrl, PixiOpts opts) {
+        return pixiLockTemplate("/templates/conda-pixi-v1-lock/dockerfile-pixi-lock-url.txt", lockUrl, opts);
+    }
+
+    static public String pixiLockUrlToSingularityFile(String lockUrl, PixiOpts opts) {
+        return pixiLockTemplate("/templates/conda-pixi-v1-lock/singularityfile-pixi-lock-url.txt", lockUrl, opts);
+    }
+
+    static public String pixiLockFileToDockerFile(PixiOpts opts) {
+        return pixiLockTemplate("/templates/conda-pixi-v1-lock/dockerfile-pixi-lock-file.txt", null, opts);
+    }
+
+    static public String pixiLockFileToSingularityFile(PixiOpts opts) {
+        return pixiLockTemplate("/templates/conda-pixi-v1-lock/singularityfile-pixi-lock-file.txt", null, opts);
+    }
+
     static public String condaPackagesToDockerFileUsingV2(String packages, List<String> condaChannels, CondaOpts opts) {
         return condaPackagesTemplate1(
                 "/templates/conda-micromamba-v2/dockerfile-conda-packages.txt",
@@ -219,6 +235,30 @@ public class TemplateUtils {
         return addCommands(result, opts.commands, singularity);
     }
 
+    static protected String pixiLockTemplate(String template, String lockUrl, PixiOpts opts) {
+        final boolean singularity = template.contains("/singularityfile");
+        final Map<String,String> binding = new HashMap<>();
+        binding.put("base_image", opts.baseImage);
+        binding.put("pixi_image", opts.pixiImage);
+        binding.put("lock_url", lockUrl);
+        binding.put("manifest_generate", pixiManifestFromLock(singularity));
+        binding.put("base_packages", pixiGlobalInstallBasePackage0(opts.basePackages, singularity));
+
+        final String result = renderTemplate0(template, binding, List.of("wave_context_dir"));
+        return addCommands(result, opts.commands, singularity);
+    }
+
+    /**
+     * Generate a minimal pixi.toml with the channels and platforms of the lock file,
+     * which is all {@code pixi install --frozen} needs.
+     */
+    private static String pixiManifestFromLock(boolean singularity) {
+        final String result = "PLATFORMS=$(awk '/- conda:/{n=split($NF,u,\"/\");p=u[n-1];if(p!=\"noarch\")print p}' pixi.lock | sort -u | awk '{printf \"\\\"%s\\\", \", $0}' | sed 's/, $//')"
+                + " && CHANNELS=$(awk '/^    channels:/{ch=1;next} ch&&/- url:/{gsub(/^ *- url: */,\"\");gsub(/https:\\/\\/conda\\.anaconda\\.org\\//,\"\");gsub(/\\/$/,\"\");printf \"\\\"%s\\\", \",$0;next} ch&&!/^    -/{exit}' pixi.lock | sed 's/, $//')"
+                + " && printf '[workspace]\\nname = \"wave-env\"\\nchannels = [%s]\\nplatforms = [%s]\\n' \"$CHANNELS\" \"$PLATFORMS\" > pixi.toml";
+        return singularity ? result : result + " \\";
+    }
+
     static private String renderTemplate0(String templatePath, Map<String,String> binding) {
         return renderTemplate0(templatePath, binding, List.of());
     }
@@ -254,6 +294,17 @@ public class TemplateUtils {
         return result==null || singularity
                 ? result
                 : "&& " + result + " \\";
+    }
+
+    /**
+     * Install {@code which} and the base packages with {@code pixi global install}, so the
+     * locked environment is not re-solved.
+     */
+    private static String pixiGlobalInstallBasePackage0(String basePackages, boolean singularity) {
+        String result = "pixi global install conda-forge::which";
+        if( !StringUtils.isEmpty(basePackages) )
+            result += " " + basePackages;
+        return singularity ? result : "&& " + result + " \\";
     }
 
     static private String addCommands(String result, List<String> commands, boolean singularity) {

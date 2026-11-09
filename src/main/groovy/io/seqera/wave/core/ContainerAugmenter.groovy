@@ -549,7 +549,7 @@ class ContainerAugmenter {
         return new Tuple2<String, Integer>(digest, size)
     }
 
-    protected static String processEntryPoint(value) {
+    static String processEntryPoint(value) {
         if( !value )
             return null
         if( value instanceof List ) {

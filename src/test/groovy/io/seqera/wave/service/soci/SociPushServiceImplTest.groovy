@@ -258,7 +258,7 @@ class SociPushServiceImplTest extends Specification {
 
         expect:
         service.getJobEntry(JobSpec.sociPush(SOCI, current.request.requestId, Instant.now(), Duration.ofMinutes(1), current.request.workDir)) == current
-        service.getJobEntry(JobSpec.sociPush(SOCI, 'socipush-other', Instant.now(), Duration.ofMinutes(1), current.request.workDir)) == null
+        service.getJobEntry(JobSpec.sociPush(SOCI, 'sp-other', Instant.now(), Duration.ofMinutes(1), current.request.workDir)) == null
     }
 
     def 'should select all the image manifests of an index, without the attestations' () {

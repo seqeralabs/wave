@@ -201,6 +201,16 @@ container=$(wave --singularity --conda-package bamtools=2.5.2 --build-repo docke
 singularity exec $container bamtools --version
 ```
 
+#### Build a container with a SOCI index for lazy loading
+
+Attach a [SOCI](https://github.com/awslabs/soci-snapshotter) index to the container, so that hosts running the
+SOCI snapshotter start it before the whole image is downloaded. With `--freeze` the returned image is the
+SOCI-enabled `<tag>-soci` image once its index is ready. The option cannot be combined with `--singularity`.
+
+```bash
+container=$(wave --conda-package bamtools=2.5.2 --soci --freeze --build-repo <YOUR REGISTRY> --tower-token <YOUR ACCESS TOKEN> --await)
+```
+
 #### Mirror (aka copy) a container to another registry
 
 ```bash
