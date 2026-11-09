@@ -26,6 +26,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.configuration.SociEnabled
+import io.seqera.wave.service.job.JobHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -51,9 +52,7 @@ class DockerSociIndexStrategy extends SociIndexStrategy {
                 .directory(workDir.toFile())
                 .redirectErrorStream(true)
                 .start()
-        if( process.waitFor()!=0 ) {
-            throw new IllegalStateException("Unable to launch SOCI index job - exitCode=${process.exitValue()}; output=${process.text}")
-        }
+        JobHelper.awaitDockerLaunch(process, jobName, "SOCI index job")
     }
 
     protected List<String> dockerCommand(String jobName, Path workDir, List<String> command) {

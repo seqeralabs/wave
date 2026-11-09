@@ -28,6 +28,7 @@ import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.configuration.MirrorEnabled
 import io.seqera.wave.service.mirror.MirrorRequest
+import io.seqera.wave.service.job.JobHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static java.nio.file.StandardOpenOption.CREATE
@@ -70,9 +71,7 @@ class DockerMirrorStrategy extends MirrorStrategy {
                 .directory(request.workDir.toFile())
                 .redirectErrorStream(true)
                 .start()
-        if( process.waitFor()!=0 ) {
-            throw new IllegalStateException("Unable to launch mirror container job - exitCode=${process.exitValue()}; output=${process.text}")
-        }
+        JobHelper.awaitDockerLaunch(process, jobName, "mirror container job")
     }
 
     protected List<String> mirrorCmd(String name, Path workDir, Path credsFile ) {
