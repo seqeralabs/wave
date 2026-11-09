@@ -176,6 +176,20 @@
         "<wave-container-image>"
       ],
       "enabled": false
+    },
+    {
+      "description": "Wave is on Groovy 4: keep Spock on its groovy-4.0 builds",
+      "matchPackageNames": [
+        "org.spockframework:*"
+      ],
+      "allowedVersions": "/-groovy-4\\.0$/"
+    },
+    {
+      "description": "The -jdk5 builds of Byte Buddy target legacy JVMs, use the standard ones",
+      "matchPackageNames": [
+        "net.bytebuddy:*"
+      ],
+      "allowedVersions": "!/-jdk5$/"
     }
   ]
 }
