@@ -177,7 +177,7 @@ micronaut {
 //
 jib {
     from {
-        image = 'public.cr.seqera.io/seqeralabs/nf-jdk:corretto-25.0.5-al2023-jemalloc@sha256:701dd125700418c6c83c7084d8623542a4ceedf000622f3ce3c0a813a043c173'
+        image = 'public.cr.seqera.io/seqeralabs/nf-jdk:corretto-25.0.5-al2023-jemalloc@sha256:26edb30d66be57b1bf5777cf9f55cbffb7bfb1a89429091fd253e8c7d09fd60a'
         platforms {
             platform { architecture = 'amd64'; os = 'linux' }
             platform { architecture = 'arm64'; os = 'linux' }
