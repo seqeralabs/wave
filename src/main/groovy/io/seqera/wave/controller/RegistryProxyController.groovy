@@ -155,16 +155,11 @@ class RegistryProxyController {
         }
 
         if( route.manifest ) {
-            if ( !route.digest ) {
-                final entry = manifestForPath(route, httpRequest)
-                if (entry) {
-                    return fromCacheDigest(entry)
-                }
-            } else {
-                final entry = storage.getManifest(route.getTargetPath())
-                if (entry.present) {
-                    return fromCacheDigest(entry.get())
-                }
+            final entry = route.digest
+                    ? storage.getManifest(route.targetPath).orElse(null) ?: rebuildAugmentedManifest(route, httpRequest)
+                    : manifestForPath(route, httpRequest)
+            if( entry ) {
+                return fromCacheDigest(entry)
             }
         }
 
@@ -241,6 +236,13 @@ class RegistryProxyController {
             log.debug "Manifest cache hit ==> $key"
             return manifest.get()
         }
+        // an augmented manifest requested by digest can only be served from the cache,
+        // because the upstream registry does not know the digest computed by Wave
+        if( route.digest ) {
+            final rebuilt = rebuildAugmentedManifest(route, httpRequest)
+            if( rebuilt )
+                return rebuilt
+        }
         // resolve the manifest using the proxy service
         Map<String, List<String>> headers = httpRequest.headers.asMap() as Map<String, List<String>>
         final result = proxyService.handleManifest(route, headers)
@@ -249,6 +251,36 @@ class RegistryProxyController {
             storage.saveManifest(key, result)
         }
         return result
+    }
+
+    /**
+     * Rebuild an augmented manifest requested by digest when its cache entry has expired. The augmented digest
+     * is computed by Wave and unknown to the upstream registry, so it can only be served by re-running the
+     * augmentation for the tag carried by the container request.
+     *
+     * @return the rebuilt manifest, or {@code null} when the route is not an augmented wave container or the
+     *      rebuild did not produce it - the caller then falls back to the upstream registry
+     */
+    protected DigestStore rebuildAugmentedManifest(RoutePath route, HttpRequest httpRequest) {
+        final request = route.request
+        // only an augmented wave container can be rebuilt - a request without a container config is served
+        // with the upstream digest. a request is only carried by a token route
+        if( !request?.containerConfig )
+            return null
+        // the registry and image of a token route are taken from these same coordinates, only the
+        // reference differs - see RouteHandler.parse
+        final target = RoutePath.v2path('manifests', route.registry, route.image, request.coordinates().reference, request, route.token)
+        log.debug "Rebuilding expired augmented manifest '${route.targetPath}' from '${target.targetContainer}'"
+        try {
+            proxyService.handleManifest(target, httpRequest.headers.asMap() as Map<String, List<String>>)
+        }
+        catch (Exception e) {
+            // the fallback to the upstream registry is expected, no need for a stack trace
+            log.warn "Unable to rebuild augmented manifest '${route.targetPath}' - cause: ${e.message}"
+            return null
+        }
+        // the requested digest is either the rebuilt manifest/index or a manifest nested in it
+        return storage.getManifest(route.targetPath).orElse(null)
     }
 
     static protected MutableHttpResponse<?> badRequest(String message) {
