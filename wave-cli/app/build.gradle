@@ -35,7 +35,7 @@ dependencies {
     implementation 'dev.failsafe:failsafe:3.3.2'
     implementation 'org.apache.commons:commons-lang3:3.21.0'
     implementation 'org.yaml:snakeyaml:2.7'
-    implementation 'org.semver4j:semver4j:5.8.0'
+    implementation 'org.semver4j:semver4j:6.0.0'
     annotationProcessor 'info.picocli:picocli-codegen:4.7.7'
     // bump commons-io version to address security vulnerabilities
     runtimeOnly 'commons-io:commons-io:2.22.0'
