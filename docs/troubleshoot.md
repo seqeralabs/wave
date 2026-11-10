@@ -152,7 +152,7 @@ To resolve, pull the image reference named in the error. If a script or tool sto
 
 **Applies to:** Wave Lite (Docker Compose), Wave Lite (Kubernetes), Wave (Amazon EKS).
 
-This issue occurs when `WAVE_SERVER_URL` is unset. Wave builds container token URLs from this value, and without it the URLs point at `http://localhost:9090`, which compute nodes cannot reach.
+This issue occurs when `WAVE_SERVER_URL` is unset. Wave builds container token URLs from this value. Without it, the URLs point at `http://localhost:9090`, which compute nodes cannot reach.
 
 To resolve, set `WAVE_SERVER_URL` to the HTTPS address that Seqera Platform and your compute environments use to reach Wave, then restart Wave.
 
