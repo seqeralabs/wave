@@ -439,6 +439,13 @@ Configure Kubernetes-specific settings for Wave. Build and scan processes share 
 : [Memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to Wave build processes.
   For example, set to `3Gi` (3 Gigabytes) or `2000Mi` (2000 Megabytes).
 
+`wave.build.k8s.resources.limits.cpu` *(optional)*
+: CPU resource [limit](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) for Wave build pods.
+
+`wave.build.k8s.resources.limits.memory` *(optional)*
+: Memory resource [limit](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) for Wave build pods. A build that exceeds it fails with exit status `137`.
+  For example, set to `8Gi` (8 Gigabytes).
+
 `wave.build.k8s.service-account` *(optional)*
 : Kubernetes service account name for Wave build pods.
 
