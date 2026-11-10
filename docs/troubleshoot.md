@@ -309,7 +309,7 @@ Scan and mirror requests fail the same way, with these messages:
 - `Security scan service is not enabled - Check Wave configuration setting 'wave.scan.enabled'`
 - `Mirror service is not enabled - Check Wave configuration setting 'wave.mirror.enabled'`
 
-To resolve on Wave Lite, remove the build, freeze, scan, and mirror settings from your pipeline configuration and use prebuilt images. Wave Lite cannot run these features on Docker Compose or on Kubernetes, and a Docker Compose deployment cannot be extended to the full configuration. To add the features, install Wave Lite on Amazon EKS and [enable Wave builds](install/aws-build.md).
+To resolve on Wave Lite, remove the build, freeze, scan, and mirror settings from your pipeline configuration and use prebuilt images. Wave Lite does not run these features, and a Docker Compose deployment cannot be extended to the full configuration. To add them, install Wave Lite on Amazon EKS and [enable Wave builds](install/aws-build.md).
 
 To resolve on Wave (Amazon EKS), enable the setting named in the error.
 
