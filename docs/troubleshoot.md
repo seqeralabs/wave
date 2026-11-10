@@ -11,7 +11,7 @@ When you use Wave, you might encounter the following issues. Each entry states w
 | **Hosted Wave** | The Seqera-hosted service at `wave.seqera.io`. The default for Seqera Platform Cloud, and for Seqera Platform Enterprise when `WAVE_SERVER_URL` keeps its default value. |
 | **Wave Lite (Docker Compose)** | Self-hosted on a single Docker host. Provides container augmentation, inspection, and private registry authentication. See [Install Wave Lite with Docker Compose](install/docker-compose.md). |
 | **Wave Lite (Kubernetes)** | Self-hosted on any conformant Kubernetes cluster, with the same capabilities as Docker Compose. See [Install Wave Lite on Kubernetes](install/kubernetes-lite.md). |
-| **Wave (Amazon EKS)** | Self-hosted Wave Lite on Amazon EKS, with builds, freeze, mirroring, and security scanning enabled. See [Enable Wave builds](install/aws-build.md). |
+| **Wave (Amazon EKS)** | Self-hosted Wave on Amazon EKS, with builds, freeze, mirroring, and security scanning enabled. See [Enable Wave builds](install/aws-build.md). |
 
 Only hosted Wave and Wave (Amazon EKS) run builds, freeze, mirroring, and security scanning. Wave Lite does not run them on Docker Compose or on Kubernetes.
 
