@@ -236,9 +236,9 @@ https://<registry>/v2/<namespace>/blobs/uploads/<id>: 520 <none>
 
 **Applies to:** Wave (Amazon EKS).
 
-This issue occurs because BuildKit requires user namespaces, and Bottlerocket sets `user.max_user_namespaces=0` by default. Every build fails on an otherwise correct [Wave build deployment](install/aws-build.md).
+Every build fails on an otherwise correct [Wave build deployment](install/aws-build.md). This issue occurs because BuildKit requires user namespaces, and Bottlerocket sets `user.max_user_namespaces=0` by default.
 
-To resolve, raise the limit on your build nodes. A value of `63359` is reasonable. Values that are too low cap concurrent build capacity and cause intermittent failures.
+To resolve, raise the limit on your build nodes, for example to `63359`. A low value caps concurrent builds and causes intermittent failures.
 
 Set the value at boot through the node group's startup script or user data. This route needs no privileged containers. If you cannot change the node configuration directly, apply the value with a DaemonSet scoped to the build nodes:
 
