@@ -92,7 +92,7 @@ Self-hosted Wave takes registry credentials from one of two sources:
 
 **Applies to:** Hosted Wave (freeze and mirror to your own repository), Wave (Amazon EKS).
 
-When Wave cannot push a built, frozen, or mirrored image, or cannot authenticate to the target registry, the failure usually matches one of these causes:
+When Wave cannot push a built, frozen, or mirrored image, or cannot authenticate to the target registry, check these causes:
 
 | Symptom | Cause | Resolution |
 | :------ | :---- | :--------- |
