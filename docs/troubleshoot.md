@@ -44,7 +44,7 @@ This issue occurs when Wave cannot look up the image digest in the source regist
 | Cause | How to check |
 | :---- | :----------- |
 | The image or tag does not exist. | From a machine that can reach the registry, run `docker manifest inspect <image>:<tag>`. |
-| The registry credentials are wrong. | In your Seqera workspace, select **Credentials**. Check that the container registry credential's hostname matches the registry in the image reference. Wave matches credentials by registry hostname and uses the first match. Test the same username and token with `docker login <registry>`. |
+| The registry credentials are wrong. | In your Seqera workspace, select **Credentials**. Check that the container registry credential's hostname matches the registry in the image reference. Wave matches credentials by longest matching registry+repository prefix with bare-hostname as fallback and uses the first match. Test the same username and token with `docker login <registry>`. |
 | Wave looked up the credentials in a different workspace. | Wave uses the workspace that `tower.workspaceId` sets in your Nextflow configuration. Without it, Wave uses your personal workspace. |
 | Wave cannot reach the registry. | See [Hosted Wave](#hosted-wave) or [Self-hosted Wave](#self-hosted-wave) below. |
 | The registry certificate is signed by a private certificate authority (CA). | Hosted Wave cannot trust a private CA. Self-hosted Wave needs the CA certificate in the Wave container's trust store. This procedure is not documented yet. Contact Seqera support. |
