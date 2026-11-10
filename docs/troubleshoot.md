@@ -100,7 +100,7 @@ When Wave cannot push a built, frozen, or mirrored image, or cannot authenticate
 | `403 Forbidden` or `404 Not Found` partway through the layer upload. An initial `HEAD` often succeeds and the final manifest `PUT` fails. | The repository does not exist, and the registry requires you to create it first. | Create the repository. For per-registry rules, see [Registry pre-creation](install/reference.md#registry-pre-creation). |
 | `403` on the final manifest `PUT`, even though the layer uploads appear to work. | The credentials lack push scope. | Grant the credential `push`, `write`, or `deploy` permission. |
 | `404` on push to JFrog Artifactory. | The repository key is missing from the path. | Make the repository key the first path segment after the host, for example `artifactory.example.com/docker-local/...`. |
-| STS `AccessDenied` errors in the Wave service logs, before the build pod starts (Amazon EKS only). | The AWS credentials or role target the wrong region or account for ECR. | Align `aws.region` and the jump-role configuration with the ECR registry. |
+| AWS Security Token Service (STS) `AccessDenied` errors in the Wave service logs, before the build pod starts (Amazon EKS only). | The AWS credentials or role target the wrong region or account for Amazon Elastic Container Registry (ECR). | Align `aws.region` and the jump-role configuration with the ECR registry. |
 
 ## Container pulls
 
