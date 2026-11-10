@@ -349,7 +349,7 @@ To resolve, generate a new access token in Seqera Platform and update your Nextf
 
 **Applies to:** Wave Lite (Docker Compose), Wave Lite (Kubernetes), Wave (Amazon EKS).
 
-This issue occurs when Wave has no pairing with the Seqera Platform endpoint in the request. Seqera Platform pairs with Wave when it connects to it, and Wave records the Platform API endpoint it paired with.
+This issue occurs when Wave has no pairing with the Seqera Platform endpoint in the request. Seqera Platform pairs with Wave when it connects to Wave. Wave records the Platform API endpoint of each pairing.
 
 To resolve, check that:
 
