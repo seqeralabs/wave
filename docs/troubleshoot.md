@@ -168,7 +168,7 @@ The error links to the build page at `<wave-host>/view/builds/<build-id>`, which
 
 | Symptom in the build log | Cause | Resolution |
 | :----------------------- | :---- | :--------- |
-| Exit status `137` | The build ran out of memory. Hosted Wave builds use up to about 3.6 GB. | Split large Conda environments across smaller images. On Amazon EKS, raise `wave.build.k8s.resources.requests.memory`. |
+| Exit status `137` | The build ran out of memory. Hosted Wave builds use up to about 3.6 GB. | Split large Conda environments across smaller images. On Amazon EKS, raise `wave.build.k8s.resources.limits.memory`. |
 | The build is cancelled after the time limit. | Hosted Wave cancels builds after 15 minutes, or 25 minutes with an access token and freeze enabled. See [Time limits](how-wave-works.md#time-limits). | Reduce the build size. On Amazon EKS, raise `wave.build.timeout` and `wave.build.trusted-timeout`. |
 | A Conda, Pixi, or Docker error | A package or base image cannot be resolved. | Check the package names, versions, and channels. |
 | An HTTP error on push | The registry or a proxy rejected the push. | See [Build errors from registries behind a reverse proxy](#build-errors-from-registries-behind-a-reverse-proxy) and [Registry push and authentication failures](#registry-push-and-authentication-failures). |
