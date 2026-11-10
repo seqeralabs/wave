@@ -13,7 +13,7 @@ When you use Wave, you might encounter the following issues. Each entry states w
 | **Wave Lite (Kubernetes)** | Self-hosted on any conformant Kubernetes cluster, with the same capabilities as Docker Compose. See [Install Wave Lite on Kubernetes](install/kubernetes-lite.md). |
 | **Wave (Amazon EKS)** | Self-hosted Wave on Amazon EKS, with builds, freeze, mirroring, and security scanning enabled. See [Enable Wave builds](install/aws-build.md). |
 
-Only hosted Wave and Wave (Amazon EKS) run builds, freeze, mirroring, and security scanning. Wave Lite does not run them on Docker Compose or on Kubernetes.
+Only hosted Wave and Wave (Amazon EKS) run builds, freeze, mirroring, and security scanning.
 
 ## Find the logs
 
