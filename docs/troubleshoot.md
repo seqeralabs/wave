@@ -44,7 +44,7 @@ This issue occurs when Wave cannot look up the image digest in the source regist
 | Cause | How to check |
 | :---- | :----------- |
 | The image or tag does not exist. | From a machine that can reach the registry, run `docker manifest inspect <image>:<tag>`. |
-| The registry credentials are wrong. | In your Seqera workspace, select **Credentials**. Check that the container registry credential's hostname matches the registry in the image reference. Wave matches credentials by longest matching registry+repository prefix with bare-hostname as fallback and uses the first match. Test the same username and token with `docker login <registry>`. |
+| The registry credentials are wrong. | In your Seqera workspace, select **Credentials**. Check that the container registry credential's hostname matches the registry in the image reference. Wave uses the credential whose **Registry server** value is the longest prefix of the image repository. For example, for `quay.io/org/image`, a `quay.io/org` credential takes precedence over a `quay.io` credential. To scope a Docker Hub credential to official images such as `ubuntu`, set **Registry server** to `docker.io/library`. Test the same username and token with `docker login <registry>`. |
 | Wave looked up the credentials in a different workspace. | Wave uses the workspace that `tower.workspaceId` sets in your Nextflow configuration. Without it, Wave uses your personal workspace. |
 | Wave cannot reach the registry. | See [Hosted Wave](#hosted-wave) or [Self-hosted Wave](#self-hosted-wave) below. |
 | The registry certificate is signed by a private certificate authority (CA). | Hosted Wave cannot trust a private CA. Self-hosted Wave needs the CA certificate in the Wave container's trust store. This procedure is not documented yet. Contact Seqera support. |
@@ -133,7 +133,7 @@ CannotPullContainerError: ... manifest for <wave-host>/wt/<token>/<image>@sha256
 
 This is a known issue. Wave caches an augmented manifest for one hour. A pull by tag rebuilds an expired manifest, but a pull by digest does not. The token is still valid, but the digest lookup fails.
 
-AWS Batch is affected because the ECS agent resolves the tag to a digest when the task arrives, then pulls by that digest. The pull fails if it starts more than an hour after Wave last cached the manifest.
+AWS Batch is affected because the Amazon Elastic Container Service (ECS) agent resolves the tag to a digest when the task arrives, then pulls by that digest. The pull fails if it starts more than an hour after Wave last cached the manifest.
 
 Workarounds:
 
@@ -280,7 +280,7 @@ For more on Bottlerocket settings, see the [Bottlerocket FAQs](https://bottleroc
 
 **Applies to:** Wave (Amazon EKS) earlier than 1.38.0.
 
-The image is built and pushed, but Wave reports the build, scan, or mirror job as failed with exit status `-1`. The build status returns `COMPLETED` with `succeeded: false`, and Nextflow stops the run.
+Wave builds and pushes the image, but reports the build, scan, or mirror job as failed with exit status `-1`. The build status returns `COMPLETED` with `succeeded: false`, and Nextflow stops the run.
 
 This issue occurs because the Kubernetes client bundled with Wave versions before 1.38.0 cannot parse the pod status that Kubernetes 1.34 and later return.
 
