@@ -323,7 +323,7 @@ Full message:
 Ephemeral container provisioning is not enabled in this Wave deployment - use 'freeze' mode to provision this container
 ```
 
-This issue occurs when the deployment does not serve augmented containers. Every container must then be provisioned with freeze.
+This issue occurs when the deployment does not serve augmented containers. Every container then requires freeze.
 
 To resolve on Wave (Amazon EKS), set `wave.freeze = true` in your Nextflow configuration.
 
