@@ -72,7 +72,7 @@ For AWS ECR, Wave can additionally authenticate using its own cloud identity, re
 
 The **Registry server** value of a container registry credential can be a bare host, such as `quay.io`, or a host followed by a repository path, such as `quay.io/org`. Path-scoped credentials let you use different credentials for different repositories on the same host.
 
-Wave compares the registry value against the full image repository, for example `quay.io/org/image`, and applies these rules:
+Wave compares the registry value against the full image repository, such as `quay.io/org/image`. The following rules apply:
 
 - A registry value matches when it equals the repository or is a prefix of it that ends at a `/` boundary. `quay.io/org` matches `quay.io/org/image` but not `quay.io/organization/image`.
 - When several credentials match, Wave uses the one with the longest registry value. A bare-host credential applies to any repository on that host that no more specific credential matches.
