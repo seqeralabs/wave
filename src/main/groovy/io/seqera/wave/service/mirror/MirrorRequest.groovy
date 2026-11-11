@@ -94,7 +94,12 @@ class MirrorRequest {
      */
     final PlatformId identity
 
-    static MirrorRequest create(String sourceImage, String targetImage, String digest, ContainerPlatform platform, Path workspace, String authJson, String scanId, Instant ts, String offsetId, PlatformId identity) {
+    /**
+     * Whether this mirror's metadata may be rendered by Wave's own view pages. Null means public.
+     */
+    final Boolean isPublic
+
+    static MirrorRequest create(String sourceImage, String targetImage, String digest, ContainerPlatform platform, Path workspace, String authJson, String scanId, Instant ts, String offsetId, PlatformId identity, Boolean isPublic = null) {
         assert sourceImage, "Argument 'sourceImage' cannot be null"
         assert targetImage, "Argument 'targetImage' cannot be empty"
         assert workspace, "Argument 'workspace' cannot be null"
@@ -112,7 +117,8 @@ class MirrorRequest {
                 scanId,
                 ts,
                 offsetId,
-                identity
+                identity,
+                isPublic
         )
     }
 
@@ -172,7 +178,8 @@ class MirrorRequest {
                 opts.scanId as String,
                 opts.creationTime as Instant,
                 opts.offsetId as String,
-                opts.identity as PlatformId
+                opts.identity as PlatformId,
+                opts.isPublic as Boolean
         )
     }
 }
