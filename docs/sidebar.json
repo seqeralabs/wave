@@ -25,6 +25,7 @@
             "features/container-builds",
             "features/container-freezes",
             "features/mirroring",
+            "features/soci",
             "features/security"
           ]
         },
@@ -67,7 +68,6 @@
         "api"
       ]
     },
-    "soci",
     "faq",
     "troubleshoot",
     {

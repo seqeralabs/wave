@@ -496,7 +496,7 @@ Configure Kubernetes resource requirements for Wave container mirroring operatio
 
 ## SOCI index
 
-Configure the SOCI lazy loading support, enabled by `wave.soci.enabled`. See [SOCI lazy loading](../soci.md).
+Configure the SOCI lazy loading support, enabled by `wave.soci.enabled`. See [SOCI lazy loading](../features/soci.mdx).
 
 `wave.soci.repo` *(optional)*
 : Repository where the zTOC artifacts are stored (default: `<wave.build.repo>/soci-ztoc`). It must be on the same registry as `wave.build.repo`. Its lifecycle expiry must be longer than `wave.soci.ztoc.duration`.
