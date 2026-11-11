@@ -5,8 +5,14 @@ From: {{pixi_image}}
 %post
     mkdir /opt/wave && cd /opt/wave
     pixi init --import /scratch/conda.yml
-    pixi add conda-forge::which
-    {{base_packages}}
+    pixi add conda-forge::which{{base_packages}} > /tmp/pixi.log 2>&1 \
+        && cat /tmp/pixi.log \
+        || { cat /tmp/pixi.log >&2 && grep -q __cuda /tmp/pixi.log \
+            && pixi workspace system-requirements add cuda 99 \
+            && export CONDA_OVERRIDE_CUDA="99" \
+            && pixi add conda-forge::which{{base_packages}} ; } \
+        || exit 1
+    pixi install
     pixi shell-hook > /shell-hook.sh
     echo ">> CONDA_LOCK_START"
     cat /opt/wave/pixi.lock
