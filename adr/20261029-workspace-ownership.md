@@ -93,6 +93,9 @@ record.owner.workspaceId == null
 record.owner.workspaceId in workspaces(caller)       → allow
 caller is 'owner' of org record.owner.orgId          → allow
 otherwise                                            → 403
+
+any Platform call above: unpaired, timeout or 5xx,
+and no cached result                                 → 503
 ```
 
 - The Platform asked is always the one stored on the record. Clients send no endpoint on the read path, so a request can't point Wave at another host
@@ -100,11 +103,13 @@ otherwise                                            → 403
 - That listing has one row per role the caller holds (`WorkspaceDao.findAllByParticipantUserId`): a workspace participant role gives a row with the `workspaceId`, an organisation role gives a row with the `orgId`, a null `workspaceId` and the org `roles`. An organisation owner who isn't also a participant of a workspace gets no row for it, yet administers it in Platform. The org-owner rule covers them from the same response, with no extra Platform call. Organisation `member` and `collaborator` roles alone don't grant access, as in Platform
 - The token is validated exactly as presented. The submit path's `TowerConnector.sendAsync1` swaps in a newer token from `JwtAuthStore` and refreshes on a 401. The access path calls Platform without the store lookup and without refresh: a 401 from Platform is a 401 from Wave
 - The user-info and workspace results are each cached for 60 seconds, under keys separate from the submit path's `userInfo` cache entries
+- When the record's Platform is unpaired or doesn't answer (timeout or 5xx) and no cached result is left, the check fails closed with 503. Wave never serves an expired user-info or workspace result. Public records are unaffected
 - A record's logs, conda lock file, SPDX file and scan logs follow the record
 
 **Rationale:**
 - Refreshing would let an expired or leaked token keep working for up to the 30 days `JwtAuthStore` keeps it
 - 60 seconds is the delay before a revoked token or a removed membership takes effect
+- Serving an expired result while Platform is down would stretch that delay to the length of the outage. Only the record's Platform can decide access, so while it is unavailable its private records are unavailable too
 
 #### 1.5 Workspace verified at submit for private requests
 
@@ -156,7 +161,7 @@ attrs.containerFile, condaFile, platform, repository, buildContext, containerCon
 - Public and anonymous build ids don't change, and neither does the existing cache
 - Mirror ids are already unique per request, so mirrors need no change
 
-**Cost:** content built privately is built and scanned once per workspace that requests it, with a cache scoped to that workspace. The build cache is keyed by build id (`ref=${cacheRepository}:${containerId}` in `BuildStrategy`), so a private build shares no cache with other workspaces or with public builds: the first private build of some content in a workspace is a full build, later ones in the same workspace hit its cache. This is intended: a private build shares nothing outside its workspace, its cache included.
+**Cost:** content built privately is built and scanned once per workspace that requests it, with a cache scoped to that workspace. The build cache is keyed by container id (`ref=${cacheRepository}:${containerId}` in `BuildStrategy`), so a private build shares no cache with other workspaces or with public builds: the first private build of some content in a workspace is a full build, later ones in the same workspace hit its cache. This is intended: a private build shares nothing outside its workspace, its cache included.
 
 #### 2.3 One canonical endpoint string
 
@@ -256,7 +261,7 @@ Rollout: PRs 1 to 6 change nothing visible, because no record is private yet; te
 - `private` on an anonymous request, or on the community repository, gives a public record and an unchanged build id
 - The same Containerfile sent as private from two workspaces, or from the same workspace id on two endpoints, gives two build ids; from one workspace, or sent as public, it gives one
 - A private request naming a workspace the caller doesn't belong to is rejected with 403
-- Access check: a token from another endpoint gets 401; an expired token gets 401 and isn't refreshed; a member of the record's workspace passes; an owner of the record's organisation who isn't a workspace participant passes; an organisation member who isn't a workspace participant gets 403; a valid user outside the workspace gets 403; on a personal-workspace record only the same user passes; results are cached for 60 seconds
+- Access check: a token from another endpoint gets 401; an expired token gets 401 and isn't refreshed; a member of the record's workspace passes; an owner of the record's organisation who isn't a workspace participant passes; an organisation member who isn't a workspace participant gets 403; a valid user outside the workspace gets 403; on a personal-workspace record only the same user passes; results are cached for 60 seconds; with the record's Platform unpaired, timing out or returning 5xx, a cached result is still used and an expired one gives 503
 - View pages: a private record with no session redirects to the record's Platform `/authorize`, never to another endpoint; a callback with an unknown or expired `state`, or a failed PKCE exchange, gives 401; the session cookie is host-only and `HttpOnly`; list pages never redirect
 - The current API still returns private records; the new API applies the check
 - Records written before this change still load and are public
