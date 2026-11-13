@@ -313,7 +313,7 @@ Configure how Wave builds container images and manages build logs.
   Options include: `uncompressed`, `estargz`, and `zstd`.
 
 `wave.build.condasplit-image` *(optional)*
-: Container image that supplies the `condasplit` tool used by `conda/micromamba:v2-fast` and `conda/pixi:v1-fast` builds to split the Conda environment into multiple image layers (default: `public.cr.seqera.io/wave/condasplit:v3`).
+: Container image that supplies the `condasplit` tool used by `conda/micromamba:v2-fast` and `conda/pixi:v1-fast` builds to split the Conda environment into multiple image layers (default: `public.cr.seqera.io/wave/condasplit:v4`).
   The same image is also the BuildKit frontend of these builds, named by the `# syntax=` directive of the generated Dockerfile. It adds one image layer for each layer directory created by `condasplit`.
   The image is used by the build only and is not included in the built image.
   If your installation can't access the default image, mirror it to a registry your build service can pull from and set this option to the mirrored image.
@@ -502,7 +502,7 @@ Configure the SOCI lazy loading support, enabled by `wave.soci.enabled`. See [SO
 : Repository where the zTOC artifacts are stored (default: `<wave.build.repo>/soci-ztoc`). It must be on the same registry as `wave.build.repo`. Its lifecycle expiry must be longer than `wave.soci.ztoc.duration`.
 
 `wave.soci.indexer-image` *(optional)*
-: Container image of the `soci-indexer` job (default: `public.cr.seqera.io/wave/soci-indexer:v0.1.0`).
+: Container image of the `soci-indexer` job (default: `public.cr.seqera.io/wave/soci-indexer:v0.1.1`).
 
 `wave.soci.min-layer-size` *(optional)*
 : Layers smaller than this size in bytes are not indexed (default: `10485760`).

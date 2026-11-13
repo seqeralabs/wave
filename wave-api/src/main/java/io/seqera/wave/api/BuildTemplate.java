@@ -36,6 +36,12 @@ public final class BuildTemplate {
     public static final String CONDA_PIXI_V1_FAST = "conda/pixi:v1-fast";
 
     /**
+     * Build template for Pixi-based multi-stage builds installing
+     * the environment from a Pixi lock file without re-solving it
+     */
+    public static final String CONDA_PIXI_V1_LOCK = "conda/pixi:v1-lock";
+
+    /**
      * Build template for Micromamba v1-based multi-stage builds
      */
     public static final String CONDA_MICROMAMBA_V1 = "conda/micromamba:v1";

@@ -67,7 +67,7 @@ Use the following options to configure Wave build settings:
 `wave.build.conda.baseImage`
 : _Requires Nextflow version 26.08.0-edge or later._
 : Base image for the final stage of the `conda/micromamba:v2` and `conda/micromamba:v2-fast` build templates.
-  Not supported with the `conda/pixi:v1` and `conda/pixi:v1-fast` templates.
+  Not supported with the `conda/pixi:v1`, `conda/pixi:v1-fast`, and `conda/pixi:v1-lock` templates.
   Default: `ubuntu:24.04`.
 
 `wave.build.conda.basePackages`
@@ -88,7 +88,7 @@ Use the following options to configure Wave build settings:
 `wave.build.template`
 : _Requires Nextflow version 25.12.0-edge or later._
 : Build template for container builds.
-  Supported values: `conda/micromamba:v1` (Micromamba 1.x with single-stage builds), `conda/micromamba:v2` (Micromamba 2.x with multi-stage builds), `conda/micromamba:v2-fast` (like `conda/micromamba:v2`, with the Conda environment split into multiple image layers, Docker only), `conda/pixi:v1` (Pixi with multi-stage builds), `conda/pixi:v1-fast` (like `conda/pixi:v1`, with the Conda environment split into multiple image layers, Docker only), `cran/installr:v1` (R/CRAN packages).
+  Supported values: `conda/micromamba:v1` (Micromamba 1.x with single-stage builds), `conda/micromamba:v2` (Micromamba 2.x with multi-stage builds), `conda/micromamba:v2-fast` (like `conda/micromamba:v2`, with the Conda environment split into multiple image layers, Docker only), `conda/pixi:v1` (Pixi with multi-stage builds), `conda/pixi:v1-fast` (like `conda/pixi:v1`, with the Conda environment split into multiple image layers, Docker only), `conda/pixi:v1-lock` (Pixi with multi-stage builds from a `pixi.lock` file set with the `conda` directive, see [Pixi lock file builds](../features/container-builds.mdx#pixi-lock-file-builds)), `cran/installr:v1` (R/CRAN packages).
   See [Multi-stage Conda builds](../features/container-builds.mdx#multi-stage-conda-builds) for details.
   Default: `conda/micromamba:v2` for Conda packages.
 

@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to coding agents when working with code in this repository.
 
 ## Project Overview
 
@@ -89,6 +89,12 @@ the two, otherwise both releases are triggered.
    The commit must not touch any file in `wave-cli/`.
 4. Git push to upstream master branch. The `build.yml` workflow publishes the condasplit image (when its tag is
    missing), then the Wave image and the `v<VERSION>` release. A failed condasplit build stops the release.
+5. Wait for the `Wave CI` run of the release commit to succeed (`gh run list --commit <SHA>`, then
+   `gh run watch <ID> --exit-status`) and check the release is published (`gh release view v<VERSION>`).
+6. Deploy it by opening a PR on `seqeralabs/platform-deployment`: on a new branch from `origin/master`, set
+   `newTag: v<VERSION>` in `applications/wave/environments/tower-{dev,stage,prod}/kustomization.yaml` (all three
+   environments together). Use the title `chore: Bump wave to v<VERSION> in all environments [NOTASK]` and list the
+   release changes in the PR body.
 
 ### Condasplit
 
