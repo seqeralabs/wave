@@ -18,8 +18,6 @@
 
 package io.seqera.wave.util
 
-import java.util.regex.Pattern
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Nullable
@@ -175,8 +173,6 @@ class ContainerHelper {
         return result
     }
 
-    static private final Pattern TRAILING_SLASHES = ~/\/+$/
-
     /**
      * Reduce a Platform endpoint to one canonical spelling, so that two spellings of the same
      * Platform don't become two record owners.
@@ -185,6 +181,9 @@ class ContainerHelper {
      * hashes the endpoint exactly as Platform sent it when it opened the channel, so normalising
      * one side alone would miss whenever Platform registered a non-canonical spelling. Making the
      * lookup tolerant of spelling needs the registration side normalised too, in the pairing library.
+     *
+     * Rebuilding the URI also drops any user info, query string and fragment, which a Platform
+     * endpoint has no use for - and keeps credentials out of a value that gets persisted.
      */
     static String normalisePlatformEndpoint(String endpoint) {
         if( !endpoint )
@@ -197,8 +196,7 @@ class ContainerHelper {
                 return result
             final scheme = uri.scheme.toLowerCase()
             final port = uri.port == defaultPort0(scheme) ? -1 : uri.port
-            final p = uri.path
-            final path = p?.endsWith('/') ? TRAILING_SLASHES.matcher(p).replaceAll('') : p
+            final path = uri.path?.replaceAll('/+$', '')
             return new URI(scheme, null, uri.host.toLowerCase(), port, path, null, null).toString()
         }
         catch( URISyntaxException e ) {

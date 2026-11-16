@@ -25,6 +25,8 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.seqera.wave.core.ContainerPlatform
+import com.fasterxml.jackson.annotation.JsonIgnore
+import io.seqera.wave.service.persistence.PersistOnly
 import io.seqera.wave.service.persistence.PostgresIgnore
 import io.seqera.wave.tower.RecordOwner
 import jakarta.inject.Singleton
@@ -54,7 +56,7 @@ class MirrorResult {
     final Long userId
     final String scanId
     final Status status
-    final RecordOwner owner   // null for an anonymous request
+    @JsonIgnore @PersistOnly final RecordOwner owner   // stored, not returned by the API
     final Duration duration
     final Integer exitCode
     final String logs

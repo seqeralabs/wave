@@ -21,6 +21,7 @@ package io.seqera.wave.service.persistence
 import java.time.Instant
 import java.time.OffsetDateTime
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
@@ -184,8 +185,11 @@ class WaveContainerRecord {
     final ChildRefs scanChildIds
 
     /**
-     * The Platform tenant owning this record, null for an anonymous request
+     * The Platform tenant owning this record, null for an anonymous request. Stored but
+     * not returned by the API: the read endpoints need no auth yet
      */
+    @JsonIgnore
+    @PersistOnly
     final RecordOwner owner
 
     WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequest data, String waveImage, String addr, Instant expiration) {

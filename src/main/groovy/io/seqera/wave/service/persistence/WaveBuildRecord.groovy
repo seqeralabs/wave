@@ -24,6 +24,7 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
+import com.fasterxml.jackson.annotation.JsonIgnore
 import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.core.ChildRefs
@@ -65,7 +66,7 @@ class WaveBuildRecord {
     String buildTemplate
     ChildRefs buildChildIds
     ChildRefs scanChildIds
-    RecordOwner owner   // null for an anonymous build
+    @JsonIgnore @PersistOnly RecordOwner owner   // stored, not returned by the API
 
     Boolean succeeded() {
         return duration != null ? (exitStatus==0) : null
