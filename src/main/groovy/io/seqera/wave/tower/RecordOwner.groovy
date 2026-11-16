@@ -23,8 +23,6 @@ import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import io.seqera.serde.moshi.MoshiSerializable
 
-import static io.seqera.wave.util.ContainerHelper.normalisePlatformEndpoint
-
 /**
  * Model the Platform tenant a Wave record belongs to.
  *
@@ -38,7 +36,14 @@ import static io.seqera.wave.util.ContainerHelper.normalisePlatformEndpoint
 @CompileStatic
 class RecordOwner implements MoshiSerializable {
 
-    /** User and workspace ids are unique only within one Platform, so neither identifies a tenant without this */
+    /**
+     * The Platform this record belongs to, stored exactly as the request carried it.
+     *
+     * This is the address the access check dials, and the pairing lookup resolves it by the
+     * spelling Platform itself registered - the submit path already refused anything else. A
+     * normalised value could miss both, and the owner is persisted, so that would need a
+     * backfill. The tenant key normalises this when it is computed; the stored value stays raw.
+     */
     String towerEndpoint
 
     Long userId
@@ -52,7 +57,7 @@ class RecordOwner implements MoshiSerializable {
         if( identity?.userId == null )
             return null
         new RecordOwner(
-                towerEndpoint: normalisePlatformEndpoint(identity.towerEndpoint),
+                towerEndpoint: identity.towerEndpoint,
                 userId: identity.userId,
                 workspaceId: identity.workspaceId )
     }

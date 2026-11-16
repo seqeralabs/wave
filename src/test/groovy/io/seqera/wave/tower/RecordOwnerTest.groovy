@@ -54,13 +54,14 @@ class RecordOwnerTest extends Specification {
         owner.towerEndpoint == 'https://api.cloud.seqera.io'
     }
 
-    def 'should normalise the endpoint so one Platform gives one owner' () {
+    def 'should keep the endpoint exactly as the request carried it' () {
         given:
-        def a = RecordOwner.of(new PlatformId(new User(id: 1), 2L, 'tok', 'https://api.cloud.seqera.io/'))
-        def b = RecordOwner.of(new PlatformId(new User(id: 1), 2L, 'tok', 'HTTPS://API.cloud.seqera.io:443'))
+        // the submit path only admits the spelling Platform paired with, and that is the
+        // address the access check has to dial back - normalising it here could miss
+        def owner = RecordOwner.of(new PlatformId(new User(id: 1), 2L, 'tok', 'https://api.cloud.seqera.io/'))
 
         expect:
-        a == b
+        owner.towerEndpoint == 'https://api.cloud.seqera.io/'
     }
 
     def 'should carry no access token' () {

@@ -50,9 +50,9 @@ class RecordOwnerWiringTest extends Specification {
     static final PlatformId AUTHENTICATED =
             new PlatformId(new User(id: 100), 200L, 'tok', 'https://api.cloud.seqera.io/')
 
-    // the endpoint is normalised, so the trailing slash the request carried is gone
+    // the endpoint is stored exactly as the request carried it, trailing slash included
     static final RecordOwner OWNER = new RecordOwner(
-            towerEndpoint: 'https://api.cloud.seqera.io', userId: 100L, workspaceId: 200L )
+            towerEndpoint: 'https://api.cloud.seqera.io/', userId: 100L, workspaceId: 200L )
 
     private static BuildRequest buildRequest(PlatformId identity) {
         BuildRequest.of(
@@ -169,8 +169,7 @@ class RecordOwnerWiringTest extends Specification {
         then:
         record.owner == OWNER
         and:
-        // the raw endpoint the client sent is still kept verbatim: it is what the pairing
-        // lookup keys on
+        // the record's own field and the owner agree: both are what the pairing lookup keys on
         record.towerEndpoint == 'https://api.cloud.seqera.io/'
     }
 
