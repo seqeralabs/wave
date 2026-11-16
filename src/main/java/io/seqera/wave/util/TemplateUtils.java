@@ -287,13 +287,12 @@ public class TemplateUtils {
                 : "&& " + result + " \\";
     }
 
-    private static String pixiAddBasePackage0(String basePackages, boolean singularity) {
-        String result = !StringUtils.isEmpty(basePackages)
-                ? String.format("pixi add %s", basePackages)
+    private static String pixiAddBasePackage0(String basePackages) {
+        // rendered inline after `pixi add conda-forge::which` so that a single
+        // `pixi add` command solves the whole environment
+        return !StringUtils.isEmpty(basePackages)
+                ? " " + basePackages
                 : null;
-        return result==null || singularity
-                ? result
-                : "&& " + result + " \\";
     }
 
     /**
