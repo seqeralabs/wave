@@ -120,6 +120,9 @@ class ScanEntry implements StateEntry<String>, JobEntry {
      */
     RecordOwner owner
 
+    /** inherited from the parent; a Visibility value, null is read as public */
+    String visibility
+
     @Override
     String getKey() {
         return scanId
@@ -151,7 +154,8 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 List.of(),
                 null,
                 null,
-                RecordOwner.of(request.identity))
+                RecordOwner.of(request.identity),
+                request.visibility)
     }
 
     ScanEntry success(List<ScanVulnerability> vulnerabilities){
@@ -170,7 +174,8 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 vulnerabilities,
                 0,
                 null,
-                this.owner)
+                this.owner,
+                this.visibility)
     }
 
     ScanEntry failure(Integer exitCode, String logs){
@@ -189,7 +194,8 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 List.of(),
                 exitCode,
                 logs,
-                this.owner)
+                this.owner,
+                this.visibility)
     }
 
     static ScanEntry failure(ScanRequest request){
@@ -208,7 +214,8 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 List.of(),
                 null,
                 null,
-                RecordOwner.of(request.identity))
+                RecordOwner.of(request.identity),
+                request.visibility)
     }
 
 
@@ -239,7 +246,8 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 opts.vulnerabilities as List<ScanVulnerability>,
                 opts.exitCode as Integer,
                 opts.logs as String,
-                opts.owner as RecordOwner
+                opts.owner as RecordOwner,
+                opts.visibility as String
         )
     }
 
@@ -259,7 +267,8 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 record.vulnerabilities,
                 record.exitCode,
                 record.logs,
-                record.owner
+                record.owner,
+                record.visibility
         )
     }
 

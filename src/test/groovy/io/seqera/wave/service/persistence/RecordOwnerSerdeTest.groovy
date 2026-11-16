@@ -156,6 +156,33 @@ class RecordOwnerSerdeTest extends Specification {
         !returned.contains('towerEndpoint')
     }
 
+    def 'should load records written before visibility existed as public' () {
+        expect:
+        // null visibility means public - the default must survive a record that predates the field
+        Mapper.fromJson(WaveBuildRecord, '{"buildId":"bd-1_1"}').visibility == null
+        Mapper.fromJson(WaveScanRecord, '{"id":"sc-1"}').visibility == null
+        Mapper.fromJson(MirrorResult, '{"mirrorId":"mr-1"}').visibility == null
+        Mapper.fromJson(WaveContainerRecord, '{"id":"wave-1"}').visibility == null
+    }
+
+    def 'should round-trip visibility through both stores' () {
+        given:
+        def record = new WaveBuildRecord(buildId: 'bd-1_1', startTime: Instant.now(), visibility: 'private')
+
+        expect: 'the data column'
+        Mapper.fromJson(WaveBuildRecord, Mapper.toJson(record)).visibility == 'private'
+
+        and: 'and the Redis state store, where a scan carries its parent visibility'
+        def encoder = new MoshiEncodeStrategy<ScanEntry>() {}
+        def entry = ScanEntry.create(ScanRequest.of(
+                scanId: 'sc-1', buildId: 'bd-1_1', targetImage: 'docker.io/foo:latest',
+                platform: ContainerPlatform.DEFAULT, workDir: java.nio.file.Path.of('/some/path'),
+                creationTime: Instant.now(), identity: PlatformId.NULL, visibility: 'private' ))
+        encoder.decode(encoder.encode(entry)).visibility == 'private'
+        and: 'unlike the owner, visibility is returned by the API'
+        JacksonHelper.toJson(record).contains('"visibility"')
+    }
+
     def 'should omit the workspace id when there is none' () {
         when:
         def json = Mapper.toJson(new RecordOwner(towerEndpoint: 'https://foo.com', userId: 1L))

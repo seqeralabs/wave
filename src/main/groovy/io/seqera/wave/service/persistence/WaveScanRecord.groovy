@@ -56,6 +56,7 @@ class WaveScanRecord implements Cloneable {
     String logs
     Path workDir
     @JsonIgnore @PersistOnly RecordOwner owner   // inherited from the parent; stored, not returned by the API
+    String visibility                            // inherited from the parent; null is read as public
 
     /* required by jackson deserialization - do not remove */
     WaveScanRecord() {}
@@ -110,6 +111,7 @@ class WaveScanRecord implements Cloneable {
         this.logs = sanitize0(scan.logs)
         this.workDir = scan.workDir
         this.owner = scan.owner
+        this.visibility = scan.visibility
     }
 
     private static String sanitize0(String str) {
