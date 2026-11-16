@@ -26,6 +26,7 @@ import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.persistence.PostgresIgnore
+import io.seqera.wave.tower.RecordOwner
 import jakarta.inject.Singleton
 /**
  * Model a container mirror entry object
@@ -53,6 +54,7 @@ class MirrorResult {
     final Long userId
     final String scanId
     final Status status
+    final RecordOwner owner   // null for an anonymous request
     final Duration duration
     final Integer exitCode
     final String logs
@@ -75,6 +77,7 @@ class MirrorResult {
                 this.userId,
                 this.scanId,
                 Status.COMPLETED,
+                this.owner,
                 Duration.between(this.creationTime, Instant.now()),
                 exitCode,
                 logs
@@ -94,7 +97,8 @@ class MirrorResult {
                 request.identity?.user?.email,
                 request.identity?.user?.id,
                 request.scanId,
-                Status.PENDING
+                Status.PENDING,
+                RecordOwner.of(request.identity)
         )
     }
 

@@ -18,6 +18,8 @@
 
 package io.seqera.wave.util
 
+import java.util.regex.Pattern
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Nullable
@@ -171,6 +173,42 @@ class ContainerHelper {
         if( result != endpoint )
             log.debug "Patched Platform endpoint: '$endpoint' with '$result'"
         return result
+    }
+
+    static private final Pattern TRAILING_SLASHES = ~/\/+$/
+
+    /**
+     * Reduce a Platform endpoint to one canonical spelling, so that two spellings of the same
+     * Platform don't become two record owners.
+     *
+     * Applied to the record owner only, not to the value handed to the pairing lookup: that key
+     * hashes the endpoint exactly as Platform sent it when it opened the channel, so normalising
+     * one side alone would miss whenever Platform registered a non-canonical spelling. Making the
+     * lookup tolerant of spelling needs the registration side normalised too, in the pairing library.
+     */
+    static String normalisePlatformEndpoint(String endpoint) {
+        if( !endpoint )
+            return null
+
+        final result = endpoint.trim()
+        try {
+            final uri = new URI(result)
+            if( !uri.scheme || !uri.host )
+                return result
+            final scheme = uri.scheme.toLowerCase()
+            final port = uri.port == defaultPort0(scheme) ? -1 : uri.port
+            final p = uri.path
+            final path = p?.endsWith('/') ? TRAILING_SLASHES.matcher(p).replaceAll('') : p
+            return new URI(scheme, null, uri.host.toLowerCase(), port, path, null, null).toString()
+        }
+        catch( URISyntaxException e ) {
+            log.debug "Unable to normalise Platform endpoint: '$endpoint' - cause: ${e.message}"
+            return result
+        }
+    }
+
+    static private int defaultPort0(String scheme) {
+        return scheme == 'https' ? 443 : scheme == 'http' ? 80 : -1
     }
 
     static List<String> normaliseDeps0(List deps) {

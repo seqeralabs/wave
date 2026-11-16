@@ -32,6 +32,7 @@ import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.tower.RecordOwner
 /**
  * A collection of request and response properties to be stored
  *
@@ -64,6 +65,7 @@ class WaveBuildRecord {
     String buildTemplate
     ChildRefs buildChildIds
     ChildRefs scanChildIds
+    RecordOwner owner   // null for an anonymous build
 
     Boolean succeeded() {
         return duration != null ? (exitStatus==0) : null
@@ -104,7 +106,8 @@ class WaveBuildRecord {
                 compression: request?.compression,
                 buildTemplate: request?.buildTemplate,
                 buildChildIds: request?.buildChildIds,
-                scanChildIds: request?.scanChildIds
+                scanChildIds: request?.scanChildIds,
+                owner: RecordOwner.of(request.identity)
         )
     }
     

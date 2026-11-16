@@ -28,6 +28,7 @@ import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
+import io.seqera.wave.tower.RecordOwner
 /**
  * Model a Wave container scan result
  *
@@ -53,6 +54,7 @@ class WaveScanRecord implements Cloneable {
     Integer exitCode
     String logs
     Path workDir
+    RecordOwner owner   // inherited from the build, mirror or request this scan derives from
 
     /* required by jackson deserialization - do not remove */
     WaveScanRecord() {}
@@ -106,6 +108,7 @@ class WaveScanRecord implements Cloneable {
         this.exitCode = scan.exitCode
         this.logs = sanitize0(scan.logs)
         this.workDir = scan.workDir
+        this.owner = scan.owner
     }
 
     private static String sanitize0(String str) {
