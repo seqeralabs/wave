@@ -57,7 +57,7 @@ class MirrorResult {
     final String scanId
     final Status status
     @JsonIgnore @PersistOnly final RecordOwner owner   // stored, not returned by the API
-    final String visibility                            // a Visibility value; null is read as public
+    final String visibility                            // a Visibility value
     final Duration duration
     final Integer exitCode
     final String logs

@@ -54,9 +54,4 @@ class ListWorkspacesResponse implements MoshiSerializable {
         return workspaceId != null && orgsAndWorkspaces?.any { it.workspaceId == workspaceId }
     }
 
-    /** @return true when the caller owns that organisation; member and collaborator do not count */
-    boolean ownsOrg(Long orgId) {
-        return orgId != null && orgsAndWorkspaces?.any { it.orgId == orgId && it.roles?.contains('owner') }
-    }
-
 }

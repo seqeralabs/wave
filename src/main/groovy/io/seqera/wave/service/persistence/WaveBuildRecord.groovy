@@ -67,7 +67,7 @@ class WaveBuildRecord {
     ChildRefs buildChildIds
     ChildRefs scanChildIds
     @JsonIgnore @PersistOnly RecordOwner owner   // stored, not returned by the API
-    String visibility                            // a Visibility value; null is read as public
+    String visibility                            // a Visibility value
 
     Boolean succeeded() {
         return duration != null ? (exitStatus==0) : null

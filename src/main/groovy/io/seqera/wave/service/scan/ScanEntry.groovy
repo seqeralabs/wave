@@ -120,7 +120,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
      */
     RecordOwner owner
 
-    /** inherited from the parent; a Visibility value, null is read as public */
+    /** inherited from the parent; a Visibility value */
     String visibility
 
     @Override

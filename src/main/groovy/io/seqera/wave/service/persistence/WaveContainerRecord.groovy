@@ -185,14 +185,14 @@ class WaveContainerRecord {
     final ChildRefs scanChildIds
 
     /**
-     * The Platform tenant owning this record, null for an anonymous request. Stored but
-     * not returned by the API: the read endpoints need no auth yet
+     * The Platform tenant owning this record, null for an anonymous request. Stored, not
+     * returned by the API
      */
     @JsonIgnore
     @PersistOnly
     final RecordOwner owner
 
-    /** a Visibility value; null is read as public */
+    /** a Visibility value */
     final String visibility
 
     WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequest data, String waveImage, String addr, Instant expiration) {
