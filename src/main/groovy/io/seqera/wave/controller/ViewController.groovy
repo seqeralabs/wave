@@ -473,24 +473,23 @@ class ViewController {
             else
                 return HttpResponse.ok(new ModelAndView("scan-list", renderScansView(scans)))
         }
-        // a scan inherits its parent's owner, so it is guarded before anything is rendered
+        // read once: re-reading to render would skip the guard whenever the first read
+        // returned null transiently - getScanRecord swallows any failure and yields null
         final scanRecord = scanService.getScanRecord(scanId)
-        if( scanRecord ) {
+        final binding = new HashMap(10)
+        if( !scanRecord ) {
+            binding.scan_exist = false
+            binding.scan_completed = true
+            binding.error_message = "No scan report exists with id: ${scanId}".toString()
+            binding.should_refresh = false
+        }
+        else {
+            // a scan inherits its parent's owner, so it is guarded before anything is rendered
             final denied = guard(scanRecord.owner, scanRecord.visibility, sessionId, "/view/scans/$scanId")
             if( denied )
                 return denied
-        }
-        final binding = new HashMap(10)
-        try {
-            final result = loadScanRecord(scanId)
-            log.debug "Render scan record=$result"
-            makeScanViewBinding(result, binding)
-        }
-        catch (NotFoundException e){
-            binding.scan_exist = false
-            binding.scan_completed = true
-            binding.error_message = e.getMessage()
-            binding.should_refresh = false
+            log.debug "Render scan record=$scanRecord"
+            makeScanViewBinding(scanRecord, binding)
         }
 
         // return the response
