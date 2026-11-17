@@ -111,16 +111,19 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     ContainerScanServiceImpl() {}
 
     @Override
-    String getScanId(String targetImage, String digest, ScanMode mode, String format) {
+    String getScanId(String targetImage, String digest, ScanMode mode, String format, String tenant) {
         // ignore singularity images
         if( format == 'sif' )
             return null
         // skip if scan mode is empty
         if( !mode )
             return null
+        // the store key carries the tenant too, otherwise two tenants scanning the same public
+        // image would share one entry and the first arrival would own it for everybody
+        final String key = tenant ? "$tenant/$targetImage".toString() : targetImage
         // create a new scan id if there's no entry for the given target image
         final result = scanIdStore
-                .putIfAbsentAndCount(targetImage, ScanId.of(targetImage, digest))
+                .putIfAbsentAndCount(key, ScanId.of(targetImage, digest, tenant))
         // return the value updated by the put operation
         return result.value.toString()
     }

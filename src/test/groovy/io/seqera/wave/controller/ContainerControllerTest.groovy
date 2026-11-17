@@ -47,7 +47,6 @@ import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.exception.ForbiddenException
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.service.access.RecordAccessService
-import io.seqera.wave.tower.client.ListWorkspacesResponse
 import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.service.soci.SociPushService
 import io.seqera.wave.core.ContainerPlatform
@@ -417,13 +416,10 @@ class ContainerControllerTest extends Specification {
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         // the scan id follows the target image, which embeds the container id
         def scanService = Mock(ContainerScanService) {
-            getScanId(_, _, _, _) >> { String img, String d, ScanMode m, String f -> ScanId.of(img).toString() }
+            getScanId(_, _, _, _, _) >> { String img, String d, ScanMode m, String f, String t -> ScanId.of(img, d, t).toString() }
         }
         // this spec is about ids, not membership: allow every workspace it names
-        def access = Mock(RecordAccessService) {
-            listWorkspaces(_) >> new ListWorkspacesResponse(orgsAndWorkspaces: [10L, 20L].collect {
-                new ListWorkspacesResponse.OrgAndWorkspace(orgId: 1L, workspaceId: it, roles: ['owner'] as Set) })
-        }
+        def access = Mock(RecordAccessService) { memberOf(_) >> RecordAccessService.Decision.ALLOW }
         def controller = new ContainerController(
                 inspectService: dockerAuth,
                 buildConfig: buildConfig,
@@ -505,8 +501,8 @@ class ContainerControllerTest extends Specification {
     def 'should refuse a private request naming a workspace the caller is not in' () {
         given:
         def access = Mock(RecordAccessService) {
-            listWorkspaces(_) >> new ListWorkspacesResponse(orgsAndWorkspaces: [
-                    new ListWorkspacesResponse.OrgAndWorkspace(orgId: 1L, workspaceId: 10L, roles: ['maintain'] as Set) ])
+            memberOf(_) >> { PlatformId pid ->
+                pid.workspaceId == 10L ? RecordAccessService.Decision.ALLOW : RecordAccessService.Decision.FORBIDDEN }
         }
         def controller = new ContainerController(
                 inspectService: Mock(ContainerInspectServiceImpl), buildConfig: buildConfig,
@@ -532,7 +528,7 @@ class ContainerControllerTest extends Specification {
 
     def 'should fail closed when the workspace listing is unavailable' () {
         given:
-        def access = Mock(RecordAccessService) { listWorkspaces(_) >> null }
+        def access = Mock(RecordAccessService) { memberOf(_) >> RecordAccessService.Decision.UNAVAILABLE }
         def controller = new ContainerController(
                 inspectService: Mock(ContainerInspectServiceImpl), buildConfig: buildConfig,
                 validationService: validationService, accessService: access )

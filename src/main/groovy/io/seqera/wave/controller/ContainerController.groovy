@@ -55,6 +55,7 @@ import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.micronaut.http.HttpStatus
 import io.seqera.wave.exception.ForbiddenException
+import io.seqera.wave.exception.UnauthorizedException
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.service.access.RecordAccessService
 import io.seqera.wave.exception.UnsupportedBuildServiceException
@@ -392,16 +393,18 @@ class ContainerController {
         return Visibility.PRIVATE
     }
 
-    /** A private request must belong to the workspace it names, or a caller could compute another workspace's private build id */
+    /** A private request must belong to the workspace it names, so one tenant cannot stamp a record onto another's */
     protected void checkWorkspaceAccess(PlatformId identity, String visibility) {
-        // a personal workspace is the caller's own, and a public record's owner gates nothing
-        if( !Visibility.isPrivate(visibility) || identity.workspaceId == null )
+        if( !Visibility.isPrivate(visibility) )
             return
-        final workspaces = accessService.listWorkspaces(identity)
-        if( workspaces == null )
-            throw new HttpResponseException(HttpStatus.SERVICE_UNAVAILABLE, "Unable to reach Seqera Platform at '${identity.towerEndpoint}' to verify workspace access".toString())
-        if( !workspaces.hasWorkspace(identity.workspaceId) )
+        final decision = accessService.memberOf(identity)
+        if( decision == RecordAccessService.Decision.ALLOW )
+            return
+        if( decision == RecordAccessService.Decision.FORBIDDEN )
             throw new ForbiddenException("Request denied - workspace $identity.workspaceId is not accessible with the given credentials")
+        if( decision == RecordAccessService.Decision.REJECTED )
+            throw new UnauthorizedException("Access denied by Seqera Platform at '${identity.towerEndpoint}'".toString())
+        throw new HttpResponseException(HttpStatus.SERVICE_UNAVAILABLE, "Unable to reach Seqera Platform at '${identity.towerEndpoint}' to verify workspace access".toString())
     }
 
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
@@ -450,7 +453,7 @@ class ContainerController {
         // default to async scan for build req for backward compatibility
         final scanMode = req.scanMode!=null ? req.scanMode : ScanMode.async
         // digest is not needed for builds, because they use a unique checksum in the container name
-        final scanId = scanService?.getScanId(targetImage, null, scanMode, req.format)
+        final scanId = scanService?.getScanId(targetImage, null, scanMode, req.format, tenant)
 
         return new BuildRequest(
                 containerId,
@@ -481,10 +484,11 @@ class ContainerController {
             return null
         final multiPlatform = build.platform
         final scanMode = req.scanMode!=null ? req.scanMode : ScanMode.async
+        final tenant = RecordOwner.tenantOf(build.identity, build.visibility)
         final scanIdByPlatform = new LinkedHashMap<String, String>()
         for( ContainerPlatform.Platform p : multiPlatform.platforms ) {
             final platform = p.toString()
-            final id = scanService.getScanId("${build.targetImage}#${platform}", null, scanMode, req.format)
+            final id = scanService.getScanId("${build.targetImage}#${platform}", null, scanMode, req.format, tenant)
             if( id )
                 scanIdByPlatform.put(id, platform)
         }
@@ -651,12 +655,15 @@ class ContainerController {
             condaContent = null
             buildId = null
             buildNew = null
-            scanId = scanService?.getScanId(req.containerImage, digest, req.scanMode, req.format)
+            // no build or mirror on this path, so there is no target repository to check
+            // resolved before the id: a private scan hashes its tenant, so the two cannot disagree
+            visibility = resolveVisibility(req, identity, null)
+            checkWorkspaceAccess(identity, visibility)
+            scanId = scanService?.getScanId(req.containerImage, digest, req.scanMode, req.format,
+                    RecordOwner.tenantOf(identity, visibility))
             type = ContainerRequest.Type.Container
             // when there's a scan, return null because the scan status is not known
             succeeded = scanId==null ? true : null
-            // no build or mirror on this path, so there is no target repository to check
-            visibility = resolveVisibility(req, identity, null)
         }
         else
             throw new IllegalStateException("Specify either 'containerImage' or 'containerFile' attribute")
@@ -709,7 +716,11 @@ class ContainerController {
         final configJson = inspectService.credentialsConfigJson("FROM ${request.containerImage}", targetImage, null, identity)
 
         final offset = DataTimeUtils.offsetId(request.timestamp)
-        final scanId = scanService?.getScanId(targetImage, digest, request.scanMode, request.format)
+        // resolved before the id: a private scan hashes its tenant, so the two cannot disagree
+        final visibility = resolveVisibility(request, identity, request.buildRepository)
+        checkWorkspaceAccess(identity, visibility)
+        final scanId = scanService?.getScanId(targetImage, digest, request.scanMode, request.format,
+                RecordOwner.tenantOf(identity, visibility))
 
         return MirrorRequest.create(
                 request.containerImage,
@@ -722,7 +733,7 @@ class ContainerController {
                 Instant.now(),
                 offset,
                 identity,
-                resolveVisibility(request, identity, request.buildRepository)
+                visibility
         )
     }
 

@@ -70,6 +70,27 @@ class ContainerScanServiceImplTest extends Specification {
     @Inject
     CleanupService cleanupService
 
+    def 'should not let one tenant own the scan id of a shared public image' () {
+        given: 'the same public image, requested by two tenants and anonymously'
+        def image = 'docker.io/library/ubuntu:22.04'
+        def t1 = 'https://api.tower.nf:100'
+        def t2 = 'https://api.tower.nf:200'
+        def base = { String id -> id.substring(0, id.lastIndexOf('_')) }
+
+        when:
+        def a = scanService.getScanId(image, null, ScanMode.async, null, t1)
+        def b = scanService.getScanId(image, null, ScanMode.async, null, t2)
+        def anon = scanService.getScanId(image, null, ScanMode.async, null, null)
+
+        then: 'each tenant gets its own id, and neither takes over the public one'
+        base(a) != base(b)
+        base(a) != base(anon)
+        base(b) != base(anon)
+
+        and: 'the same tenant keeps its own entry rather than joining another'
+        base(scanService.getScanId(image, null, ScanMode.async, null, t1)) == base(a)
+    }
+
     def 'should start scan successfully'() {
         given:
         def KEY = 'scan-10'
