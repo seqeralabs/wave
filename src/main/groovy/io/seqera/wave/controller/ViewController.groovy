@@ -198,7 +198,7 @@ class ViewController {
             case RecordAccessService.Decision.UNAUTHORIZED:
                 final url = authService.startSignIn(owner.towerEndpoint, returnTo)
                 return url
-                        ? HttpResponse.redirect(URI.create(url))
+                        ? HttpResponse.seeOther(URI.create(url))
                         : authError(HttpStatus.UNAUTHORIZED, 'This record belongs to a Seqera Platform workspace. Sign in to Seqera Platform to view it.', owner.towerEndpoint)
             case RecordAccessService.Decision.FORBIDDEN:
                 return authError(HttpStatus.FORBIDDEN, 'This record belongs to a workspace you do not have access to.')
