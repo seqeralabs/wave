@@ -99,6 +99,21 @@ class RecordAccessServiceTest extends Specification {
         svc(caller(7L), null).check(owner(1L, 10L), 'private', 'tok') == Decision.UNAVAILABLE
     }
 
+    def 'should report a rejected token as unauthorized, not unreachable' () {
+        given: 'Platform answers 401, as it arrives from a future'
+        def client = Mock(TowerClient)
+        client.userInfoForAccess(_, _) >> {
+            throw new java.util.concurrent.ExecutionException(
+                    new io.seqera.wave.exception.HttpResponseException(401, 'Unauthorized access to Tower resource')) }
+        def svc = new RecordAccessService(towerClient: client)
+
+        when:
+        svc.check(owner(1L, 10L), 'private', 'stale-token')
+
+        then: 'it is a rejection, not a 503 that invites a retry'
+        thrown(io.seqera.wave.exception.UnauthorizedException)
+    }
+
     def 'should refuse when Platform answers without a user' () {
         expect:
         svc(new GetUserInfoResponse(user: null)).check(owner(1L, 10L), 'private', 'tok') == Decision.UNAUTHORIZED
