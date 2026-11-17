@@ -439,6 +439,10 @@ class ContainerHelperTest extends Specification {
         // not a parseable absolute URL: trimmed and left as-is
         'foo.com'                               | 'foo.com'
         '  https://foo.com  '                   | 'https://foo.com'
+        // rebuilding the URI drops user info, query and fragment
+        'https://user:pass@foo.com/api'         | 'https://foo.com/api'
+        'https://foo.com/api?x=1'               | 'https://foo.com/api'
+        'https://foo.com/api#frag'              | 'https://foo.com/api'
     }
 
     def 'should find conda name with named recipe' () {
