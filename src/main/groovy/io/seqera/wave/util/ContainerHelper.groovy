@@ -182,6 +182,7 @@ class ContainerHelper {
      * pairing store resolves - see RecordOwner.towerEndpoint. The tenant key is computed for the
      * build id rather than stored, so canonicalising it here persists nothing.
      *
+     * Rebuilding the URI also drops any user info, query string and fragment.
      */
     static String normalisePlatformEndpoint(String endpoint) {
         if( !endpoint )
