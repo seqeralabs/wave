@@ -141,7 +141,10 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
                 compression: templateRequest.compression,
                 buildTemplate: templateRequest.buildTemplate,
                 buildChildIds: buildChildIds,
-                scanChildIds: templateRequest.scanChildIds
+                scanChildIds: templateRequest.scanChildIds,
+                // without this the parent record has an owner but no visibility, and the
+                // access check reads it as public
+                visibility: templateRequest.visibility
         )
         final initialEntry = BuildEntry.create(syntheticRequest)
         final stored = buildStore.storeIfAbsent(finalTargetImage, initialEntry)
