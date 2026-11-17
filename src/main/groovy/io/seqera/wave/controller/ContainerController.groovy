@@ -53,6 +53,10 @@ import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
+import io.micronaut.http.HttpStatus
+import io.seqera.wave.exception.ForbiddenException
+import io.seqera.wave.exception.HttpResponseException
+import io.seqera.wave.service.access.RecordAccessService
 import io.seqera.wave.exception.UnsupportedBuildServiceException
 import io.seqera.wave.exception.UnsupportedMirrorServiceException
 import io.seqera.wave.exception.NotFoundException
@@ -204,6 +208,9 @@ class ContainerController {
 
     @Inject
     private ContainerStatusService statusService
+
+    @Inject
+    private RecordAccessService accessService
 
     @Inject
     @Nullable
@@ -385,6 +392,18 @@ class ContainerController {
         return Visibility.PRIVATE
     }
 
+    /** A private request must belong to the workspace it names, or a caller could compute another workspace's private build id */
+    protected void checkWorkspaceAccess(PlatformId identity, String visibility) {
+        // a personal workspace is the caller's own, and a public record's owner gates nothing
+        if( !Visibility.isPrivate(visibility) || identity.workspaceId == null )
+            return
+        final workspaces = accessService.listWorkspaces(identity)
+        if( workspaces == null )
+            throw new HttpResponseException(HttpStatus.SERVICE_UNAVAILABLE, "Unable to reach Seqera Platform at '${identity.towerEndpoint}' to verify workspace access".toString())
+        if( !workspaces.hasWorkspace(identity.workspaceId) )
+            throw new ForbiddenException("Request denied - workspace $identity.workspaceId is not accessible with the given credentials")
+    }
+
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
         if( !buildConfig )
             throw new UnsupportedBuildServiceException()
@@ -423,6 +442,7 @@ class ContainerController {
         // create a unique digest to identify the build req
         // resolved before the id: a private build hashes its tenant, so the two cannot disagree
         final visibility = resolveVisibility(req, identity, buildRepository)
+        checkWorkspaceAccess(identity, visibility)
         final tenant = RecordOwner.tenantOf(identity, visibility)
         final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext, containerConfig, tenant)
         final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, nameStrategy)

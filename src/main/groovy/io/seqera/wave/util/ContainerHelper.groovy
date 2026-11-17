@@ -348,9 +348,8 @@ class ContainerHelper {
     }
 
     /**
-     * @param tenant {@code RecordOwner.tenantOf(identity, visibility)} - null for a public or
-     *      anonymous build. Omitting it on a private build hands that build the public id, and
-     *      with it the public layer cache, so always derive it rather than passing null.
+     * @param tenant Null for a public or anonymous build. Omitting it on a private build hands
+     *      that build the public id, and with it the public layer cache.
      */
     static String makeContainerId(String containerFile, String condaFile, ContainerPlatform platform, String repository, BuildContext buildContext, ContainerConfig containerConfig, String tenant=null) {
         final attrs = new LinkedHashMap<String,String>(10)
