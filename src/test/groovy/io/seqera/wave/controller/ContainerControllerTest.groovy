@@ -78,6 +78,7 @@ import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanId
 import io.seqera.wave.api.ScanMode
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.RecordOwner
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
 import jakarta.inject.Inject
@@ -93,6 +94,9 @@ class ContainerControllerTest extends Specification {
     @Inject
     @Client("/")
     HttpClient client
+
+    @Inject
+    PersistenceService persistenceService
 
     @Inject
     BuildConfig buildConfig
@@ -1311,5 +1315,35 @@ class ContainerControllerTest extends Specification {
         def build2 = controller.makeBuildRequest(request2, PlatformId.NULL,"")
         then:
         build1.containerId == build2.containerId
+    }
+
+    def 'should not return the owner in the container record response' () {
+        given:
+        def identity = new PlatformId(new User(id: 100), 200L, 'tok', 'https://api.cloud.seqera.io')
+        def req = new SubmitContainerTokenRequest(
+                towerEndpoint: 'https://api.cloud.seqera.io',
+                towerWorkspaceId: 200,
+                containerPlatform: ContainerPlatform.of('amd64'),
+                timestamp: Instant.now().toString() )
+        def data = ContainerRequest.of(
+                requestId: 'wave-owner123',
+                identity: identity,
+                containerImage: 'hello-world' )
+        def record = new WaveContainerRecord(req, data, 'wave.io/foo:latest', '1.2.3.4', Instant.now())
+        and:
+        persistenceService.saveContainerRequestAsync(record)
+
+        when: 'the record is read back over HTTP, as a client sees it'
+        def res = client.toBlocking().exchange(HttpRequest.GET("/v1alpha2/container/${record.id}"), String)
+
+        then:
+        res.status.code == 200
+        and: 'the owner object is absent from the response'
+        !res.body().contains('"owner"')
+        and: 'the record keeps its own endpoint and workspace, which this endpoint has always returned'
+        res.body().contains('"towerEndpoint"')
+        res.body().contains('"workspaceId"')
+        and: 'while the stored record still carries the owner'
+        persistenceService.loadContainerRequest(record.id).owner == RecordOwner.of(identity)
     }
 }
