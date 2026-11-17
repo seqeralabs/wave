@@ -142,8 +142,7 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
                 buildTemplate: templateRequest.buildTemplate,
                 buildChildIds: buildChildIds,
                 scanChildIds: templateRequest.scanChildIds,
-                // without this the parent record has an owner but no visibility, and the
-                // access check reads it as public
+                // absent visibility reads as public, so the parent must carry the template's
                 visibility: templateRequest.visibility
         )
         final initialEntry = BuildEntry.create(syntheticRequest)

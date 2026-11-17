@@ -99,29 +99,19 @@ class ViewControllerTest extends Specification {
     EmbeddedServer embeddedServer;
 
 
-    def 'should read the scan record once so a transient miss cannot skip the guard' () {
-        given: 'a private scan whose first read fails transiently and would succeed on a retry'
-        def owner = new RecordOwner(towerEndpoint: 'https://platform.io/api', userId: 1L, workspaceId: 10L)
-        def record = new WaveScanRecord(id: 'sc-1_1', owner: owner, visibility: 'private')
-        def calls = 0
-        def scanService = Mock(ContainerScanService) {
-            getScanRecord(_) >> { calls++; calls == 1 ? null : record }
-        }
-        def controller = new ViewController(
-                serverUrl: serverUrl,
-                scanService: scanService,
-                accessService: Mock(RecordAccessService) { check(_, _, _) >> RecordAccessService.Decision.UNAUTHORIZED } )
+    def 'should read the scan record once, so a transient miss cannot be re-read past the guard' () {
+        given: 'a scan whose first read comes back null'
+        def scanService = Mock(ContainerScanService)
+        def controller = new ViewController(serverUrl: serverUrl, scanService: scanService)
 
         when:
         def resp = controller.viewScan('sc-1_1', null)
 
-        then: 'the record is fetched exactly once, so there is no second unguarded read'
-        calls == 1
+        then: 'exactly one read - a second would bypass the guard that the first skipped'
+        1 * scanService.getScanRecord('sc-1_1') >> null
 
-        and: 'nothing of the private record reaches the page'
-        def mv = resp.body()
-        def m = (mv instanceof Optional ? mv.get() : mv).model
-        def body = m instanceof Optional ? m.get() : m
+        and: 'the page reports the record as absent and carries nothing from it'
+        def body = resp.body().model.get()
         body.scan_exist == false
         body.scan_id == null
     }
