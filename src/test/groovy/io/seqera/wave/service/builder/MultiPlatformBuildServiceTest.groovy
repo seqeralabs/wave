@@ -176,6 +176,39 @@ class MultiPlatformBuildServiceTest extends Specification {
         1 * jobService.launchMultiBuild(_)
     }
 
+    def 'should carry the template visibility onto the synthetic parent entry'() {
+        given: 'a private multi-arch build'
+        def buildService = Mock(ContainerBuildService)
+        def buildStore = Mock(BuildStateStore)
+        def multiBuildStore = Mock(MultiBuildStateStore)
+        def service = new MultiPlatformBuildService(
+                buildService: buildService,
+                buildStore: buildStore,
+                multiBuildStore: multiBuildStore,
+                manifestAssembler: Mock(ManifestAssembler),
+                jobService: Mock(JobService) )
+        and:
+        def template = BuildRequest.of(
+                containerId: 'abc123',
+                containerFile: 'FROM ubuntu:latest',
+                workspace: Path.of('/tmp'),
+                targetImage: 'docker.io/wave:abc123',
+                identity: TEST_IDENTITY,
+                platform: ContainerPlatform.of('linux/amd64'),
+                format: BuildFormat.DOCKER,
+                maxDuration: Duration.ofMinutes(5),
+                visibility: 'private' )
+        and:
+        buildService.buildImage(_) >> new BuildTrack('bd-amd64_0', 'docker.io/wave:amd64', false, null)
+
+        when:
+        service.buildMultiPlatformImage(template, 'multi123', 'docker.io/wave:multi123', PlatformId.NULL)
+
+        then: 'the parent entry is private too, otherwise its record reads as public'
+        1 * buildStore.storeIfAbsent('docker.io/wave:multi123', { it.request.visibility == 'private' }) >> true
+        1 * multiBuildStore.put('docker.io/wave:multi123', _)
+    }
+
     def 'should assemble manifest and persist record on job completion with success'() {
         given:
         def buildStore = Mock(BuildStateStore)
