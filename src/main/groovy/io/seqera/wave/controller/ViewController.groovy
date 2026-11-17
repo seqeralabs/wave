@@ -473,26 +473,21 @@ class ViewController {
             else
                 return HttpResponse.ok(new ModelAndView("scan-list", renderScansView(scans)))
         }
-        // read once: re-reading to render would skip the guard whenever the first read
-        // returned null transiently - getScanRecord swallows any failure and yields null
+        // read once: re-reading to render would skip the guard when the first read returns null
         final scanRecord = scanService.getScanRecord(scanId)
-        final binding = new HashMap(10)
-        if( !scanRecord ) {
-            binding.scan_exist = false
-            binding.scan_completed = true
-            binding.error_message = "No scan report exists with id: ${scanId}".toString()
-            binding.should_refresh = false
-        }
-        else {
-            // a scan inherits its parent's owner, so it is guarded before anything is rendered
-            final denied = guard(scanRecord.owner, scanRecord.visibility, sessionId, "/view/scans/$scanId")
-            if( denied )
-                return denied
-            log.debug "Render scan record=$scanRecord"
-            makeScanViewBinding(scanRecord, binding)
-        }
+        if( !scanRecord )
+            return HttpResponse.ok(new ModelAndView("scan-view",
+                    [scan_exist: false, scan_completed: true, should_refresh: false,
+                     error_message: "No scan report exists with id: $scanId".toString(),
+                     server_url: serverUrl]))
 
-        // return the response
+        // a scan inherits its parent's owner, so it is guarded before anything is rendered
+        final denied = guard(scanRecord.owner, scanRecord.visibility, sessionId, "/view/scans/$scanId")
+        if( denied )
+            return denied
+
+        final binding = new HashMap(10)
+        makeScanViewBinding(scanRecord, binding)
         binding.put('server_url', serverUrl)
         return HttpResponse.ok(new ModelAndView("scan-view", binding))
     }
@@ -539,21 +534,6 @@ class ViewController {
                 : false
     }
 
-    /**
-     * Retrieve a {@link ScanEntry} object for the specified scan ID
-     *
-     * @param scanId The ID of the scan for which load the scan result
-     * @return The {@link ScanEntry} object associated with the specified build ID or throws the exception {@link NotFoundException} otherwise
-     * @throws NotFoundException If the a record for the specified scan ID cannot be found
-     */
-    protected WaveScanRecord loadScanRecord(String scanId) {
-        if( !scanService )
-            throw new UnsupportedScanServiceException()
-        final scanRecord = scanService.getScanRecord(scanId)
-        if( !scanRecord )
-            throw new NotFoundException("No scan report exists with id: ${scanId}")
-        return scanRecord
-    }
 
     @View("inspect-view")
     @Get('/inspect')
