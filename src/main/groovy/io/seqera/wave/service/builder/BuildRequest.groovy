@@ -165,7 +165,7 @@ class BuildRequest {
      */
     final ChildRefs scanChildIds
 
-    /** a Visibility value; null is read as public */
+    /** a Visibility value */
     final String visibility
 
     BuildRequest(

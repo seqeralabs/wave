@@ -43,12 +43,21 @@ import jakarta.inject.Singleton
 @CompileStatic
 class OidcDiscoveryClient {
 
-    private final Map<String,OidcDiscovery> cache = new ConcurrentHashMap<>()
+    private static class Cached {
+        final OidcDiscovery value
+        final long expiresAt
+        Cached(OidcDiscovery value, long expiresAt) {
+            this.value = value
+            this.expiresAt = expiresAt
+        }
+    }
+
+    private final Map<String,Cached> cache = new ConcurrentHashMap<>()
 
     private final HttpClient http = HttpClientFactory.followRedirectsHttpClient()
 
-    /** A fetch failure is cached too: sign-in stays off for that endpoint until restart */
-    private static final OidcDiscovery NONE = new OidcDiscovery()
+    /** A failure is cached only briefly, so one transient outage cannot disable sign-in until restart */
+    private static final long FAILURE_TTL_MILLIS = Duration.ofMinutes(1).toMillis()
 
     static String formEncode(Map<String,?> params) {
         return params.collect { k, v -> "${k}=${URLEncoder.encode(v.toString(), 'UTF-8')}" }.join('&')
@@ -57,7 +66,13 @@ class OidcDiscoveryClient {
     OidcDiscovery discover(String towerEndpoint) {
         if( !towerEndpoint )
             return null
-        return cache.computeIfAbsent(towerEndpoint, (it)-> fetch(it) ?: NONE)
+        final hit = cache.get(towerEndpoint)
+        if( hit != null && System.currentTimeMillis() < hit.expiresAt )
+            return hit.value
+        // deliberately not computeIfAbsent: it would hold the bin lock across the fetch
+        final found = fetch(towerEndpoint)
+        cache.put(towerEndpoint, new Cached(found, found ? Long.MAX_VALUE : System.currentTimeMillis() + FAILURE_TTL_MILLIS))
+        return found
     }
 
     protected OidcDiscovery fetch(String towerEndpoint) {

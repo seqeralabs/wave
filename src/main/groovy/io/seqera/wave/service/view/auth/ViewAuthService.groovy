@@ -87,9 +87,13 @@ class ViewAuthService {
      *      sign viewers in.
      */
     String startSignIn(String towerEndpoint, String returnTo) {
-        final discovery = discoveryClient.discover(towerEndpoint)
+        // the client id first: it is a config lookup, and it keeps the discovery fetch - and its
+        // cache - to the endpoints Wave can actually sign in to
         final id = clientId(towerEndpoint)
-        if( !id || !discovery?.usable() )
+        if( !id )
+            return null
+        final discovery = discoveryClient.discover(towerEndpoint)
+        if( !discovery?.usable() )
             return null
 
         final state = rnd()
