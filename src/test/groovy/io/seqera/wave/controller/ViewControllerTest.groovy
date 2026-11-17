@@ -135,7 +135,7 @@ class ViewControllerTest extends Specification {
         binding.build_format == 'Docker'
         binding.build_log_data == 'log content'
         binding.build_log_truncated == false
-        binding.build_log_url == 'http://foo.com/v1alpha1/builds/12345/logs'
+        binding.build_log_url == 'http://foo.com/v1alpha3/builds/12345/logs'
         binding.build_success == true
         binding.build_in_progress == false
         binding.build_failed == false
@@ -324,7 +324,7 @@ class ViewControllerTest extends Specification {
         binding.build_format == 'Docker'
         binding.build_log_data == 'log content'
         binding.build_log_truncated == false
-        binding.build_log_url == 'http://foo.com/v1alpha1/builds/12345/logs'
+        binding.build_log_url == 'http://foo.com/v1alpha3/builds/12345/logs'
         !binding.build_success
         binding.build_in_progress
         !binding.build_failed
@@ -366,7 +366,7 @@ class ViewControllerTest extends Specification {
         binding.build_format == 'Docker'
         binding.build_log_data == 'log content'
         binding.build_log_truncated == false
-        binding.build_log_url == 'http://foo.com/v1alpha1/builds/12345/logs'
+        binding.build_log_url == 'http://foo.com/v1alpha3/builds/12345/logs'
         binding.build_success == false
         binding.build_in_progress == false
         binding.build_failed == true
@@ -405,7 +405,7 @@ class ViewControllerTest extends Specification {
         binding.scan_succeeded
         binding.scan_exitcode == 0
         binding.scan_logs == "Some scan logs"
-        binding.scan_sbom_spdx_url == 'http://foo.com/v1alpha1/scans/12345/spdx'
+        binding.scan_sbom_spdx_url == 'http://foo.com/v1alpha3/scans/12345/spdx'
         binding.vulnerabilities == [new ScanVulnerability(id:'cve-1', severity:'HIGH', title:'test vul', pkgName:'testpkg', installedVersion:'1.0.0', fixedVersion:'1.1.0', primaryUrl:'http://vul/cve-1')]
         binding.build_id == 'bd-12345'
         binding.build_url == 'http://foo.com/view/builds/bd-12345'

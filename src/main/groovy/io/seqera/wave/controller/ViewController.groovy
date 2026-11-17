@@ -39,7 +39,6 @@ import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.http.annotation.CookieValue
 import io.micronaut.http.HttpStatus
-import io.seqera.wave.exception.UnauthorizedException
 import io.seqera.wave.service.access.RecordAccessService
 import io.seqera.wave.service.view.auth.RefusedViewCounter
 import io.seqera.wave.service.view.auth.ViewAuthService
@@ -151,7 +150,7 @@ class ViewController {
         binding.mirror_in_progress = result.exitCode == null
         binding.mirror_exitcode = result.exitCode ?: null
         binding.mirror_logs = result.exitCode ? result.logs : null
-        binding.mirror_log_url = result.logs ? "$serverUrl/v1alpha1/mirrors/${result.mirrorId}/logs" : null
+        binding.mirror_log_url = result.logs ? "$serverUrl/v1alpha3/mirrors/${result.mirrorId}/logs" : null
         binding.mirror_time = formatTimestamp(result.creationTime, result.offsetId) ?: '-'
         binding.mirror_duration = formatDuration(result.duration) ?: '-'
         binding.mirror_source_image = result.sourceImage
@@ -165,15 +164,12 @@ class ViewController {
     }
 
 
-    /** A rejected token is no longer any use: drop it so the viewer is sent to sign in again */
     private RecordAccessService.Decision decide(RecordOwner owner, String visibility, String sessionId) {
-        try {
-            return accessService.check(owner, visibility, authService.tokenFor(sessionId, owner?.towerEndpoint))
-        }
-        catch( UnauthorizedException e ) {
+        final decision = accessService.check(owner, visibility, authService.tokenFor(sessionId, owner?.towerEndpoint))
+        // a rejected token is no longer any use: drop it so the viewer is sent to sign in again
+        if( decision == RecordAccessService.Decision.REJECTED )
             authService.forget(sessionId, owner?.towerEndpoint)
-            return RecordAccessService.Decision.UNAUTHORIZED
-        }
+        return decision
     }
 
     /** Lists never start a sign-in: they use a session only if the viewer already has one */
@@ -195,6 +191,7 @@ class ViewController {
 
         refusedViews?.increment(authService.known(owner?.towerEndpoint), decision.toString())
         switch (decision) {
+            case RecordAccessService.Decision.REJECTED:
             case RecordAccessService.Decision.UNAUTHORIZED:
                 final url = authService.startSignIn(owner.towerEndpoint, returnTo)
                 return url
@@ -335,12 +332,12 @@ class ViewController {
             final buildLog = buildLogService.fetchLogString(result.buildId)
             binding.build_log_data = buildLog?.data
             binding.build_log_truncated = buildLog?.truncated
-            binding.build_log_url = "$serverUrl/v1alpha1/builds/${result.buildId}/logs"
+            binding.build_log_url = "$serverUrl/v1alpha3/builds/${result.buildId}/logs"
         }
         //add conda lock file when available
         if( buildLogService && result.condaFile ) {
             binding.build_conda_lock_data = buildLogService.fetchCondaLockString(result.buildId)
-            binding.build_conda_lock_url = "$serverUrl/v1alpha1/builds/${result.buildId}/condalock"
+            binding.build_conda_lock_url = "$serverUrl/v1alpha3/builds/${result.buildId}/condalock"
         }
         // result the main object
         return binding
@@ -605,9 +602,9 @@ class ViewController {
         binding.scan_failed = result.status == ScanEntry.FAILED
         binding.scan_succeeded = result.status == ScanEntry.SUCCEEDED
         binding.scan_exitcode = result.exitCode
-        binding.scan_sbom_spdx_url = hasSpdx(result) ? "$serverUrl/v1alpha1/scans/${result.id}/spdx" : null
+        binding.scan_sbom_spdx_url = hasSpdx(result) ? "$serverUrl/v1alpha3/scans/${result.id}/spdx" : null
         binding.scan_logs = result.logs
-        binding.scan_log_url = result.logs ? "$serverUrl/v1alpha1/scans/${result.id}/logs" : null
+        binding.scan_log_url = result.logs ? "$serverUrl/v1alpha3/scans/${result.id}/logs" : null
         // build info
         binding.build_id = result.buildId
         binding.build_url = result.buildId ? "$serverUrl/view/builds/${result.buildId}" : null
