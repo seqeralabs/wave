@@ -407,7 +407,7 @@ class ContainerControllerTest extends Specification {
         RESULT << ['quay.io/source/image:latest-soci', 'quay.io/source/image:latest']
     }
 
-    def 'should not let the caller identity reach the build id or the scan id' () {
+    def 'should keep public and anonymous ids independent of the caller, and scope private ones to the tenant' () {
         given:
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         // the scan id follows the target image, which embeds the container id
@@ -419,37 +419,42 @@ class ContainerControllerTest extends Specification {
                 buildConfig: buildConfig,
                 validationService: validationService,
                 scanService: scanService )
-        def submit = { new SubmitContainerTokenRequest(containerFile: encode('FROM foo')) }
+        def id = { String vis, PlatformId who -> controller.makeBuildRequest(
+                new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), visibility: vis), who, '') }
 
-        when: 'the same content is submitted by three different callers'
-        def anonymous = controller.makeBuildRequest(submit(), PlatformId.NULL, '')
-        def userA = controller.makeBuildRequest(submit(),
-                new PlatformId(new User(id: 1), 10L, 'tok-a', 'https://api.cloud.seqera.io'), '')
-        def userB = controller.makeBuildRequest(submit(),
-                new PlatformId(new User(id: 2), 20L, 'tok-b', 'https://other.platform.io'), '')
+        def anonymous = id(null, PlatformId.NULL)
+        def userA     = id(null, new PlatformId(new User(id: 1), 10L, 'tok', 'https://api.cloud.seqera.io'))
+        def userB     = id(null, new PlatformId(new User(id: 2), 20L, 'tok', 'https://other.io'))
 
-        then: 'the ids are content-addressed, so the caller cannot change them'
-        anonymous.containerId == userA.containerId
-        anonymous.containerId == userB.containerId
-        and:
+        expect: 'a public build is content-addressed, so the caller cannot change its id'
         anonymous.buildId == userA.buildId
         anonymous.buildId == userB.buildId
-        and:
-        anonymous.targetImage == userA.targetImage
-        anonymous.targetImage == userB.targetImage
-        and:
-        anonymous.scanId == userA.scanId
-        anonymous.scanId == userB.scanId
 
-        and: 'asking for private does not change the id either'
-        controller.makeBuildRequest(
-                new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), visibility: 'private'),
-                new PlatformId(new User(id: 1), 10L, 'tok-a', 'https://api.cloud.seqera.io'), '').buildId == anonymous.buildId
+        and: 'asking for private while anonymous changes nothing - the request stays public'
+        id('private', PlatformId.NULL).buildId == anonymous.buildId
 
-        and: 'while the identity itself is still carried on the request'
-        anonymous.identity == PlatformId.NULL
-        userA.identity.userId == 1
-        userB.identity.userId == 2
+        when: 'the same content is built privately from two workspaces'
+        def ws10 = id('private', new PlatformId(new User(id: 1), 10L, 'tok', 'https://api.cloud.seqera.io'))
+        def ws20 = id('private', new PlatformId(new User(id: 1), 20L, 'tok', 'https://api.cloud.seqera.io'))
+
+        then: 'each workspace gets its own build, and neither collides with the public one'
+        ws10.buildId != ws20.buildId
+        ws10.buildId != anonymous.buildId
+        and: 'the scan follows the build'
+        ws10.scanId != ws20.scanId
+
+        and: 'the same workspace twice gives one build'
+        id('private', new PlatformId(new User(id: 9), 10L, 'other-tok', 'https://api.cloud.seqera.io')).buildId == ws10.buildId
+
+        and: 'the same workspace id on two Platforms is two tenants'
+        id('private', new PlatformId(new User(id: 1), 10L, 'tok', 'https://other.io')).buildId != ws10.buildId
+
+        and: 'a personal-workspace private build is scoped to the user'
+        def userOnly = id('private', new PlatformId(new User(id: 1), null, 'tok', 'https://api.cloud.seqera.io'))
+        userOnly.buildId != id('private', new PlatformId(new User(id: 2), null, 'tok', 'https://api.cloud.seqera.io')).buildId
+
+        and: 'two spellings of one Platform are one tenant'
+        id('private', new PlatformId(new User(id: 1), 10L, 'tok', 'HTTPS://API.cloud.seqera.io:443/')).buildId == ws10.buildId
     }
 
     static final String COMMUNITY_REPO = 'public.cr.seqera.io/wave'

@@ -421,7 +421,10 @@ class ContainerController {
         checkContainerSpec(containerSpec)
 
         // create a unique digest to identify the build req
-        final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext, containerConfig)
+        // resolved before the id: a private build hashes its tenant, so the two cannot disagree
+        final visibility = resolveVisibility(req, identity, buildRepository)
+        final tenant = RecordOwner.tenantOf(identity, visibility)
+        final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext, containerConfig, tenant)
         final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, nameStrategy)
         final maxDuration = buildConfig.buildMaxDuration(req)
         // default to async scan for build req for backward compatibility
@@ -449,7 +452,7 @@ class ContainerController {
                 req.buildCompression,
                 req.buildTemplate,
                 false,          // noEmail
-                resolveVisibility(req, identity, buildRepository)
+                visibility
         )
     }
 
@@ -493,8 +496,10 @@ class ContainerController {
         final condaContent = templateBuild.condaFile
         final buildRepository = ContainerCoordinates.parse(templateBuild.targetImage).repository
 
-        // compute multi-platform container ID and target image
-        final containerId = makeMultiPlatformContainerId(containerSpec, condaContent, buildRepository, req.buildContext, req.freeze ? req.containerConfig : null)
+        // compute multi-platform container ID and target image. The template already carries the
+        // resolved visibility, so the parent id scopes to the same tenant as its child builds
+        final tenant = RecordOwner.tenantOf(identity, templateBuild.visibility)
+        final containerId = makeMultiPlatformContainerId(containerSpec, condaContent, buildRepository, req.buildContext, req.freeze ? req.containerConfig : null, tenant)
         final targetImage = makeTargetImage(templateBuild.format, buildRepository, containerId, condaContent, req.nameStrategy)
 
         // check for dry-run execution

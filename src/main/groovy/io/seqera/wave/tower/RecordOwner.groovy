@@ -22,6 +22,9 @@ import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import io.seqera.serde.moshi.MoshiSerializable
+import io.seqera.wave.api.Visibility
+
+import static io.seqera.wave.util.ContainerHelper.normalisePlatformEndpoint
 
 /**
  * Model the Platform tenant a Wave record belongs to.
@@ -50,6 +53,27 @@ class RecordOwner implements MoshiSerializable {
 
     /** Null when the request named no workspace, which means the user's personal workspace */
     Long workspaceId
+
+    /**
+     * The tenant this record belongs to: the workspace when there is one, otherwise the user.
+     *
+     * The endpoint is canonicalised here rather than on the stored field, so that two spellings
+     * of one Platform give one tenant without the stored address losing the spelling the pairing
+     * lookup resolves.
+     */
+    String tenant() {
+        final endpoint = normalisePlatformEndpoint(towerEndpoint)
+        // not `workspaceId ?:` - 0L is falsy in Groovy
+        return workspaceId != null ? "$endpoint:$workspaceId" : "$endpoint:user:$userId"
+    }
+
+    /**
+     * @return The tenant to hash into a private build id, or {@code null} when the build is
+     *      public or anonymous - in which case the id is unchanged from before this existed.
+     */
+    static String tenantOf(PlatformId identity, String visibility) {
+        return Visibility.isPrivate(visibility) ? of(identity)?.tenant() : null
+    }
 
     static RecordOwner of(PlatformId identity) {
         // an endpoint alone doesn't make a record owned: ContainerController fills in the
