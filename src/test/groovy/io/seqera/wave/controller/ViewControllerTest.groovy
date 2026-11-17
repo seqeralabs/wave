@@ -19,6 +19,8 @@
 package io.seqera.wave.controller
 
 import spock.lang.Specification
+import io.seqera.wave.tower.RecordOwner
+import io.seqera.wave.service.access.RecordAccessService
 import spock.lang.Unroll
 
 import java.net.http.HttpResponse
@@ -96,6 +98,33 @@ class ViewControllerTest extends Specification {
     @Inject
     EmbeddedServer embeddedServer;
 
+
+    def 'should read the scan record once so a transient miss cannot skip the guard' () {
+        given: 'a private scan whose first read fails transiently and would succeed on a retry'
+        def owner = new RecordOwner(towerEndpoint: 'https://platform.io/api', userId: 1L, workspaceId: 10L)
+        def record = new WaveScanRecord(id: 'sc-1_1', owner: owner, visibility: 'private')
+        def calls = 0
+        def scanService = Mock(ContainerScanService) {
+            getScanRecord(_) >> { calls++; calls == 1 ? null : record }
+        }
+        def controller = new ViewController(
+                serverUrl: serverUrl,
+                scanService: scanService,
+                accessService: Mock(RecordAccessService) { check(_, _, _) >> RecordAccessService.Decision.UNAUTHORIZED } )
+
+        when:
+        def resp = controller.viewScan('sc-1_1', null)
+
+        then: 'the record is fetched exactly once, so there is no second unguarded read'
+        calls == 1
+
+        and: 'nothing of the private record reaches the page'
+        def mv = resp.body()
+        def m = (mv instanceof Optional ? mv.get() : mv).model
+        def body = m instanceof Optional ? m.get() : m
+        body.scan_exist == false
+        body.scan_id == null
+    }
 
     def 'should create build binding' () {
         given:
