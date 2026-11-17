@@ -65,8 +65,10 @@ class ViewAuthController {
         if( !newSession )
             return unauthorized('Seqera Platform refused the sign-in.')
 
+        // see-other, not the default permanent redirect: a cached one would pin the browser
+        // to a dead single-use state
         return HttpResponse
-                .redirect(URI.create(pending.returnTo ?: '/'))
+                .seeOther(URI.create(pending.returnTo ?: '/'))
                 .cookie(sessionCookie(newSession))
     }
 
