@@ -22,6 +22,7 @@ import groovy.transform.CompileStatic
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
+import io.micronaut.http.context.ServerRequestContext
 import io.seqera.wave.service.access.RecordAccessService
 import io.seqera.wave.service.view.auth.ViewAuthService
 import io.seqera.wave.tower.RecordOwner
@@ -49,6 +50,16 @@ class RecordAccessGuard {
     private ViewAuthService authService
 
     /**
+     * Lets a caller name the Platform it believes it is talking to.
+     *
+     * A bearer is forwarded to whichever Platform owns the record, so any paired Platform could
+     * collect a token by getting someone to read one of its private record ids. Naming the
+     * endpoint is optional - no released client sends it - but when it is named and does not
+     * match, the token is refused here rather than sent on.
+     */
+    static final String ENDPOINT_HEADER = 'X-Tower-Endpoint'
+
+    /**
      * @return null when the caller may read the record, otherwise the refusal to send.
      *      A bearer token wins; the view session is the fallback so a signed-in browser can
      *      follow the artifact links rendered on a view page.
@@ -59,6 +70,8 @@ class RecordAccessGuard {
         if( !RecordAccessService.isPrivate(owner, visibility) )
             return null
         final bearer = bearer(authorization)
+        if( bearer && !intendedFor(owner.towerEndpoint) )
+            return HttpResponse.unauthorized()
         final token = bearer ?: authService?.tokenFor(sessionId, owner?.towerEndpoint)
         final decision = accessService.check(owner, visibility, token)
         switch (decision) {
@@ -76,6 +89,17 @@ class RecordAccessGuard {
             default:
                 return HttpResponse.status(HttpStatus.SERVICE_UNAVAILABLE)
         }
+    }
+
+    /** @return true unless the caller named a different Platform from the one owning the record */
+    static protected boolean intendedFor(String towerEndpoint) {
+        final req = ServerRequestContext.currentRequest()
+        final named = req.isPresent() ? req.get().getHeaders().get(ENDPOINT_HEADER) : null
+        return !named || trimmed(named) == trimmed(towerEndpoint)
+    }
+
+    static private String trimmed(String endpoint) {
+        return endpoint?.trim()?.replaceAll('/+$', '')
     }
 
     static String bearer(String authorization) {
