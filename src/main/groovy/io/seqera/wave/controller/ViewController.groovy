@@ -28,6 +28,9 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
+import io.micronaut.http.MutableHttpResponse
+import io.micronaut.http.cookie.SameSite
+import io.micronaut.http.cookie.Cookie
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
@@ -177,11 +180,23 @@ class ViewController {
         return decide(owner, visibility, sessionId) == RecordAccessService.Decision.ALLOW
     }
 
-    static protected HttpResponse<?> authError(HttpStatus status, String message, String platformUrl=null) {
+    static protected MutableHttpResponse<?> authError(HttpStatus status, String message, String retryTo=null) {
         final model = new HashMap<String,Object>(2)
         model.error_message = message
-        if( platformUrl ) model.platform_url = platformUrl
+        // a link back to the page, not to owner.towerEndpoint: that is the API address, and it is
+        // whatever endpoint the record's submitter paired
+        if( retryTo ) model.retry_url = retryTo
         return HttpResponse.status(status).body(new ModelAndView("view-auth-error", model))
+    }
+
+    /** Ties the sign-in to this browser: the callback refuses a state that does not hash to it */
+    protected Cookie stateCookie(String stateHash) {
+        return Cookie.of(ViewAuthService.STATE_COOKIE, stateHash)
+                .path('/view/auth')
+                .httpOnly(true)
+                .secure(authService.secureCookie())
+                .sameSite(SameSite.Lax)
+                .maxAge(600)
     }
 
     protected HttpResponse<?> guard(RecordOwner owner, String visibility, String sessionId, String returnTo) {
@@ -193,10 +208,10 @@ class ViewController {
         switch (decision) {
             case RecordAccessService.Decision.REJECTED:
             case RecordAccessService.Decision.UNAUTHORIZED:
-                final url = authService.startSignIn(owner.towerEndpoint, returnTo)
-                return url
-                        ? HttpResponse.seeOther(URI.create(url))
-                        : authError(HttpStatus.UNAUTHORIZED, 'This record belongs to a Seqera Platform workspace. Sign in to Seqera Platform to view it.', owner.towerEndpoint)
+                final signIn = authService.startSignIn(owner.towerEndpoint, returnTo)
+                return signIn
+                        ? HttpResponse.seeOther(URI.create(signIn.url)).cookie(stateCookie(signIn.stateHash))
+                        : authError(HttpStatus.UNAUTHORIZED, 'This record belongs to a Seqera Platform workspace, and Wave cannot sign viewers in to it.')
             case RecordAccessService.Decision.FORBIDDEN:
                 return authError(HttpStatus.FORBIDDEN, 'This record belongs to a workspace you do not have access to.')
             default:

@@ -45,6 +45,9 @@ class ViewAuthService {
 
     static final String COOKIE = 'wave-view-session'
 
+    /** Holds the hash of the state this browser started a sign-in with */
+    static final String STATE_COOKIE = 'wave-view-state'
+
     private static final SecureRandom RANDOM = new SecureRandom()
 
     @Inject
@@ -86,7 +89,7 @@ class ViewAuthService {
      * @return The Platform URL to redirect the browser to, or null when that Platform cannot
      *      sign viewers in.
      */
-    String startSignIn(String towerEndpoint, String returnTo) {
+    SignInRedirect startSignIn(String towerEndpoint, String returnTo) {
         // the client id first: it is a config lookup, and it keeps the discovery fetch - and its
         // cache - to the endpoints Wave can actually sign in to
         final id = clientId(towerEndpoint)
@@ -108,17 +111,31 @@ class ViewAuthService {
                 state: state,
                 code_challenge: challengeOf(verifier),
                 code_challenge_method: 'S256' ]
-        return "${discovery.authorization_endpoint}?${OidcDiscoveryClient.formEncode(params)}".toString()
+        final url = "${discovery.authorization_endpoint}?${OidcDiscoveryClient.formEncode(params)}".toString()
+        return new SignInRedirect(url, challengeOf(state))
     }
 
-    PendingSignIn consume(String state) {
-        if( !state )
+    /**
+     * @return the pending sign-in, or null unless this is the browser that started it and the
+     *      first caller to claim the state. The claim is the atomic step: get-then-remove would
+     *      let two callbacks carrying one state both through.
+     */
+    PendingSignIn consume(String state, String stateHash) {
+        if( !state || !stateHash )
+            return null
+        if( !MessageDigest.isEqual(challengeOf(state).bytes, stateHash.bytes) )
             return null
         final pending = pendingStore.get(state)
-        if( pending )
-            pendingStore.remove(state)
+        if( !pending )
+            return null
+        if( !pendingStore.putIfAbsent(CLAIMED + state, pending) )
+            return null
+        pendingStore.remove(state)
         return pending
     }
+
+    /** The claim marker outlives the entry it consumes, so the state cannot be replayed */
+    static private final String CLAIMED = 'claimed/'
 
     /** @return the new session id, or null when the exchange failed */
     String completeSignIn(PendingSignIn pending, String code, String existingSessionId) {
