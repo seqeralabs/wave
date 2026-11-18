@@ -24,6 +24,9 @@ jobs:
 
       - name: Run tests
         working-directory: soci-indexer
+        # the ztoc library links zlib with `-l:libz.a`, see the Dockerfile
+        env:
+          CGO_LDFLAGS_ALLOW: '-l:libz\.a'
         run: |
           apt-get update -qq && apt-get install -y -qq zlib1g-dev
           go vet ./...
