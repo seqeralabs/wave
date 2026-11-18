@@ -20,6 +20,8 @@ package io.seqera.wave.service.view.auth
 
 import spock.lang.Specification
 
+import io.micronaut.context.ApplicationContext
+
 import java.security.MessageDigest
 
 /**
@@ -36,6 +38,16 @@ class ViewAuthServiceTest extends Specification {
                 token_endpoint: "$EP/token" )
     }
 
+    private static List<ViewAuthClient> entries(Map<String,String> packed) {
+        return packed.collect { ep, v ->
+            final c = new ViewAuthClient('n' + ep.hashCode())
+            c.endpoint = ep
+            c.clientId = v.tokenize('|').first()
+            c.clientSecret = v.tokenize('|').getAt(1)
+            return c
+        }
+    }
+
     private ViewAuthService svc(OidcDiscovery discovery, Map clients, Map store=[:]) {
         def pending = Mock(PendingSignInStore) {
             put(_, _) >> { String k, PendingSignIn v -> store.put(k, v) }
@@ -49,7 +61,7 @@ class ViewAuthServiceTest extends Specification {
                 sessionStore: Mock(ViewSessionStore),
                 discoveryClient: disco,
                 serverUrl: 'https://wave.test',
-                clients: clients )
+                clients: entries(clients) )
     }
 
     def 'should build an authorization url with PKCE' () {
@@ -129,7 +141,7 @@ class ViewAuthServiceTest extends Specification {
                 sessionStore: Mock(ViewSessionStore),
                 discoveryClient: Mock(OidcDiscoveryClient) { discover(_) >> usable() },
                 serverUrl: 'https://wave.test',
-                clients: [(EP): 'wave-client|secret'] )
+                clients: entries([(EP): 'wave-client|secret']) )
         def signIn = service.startSignIn(EP, '/x')
         def state = kept.keySet().first()
 
@@ -156,7 +168,7 @@ class ViewAuthServiceTest extends Specification {
                     discover(_) >> usable()
                     exchangeCode(_, _, _, _, _, _) >> 'new-tok' },
                 serverUrl: 'https://wave.test',
-                clients: [(EP): 'wave-client|secret'] )
+                clients: entries([(EP): 'wave-client|secret']) )
 
         when:
         def id = service.completeSignIn(new PendingSignIn(towerEndpoint: EP, codeVerifier: 'v', returnTo: '/x'), 'code', 'old-session')
@@ -179,6 +191,29 @@ class ViewAuthServiceTest extends Specification {
         service.clientSecret(EP) == 'the-secret'
         and: 'a public client has no secret'
         svc(usable(), [(EP): 'only-id']).clientSecret(EP) == null
+    }
+
+    def 'should bind the clients from configuration, including from environment variables' () {
+        given: 'the flat property form an env var produces'
+        def ctx = ApplicationContext.run(
+                'wave.view.auth.clients.cloud.endpoint': 'https://api.cloud.seqera.io',
+                'wave.view.auth.clients.cloud.client-id': 'the-id',
+                // a secret containing the separator the packed form used to split on
+                'wave.view.auth.clients.cloud.client-secret': 'a|b|c' )
+
+        when:
+        def found = ctx.getBeansOfType(ViewAuthClient).toList()
+
+        then:
+        found.size() == 1
+        found[0].clientId == 'the-id'
+        found[0].clientSecret == 'a|b|c'
+        and: 'a trailing slash in either spelling still matches'
+        found[0].matches('https://api.cloud.seqera.io')
+        found[0].matches('https://api.cloud.seqera.io/')
+
+        cleanup:
+        ctx.close()
     }
 
 }

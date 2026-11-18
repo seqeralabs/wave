@@ -38,6 +38,7 @@ import io.seqera.wave.service.mirror.ContainerMirrorService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.request.ContainerRequestService
+import io.seqera.wave.service.request.ContainerStatusService
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanType
 import io.seqera.wave.service.view.auth.ViewAuthService
@@ -74,6 +75,10 @@ class ReadApiController {
     @Inject
     @Nullable
     private ContainerRequestService containerService
+
+    @Inject
+    @Nullable
+    private ContainerStatusService statusService
 
     @Inject
     @Nullable
@@ -196,6 +201,21 @@ class ReadApiController {
         if( !record )
             return HttpResponse.notFound()
         return guard.refuse(record.owner, record.visibility, authorization, sessionId) ?: HttpResponse.ok(record.withUserIdOnly())
+    }
+
+    @Get("/container/{requestId}/status")
+    HttpResponse<?> getContainerStatus(String requestId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization,
+                                 @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
+        // the status has no owner of its own. Take it from the request entry the status path
+        // reads anyway, rather than the record, which is a database load on a polled route
+        final request = containerService?.getRequest(requestId)
+        final denied = request
+                ? guard.refuse(RecordOwner.of(request.identity), request.visibility, authorization, sessionId)
+                : null
+        if( denied )
+            return denied
+        final resp = statusService?.getContainerStatus(requestId)
+        return resp ? HttpResponse.ok(resp) : HttpResponse.notFound()
     }
 
 }
