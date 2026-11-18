@@ -23,7 +23,6 @@ import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpHeaders
 import io.micronaut.http.HttpResponse
-import io.micronaut.http.HttpStatus
 import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.CookieValue
@@ -33,7 +32,6 @@ import io.micronaut.http.annotation.Produces
 import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
-import io.seqera.wave.service.access.RecordAccessService
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.mirror.ContainerMirrorService
@@ -59,7 +57,7 @@ import jakarta.inject.Inject
 class ReadApiController {
 
     @Inject
-    private RecordAccessService accessService
+    private RecordAccessGuard guard
 
     @Inject
     @Nullable
@@ -81,50 +79,13 @@ class ReadApiController {
     @Nullable
     private BuildLogService logService
 
-    @Inject
-    @Nullable
-    private ViewAuthService authService
-
-    /**
-     * @return null when the caller may read the record, otherwise the refusal to send.
-     *      A bearer token wins; the view session is the fallback so a signed-in browser can
-     *      follow the artifact links rendered on a view page.
-     */
-    protected HttpResponse<?> refuse(RecordOwner owner, String visibility, String authorization, String sessionId) {
-        final bearer = bearer(authorization)
-        final token = bearer ?: authService?.tokenFor(sessionId, owner?.towerEndpoint)
-        final decision = accessService.check(owner, visibility, token)
-        switch (decision) {
-            case RecordAccessService.Decision.ALLOW:
-                return null
-            case RecordAccessService.Decision.REJECTED:
-                // a rejected session token is no longer any use: drop it so the next page signs in again
-                if( !bearer )
-                    authService?.forget(sessionId, owner?.towerEndpoint)
-                return HttpResponse.unauthorized()
-            case RecordAccessService.Decision.UNAUTHORIZED:
-                return HttpResponse.unauthorized()
-            case RecordAccessService.Decision.FORBIDDEN:
-                return HttpResponse.status(HttpStatus.FORBIDDEN)
-            default:
-                return HttpResponse.status(HttpStatus.SERVICE_UNAVAILABLE)
-        }
-    }
-
-    static protected String bearer(String authorization) {
-        if( !authorization )
-            return null
-        final value = authorization.trim()
-        return value.toLowerCase().startsWith('bearer ') ? value.substring(7).trim() : null
-    }
-
     @Get("/builds/{buildId}")
     HttpResponse<?> getBuildRecord(String buildId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization,
                                  @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
         final record = buildService?.getBuildRecord(buildId)
         if( !record )
             return HttpResponse.notFound()
-        return refuse(record.owner, record.visibility, authorization, sessionId) ?: HttpResponse.ok(record)
+        return guard.refuse(record.owner, record.visibility, authorization, sessionId) ?: HttpResponse.ok(record)
     }
 
     @Get("/builds/{buildId}/status")
@@ -133,7 +94,7 @@ class ReadApiController {
         final record = buildService?.getBuildRecord(buildId)
         if( !record )
             return HttpResponse.notFound()
-        return refuse(record.owner, record.visibility, authorization, sessionId) ?: HttpResponse.ok(record.toStatusResponse())
+        return guard.refuse(record.owner, record.visibility, authorization, sessionId) ?: HttpResponse.ok(record.toStatusResponse())
     }
 
     @Get("/builds/{buildId}/logs")
@@ -143,7 +104,7 @@ class ReadApiController {
         final record = buildService?.getBuildRecord(buildId)
         if( !record )
             return HttpResponse.notFound()
-        final denied = refuse(record.owner, record.visibility, authorization, sessionId)
+        final denied = guard.refuse(record.owner, record.visibility, authorization, sessionId)
         if( denied )
             return denied
         final logs = logService?.fetchLogStream(buildId)
@@ -157,7 +118,7 @@ class ReadApiController {
         final record = buildService?.getBuildRecord(buildId)
         if( !record )
             return HttpResponse.notFound()
-        final denied = refuse(record.owner, record.visibility, authorization, sessionId)
+        final denied = guard.refuse(record.owner, record.visibility, authorization, sessionId)
         if( denied )
             return denied
         final condaLock = logService?.fetchCondaLockStream(buildId)
@@ -170,7 +131,7 @@ class ReadApiController {
         final record = mirrorService?.getMirrorResult(mirrorId)
         if( !record )
             return HttpResponse.notFound()
-        return refuse(record.owner, record.visibility, authorization, sessionId) ?: HttpResponse.ok(record)
+        return guard.refuse(record.owner, record.visibility, authorization, sessionId) ?: HttpResponse.ok(record)
     }
 
     @Get("/scans/{scanId}")
@@ -179,7 +140,7 @@ class ReadApiController {
         final record = scanService?.getScanRecord(scanId)
         if( !record )
             return HttpResponse.notFound()
-        return refuse(record.owner, record.visibility, authorization, sessionId) ?: HttpResponse.ok(record)
+        return guard.refuse(record.owner, record.visibility, authorization, sessionId) ?: HttpResponse.ok(record)
     }
 
     @Get("/mirrors/{mirrorId}/logs")
@@ -189,7 +150,7 @@ class ReadApiController {
         final record = mirrorService?.getMirrorResult(mirrorId)
         if( !record )
             return HttpResponse.notFound()
-        final denied = refuse(record.owner, record.visibility, authorization, sessionId)
+        final denied = guard.refuse(record.owner, record.visibility, authorization, sessionId)
         if( denied )
             return denied
         return record.logs
@@ -204,7 +165,7 @@ class ReadApiController {
         final record = scanService?.getScanRecord(scanId)
         if( !record )
             return HttpResponse.notFound()
-        final denied = refuse(record.owner, record.visibility, authorization, sessionId)
+        final denied = guard.refuse(record.owner, record.visibility, authorization, sessionId)
         if( denied )
             return denied
         final report = scanService.fetchReportStream(scanId, ScanType.Spdx)
@@ -220,7 +181,7 @@ class ReadApiController {
         final record = scanService?.getScanRecord(scanId)
         if( !record )
             return HttpResponse.notFound()
-        final denied = refuse(record.owner, record.visibility, authorization, sessionId)
+        final denied = guard.refuse(record.owner, record.visibility, authorization, sessionId)
         if( denied )
             return denied
         return record.logs
@@ -234,7 +195,7 @@ class ReadApiController {
         final record = containerService?.loadContainerRecord(requestId)
         if( !record )
             return HttpResponse.notFound()
-        return refuse(record.owner, record.visibility, authorization, sessionId) ?: HttpResponse.ok(record.withUserIdOnly())
+        return guard.refuse(record.owner, record.visibility, authorization, sessionId) ?: HttpResponse.ok(record.withUserIdOnly())
     }
 
 }
