@@ -56,8 +56,17 @@ class OidcDiscoveryClient {
 
     private final HttpClient http = HttpClientFactory.followRedirectsHttpClient()
 
+    /**
+     * The code exchange posts the client secret, and a 307 or 308 would resend the body to
+     * whatever location the token endpoint names. This client refuses to follow it.
+     */
+    private final HttpClient tokenHttp = HttpClientFactory.neverRedirectsHttpClient()
+
     /** A failure is cached only briefly, so one transient outage cannot disable sign-in until restart */
     private static final long FAILURE_TTL_MILLIS = Duration.ofMinutes(1).toMillis()
+
+    /** A success expires too: a Platform that moves its OIDC endpoints is picked up within a day */
+    private static final long SUCCESS_TTL_MILLIS = Duration.ofHours(24).toMillis()
 
     static String formEncode(Map<String,?> params) {
         return params.collect { k, v -> "${k}=${URLEncoder.encode(v.toString(), 'UTF-8')}" }.join('&')
@@ -71,7 +80,8 @@ class OidcDiscoveryClient {
             return hit.value
         // deliberately not computeIfAbsent: it would hold the bin lock across the fetch
         final found = fetch(towerEndpoint)
-        cache.put(towerEndpoint, new Cached(found, found ? Long.MAX_VALUE : System.currentTimeMillis() + FAILURE_TTL_MILLIS))
+        final ttl = found ? SUCCESS_TTL_MILLIS : FAILURE_TTL_MILLIS
+        cache.put(towerEndpoint, new Cached(found, System.currentTimeMillis() + ttl))
         return found
     }
 
@@ -112,7 +122,7 @@ class OidcDiscoveryClient {
                     .header('Content-Type', 'application/x-www-form-urlencoded')
                     .POST(HttpRequest.BodyPublishers.ofString(body))
                     .build()
-            final resp = http.send(req, HttpResponse.BodyHandlers.ofString())
+            final resp = tokenHttp.send(req, HttpResponse.BodyHandlers.ofString())
             if( resp.statusCode() != 200 ) {
                 log.debug "OIDC token exchange with '$towerEndpoint' returned ${resp.statusCode()}"
                 return null

@@ -22,6 +22,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpResponse
+import io.micronaut.http.MutableHttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Controller
@@ -54,22 +55,40 @@ class ViewAuthController {
     @Produces(MediaType.TEXT_HTML)
     HttpResponse<?> callback(@Nullable @QueryValue String code,
                              @Nullable @QueryValue String state,
-                             @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId)
+                             @Nullable @QueryValue String error,
+                             @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId,
+                             @Nullable @CookieValue(ViewAuthService.STATE_COOKIE) String stateHash)
     {
-        // an unknown or expired state means the sign-in cannot be tied to this browser
-        final pending = authService.consume(state)
-        if( !pending || !code )
-            return unauthorized('This sign-in link has expired. Open the page again to retry.')
+        // a state this browser did not start, already used, or expired
+        final pending = authService.consume(state, stateHash)
+        if( !pending )
+            return expire(unauthorized('This sign-in link has expired. Open the page again to retry.'))
+
+        // the viewer cancelled at Platform, or Platform refused: not an expired link
+        if( error )
+            return expire(unauthorized("Seqera Platform did not complete the sign-in: ${error}.".toString(), pending.returnTo))
+        if( !code )
+            return expire(unauthorized('Seqera Platform returned no authorization code.', pending.returnTo))
 
         final newSession = authService.completeSignIn(pending, code, sessionId)
         if( !newSession )
-            return unauthorized('Seqera Platform refused the sign-in.')
+            return expire(unauthorized('Seqera Platform refused the sign-in.', pending.returnTo))
 
         // see-other, not the default permanent redirect: a cached one would pin the browser
         // to a dead single-use state
-        return HttpResponse
+        return expire(HttpResponse
                 .seeOther(URI.create(pending.returnTo ?: '/'))
-                .cookie(sessionCookie(newSession))
+                .cookie(sessionCookie(newSession)))
+    }
+
+    /** The state cookie is single-use: drop it whichever way the callback ends */
+    protected MutableHttpResponse<?> expire(MutableHttpResponse<?> response) {
+        return response.cookie(Cookie.of(ViewAuthService.STATE_COOKIE, '')
+                .path('/view/auth')
+                .httpOnly(true)
+                .secure(authService.secureCookie())
+                .sameSite(SameSite.Lax)
+                .maxAge(0))
     }
 
     protected Cookie sessionCookie(String sessionId) {
@@ -81,8 +100,8 @@ class ViewAuthController {
                 .sameSite(SameSite.Lax)
     }
 
-    static protected HttpResponse<?> unauthorized(String message) {
-        return ViewController.authError(HttpStatus.UNAUTHORIZED, message)
+    static protected MutableHttpResponse<?> unauthorized(String message, String retryTo=null) {
+        return ViewController.authError(HttpStatus.UNAUTHORIZED, message, retryTo)
     }
 
 }
