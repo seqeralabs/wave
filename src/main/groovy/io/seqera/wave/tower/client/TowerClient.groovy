@@ -112,20 +112,10 @@ class TowerClient {
             return cache.getOrCompute(k, (it)-> connector.sendAsyncAsPresented(endpoint, uri, auth, type).get(), accessCheckDuration)
         }
         catch( Exception e ) {
-            if( unauthorized(e) )
+            if( HttpResponseException.matches(e, HttpStatus.UNAUTHORIZED) )
                 rejected.put(k, Boolean.TRUE)
             throw e
         }
-    }
-
-    static private boolean unauthorized(Throwable e) {
-        for( Throwable t = e; t != null; t = t.cause ) {
-            if( t instanceof HttpResponseException && (t as HttpResponseException).statusCode() == HttpStatus.UNAUTHORIZED )
-                return true
-            if( t.cause === t )
-                break
-        }
-        return false
     }
 
     /**

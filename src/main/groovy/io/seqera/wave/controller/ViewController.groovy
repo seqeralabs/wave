@@ -45,6 +45,7 @@ import io.micronaut.http.HttpStatus
 import io.seqera.wave.service.access.RecordAccessService
 import io.seqera.wave.service.view.auth.RefusedViewCounter
 import io.seqera.wave.service.view.auth.ViewAuthService
+import io.seqera.wave.service.view.auth.ViewSession
 import io.seqera.wave.tower.RecordOwner
 import io.micronaut.views.ModelAndView
 import io.micronaut.views.View
@@ -167,8 +168,9 @@ class ViewController {
     }
 
 
-    private RecordAccessService.Decision decide(RecordOwner owner, String visibility, String sessionId) {
-        final decision = accessService.check(owner, visibility, authService.tokenFor(sessionId, owner?.towerEndpoint))
+    /** @param session the viewer's session, already read by the caller when it needs it too */
+    private RecordAccessService.Decision decide(RecordOwner owner, String visibility, String sessionId, ViewSession session) {
+        final decision = accessService.check(owner, visibility, session?.tokenFor(owner?.towerEndpoint))
         // a rejected token is no longer any use: drop it so the viewer is sent to sign in again
         if( decision == RecordAccessService.Decision.REJECTED )
             authService.forget(sessionId, owner?.towerEndpoint)
@@ -177,7 +179,10 @@ class ViewController {
 
     /** Lists never start a sign-in: they use a session only if the viewer already has one */
     protected boolean isReadable(RecordOwner owner, String visibility, String sessionId) {
-        return decide(owner, visibility, sessionId) == RecordAccessService.Decision.ALLOW
+        // a public row admits everyone, so a list of them reads the session store not at all
+        if( !RecordAccessService.isPrivate(owner, visibility) )
+            return true
+        return decide(owner, visibility, sessionId, authService.session(sessionId)) == RecordAccessService.Decision.ALLOW
     }
 
     static protected MutableHttpResponse<?> authError(HttpStatus status, String message, String retryTo=null) {
@@ -189,16 +194,6 @@ class ViewController {
         return HttpResponse.status(status).body(new ModelAndView("view-auth-error", model))
     }
 
-    /** Ties the sign-in to this browser: the callback refuses a state that does not hash to it */
-    protected Cookie stateCookie(String stateHash) {
-        return Cookie.of(ViewAuthService.STATE_COOKIE, stateHash)
-                .path('/view/auth')
-                .httpOnly(true)
-                .secure(authService.secureCookie())
-                .sameSite(SameSite.Lax)
-                .maxAge(600)
-    }
-
     /**
      * How soon after sign-in a refusal is taken to mean signing in again will not help. Platform
      * still holds a session, so it returns a code without prompting and the browser loops.
@@ -206,9 +201,13 @@ class ViewController {
     private static final long JUST_SIGNED_IN_MILLIS = 30_000
 
     protected HttpResponse<?> guard(RecordOwner owner, String visibility, String sessionId, String returnTo) {
-        // read before decide(), which drops the token when Platform rejects it
-        final issuedAt = authService.tokenIssuedAt(sessionId, owner?.towerEndpoint)
-        final decision = decide(owner, visibility, sessionId)
+        if( !RecordAccessService.isPrivate(owner, visibility) )
+            return null
+        // one read: decide() needs the token, and the loop check below needs when it arrived,
+        // which decide() drops on the way through
+        final session = authService.session(sessionId)
+        final issuedAt = session?.issuedAtFor(owner.towerEndpoint)
+        final decision = decide(owner, visibility, sessionId, session)
         if( decision == RecordAccessService.Decision.ALLOW )
             return null
 
@@ -223,7 +222,7 @@ class ViewController {
             case RecordAccessService.Decision.UNAUTHORIZED:
                 final signIn = authService.startSignIn(owner.towerEndpoint, returnTo)
                 return signIn
-                        ? HttpResponse.seeOther(URI.create(signIn.url)).cookie(stateCookie(signIn.stateHash))
+                        ? HttpResponse.seeOther(URI.create(signIn.url)).cookie(authService.stateCookie(signIn.stateHash, 600))
                         : authError(HttpStatus.UNAUTHORIZED, 'This record belongs to a Seqera Platform workspace, and Wave cannot sign viewers in to it.')
             case RecordAccessService.Decision.FORBIDDEN:
                 return authError(HttpStatus.FORBIDDEN, 'This record belongs to a workspace you do not have access to.')

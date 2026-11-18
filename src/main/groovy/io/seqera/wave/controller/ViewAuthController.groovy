@@ -59,36 +59,35 @@ class ViewAuthController {
                              @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId,
                              @Nullable @CookieValue(ViewAuthService.STATE_COOKIE) String stateHash)
     {
+        return expire(callback0(code, state, error, sessionId, stateHash))
+    }
+
+    private MutableHttpResponse<?> callback0(String code, String state, String error, String sessionId, String stateHash) {
         // a state this browser did not start, already used, or expired
         final pending = authService.consume(state, stateHash)
         if( !pending )
-            return expire(unauthorized('This sign-in link has expired. Open the page again to retry.'))
+            return unauthorized('This sign-in link has expired. Open the page again to retry.')
 
         // the viewer cancelled at Platform, or Platform refused: not an expired link
         if( error )
-            return expire(unauthorized("Seqera Platform did not complete the sign-in: ${error}.".toString(), pending.returnTo))
+            return unauthorized("Seqera Platform did not complete the sign-in: ${error}.".toString(), pending.returnTo)
         if( !code )
-            return expire(unauthorized('Seqera Platform returned no authorization code.', pending.returnTo))
+            return unauthorized('Seqera Platform returned no authorization code.', pending.returnTo)
 
         final newSession = authService.completeSignIn(pending, code, sessionId)
         if( !newSession )
-            return expire(unauthorized('Seqera Platform refused the sign-in.', pending.returnTo))
+            return unauthorized('Seqera Platform refused the sign-in.', pending.returnTo)
 
         // see-other, not the default permanent redirect: a cached one would pin the browser
         // to a dead single-use state
-        return expire(HttpResponse
+        return HttpResponse
                 .seeOther(URI.create(pending.returnTo ?: '/'))
-                .cookie(sessionCookie(newSession)))
+                .cookie(sessionCookie(newSession))
     }
 
     /** The state cookie is single-use: drop it whichever way the callback ends */
     protected MutableHttpResponse<?> expire(MutableHttpResponse<?> response) {
-        return response.cookie(Cookie.of(ViewAuthService.STATE_COOKIE, '')
-                .path('/view/auth')
-                .httpOnly(true)
-                .secure(authService.secureCookie())
-                .sameSite(SameSite.Lax)
-                .maxAge(0))
+        return response.cookie(authService.stateCookie('', 0))
     }
 
     protected Cookie sessionCookie(String sessionId) {

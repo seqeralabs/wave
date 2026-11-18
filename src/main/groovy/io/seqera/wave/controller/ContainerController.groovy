@@ -882,7 +882,7 @@ class ContainerController {
                 : null
         if( denied )
             return denied
-        final ContainerStatusResponse resp = statusService.getContainerStatus(requestId)
+        final ContainerStatusResponse resp = request ? statusService.getContainerStatus(request) : null
         if( !resp )
             return HttpResponse.notFound()
         return HttpResponse.ok(resp)

@@ -214,7 +214,7 @@ class ReadApiController {
                 : null
         if( denied )
             return denied
-        final resp = statusService?.getContainerStatus(requestId)
+        final resp = request ? statusService?.getContainerStatus(request) : null
         return resp ? HttpResponse.ok(resp) : HttpResponse.notFound()
     }
 

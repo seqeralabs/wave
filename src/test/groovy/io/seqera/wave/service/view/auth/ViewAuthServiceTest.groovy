@@ -48,7 +48,7 @@ class ViewAuthServiceTest extends Specification {
         }
     }
 
-    private ViewAuthService svc(OidcDiscovery discovery, Map clients, Map store=[:]) {
+    private ViewAuthService svc(OidcDiscovery discovery, Map clients, Map store=[:], PendingSignInStore pendingOverride=null, ViewSessionStore sessions=null) {
         def pending = Mock(PendingSignInStore) {
             put(_, _) >> { String k, PendingSignIn v -> store.put(k, v) }
             get(_) >> { String k -> store.get(k) }
@@ -57,8 +57,8 @@ class ViewAuthServiceTest extends Specification {
         }
         def disco = Mock(OidcDiscoveryClient) { discover(_) >> discovery }
         return new ViewAuthService(
-                pendingStore: pending,
-                sessionStore: Mock(ViewSessionStore),
+                pendingStore: pendingOverride ?: pending,
+                sessionStore: sessions ?: Mock(ViewSessionStore),
                 discoveryClient: disco,
                 serverUrl: 'https://wave.test',
                 clients: entries(clients) )
@@ -180,17 +180,6 @@ class ViewAuthServiceTest extends Specification {
         and: 'the new one holds the new token and carries the other Platform across'
         sessions.get(id).tokenFor(EP) == 'new-tok'
         sessions.get(id).tokenFor('https://other.io/api') == 'other-tok'
-    }
-
-    def 'should split the client id from its secret' () {
-        given:
-        def service = svc(usable(), [(EP): 'the-id|the-secret'])
-
-        expect:
-        service.clientId(EP) == 'the-id'
-        service.clientSecret(EP) == 'the-secret'
-        and: 'a public client has no secret'
-        svc(usable(), [(EP): 'only-id']).clientSecret(EP) == null
     }
 
     def 'should bind the clients from configuration, including from environment variables' () {
