@@ -464,8 +464,12 @@ class ContainerControllerTest extends Specification {
         def userOnly = id('private', new PlatformId(new User(id: 1), null, 'tok', 'https://api.cloud.seqera.io'))
         userOnly.buildId != id('private', new PlatformId(new User(id: 2), null, 'tok', 'https://api.cloud.seqera.io')).buildId
 
-        and: 'two spellings of one Platform are one tenant'
-        id('private', new PlatformId(new User(id: 1), 10L, 'tok', 'HTTPS://API.cloud.seqera.io:443/')).buildId == ws10.buildId
+        // folding them together would hand a Platform paired under another spelling the ids of
+        // the one it is impersonating
+        and: 'two spellings of one host are two tenants'
+        id('private', new PlatformId(new User(id: 1), 10L, 'tok', 'HTTPS://API.cloud.seqera.io:443/')).buildId != ws10.buildId
+        id('private', new PlatformId(new User(id: 1), 10L, 'tok', 'https://api.cloud.seqera.io/')).buildId != ws10.buildId
+        id('private', new PlatformId(new User(id: 1), 10L, 'tok', 'https://api.cloud.seqera.io:443')).buildId != ws10.buildId
     }
 
     static final String COMMUNITY_REPO = 'public.cr.seqera.io/wave'

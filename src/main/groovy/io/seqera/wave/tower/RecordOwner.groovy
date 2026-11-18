@@ -24,7 +24,6 @@ import groovy.transform.ToString
 import io.seqera.serde.moshi.MoshiSerializable
 import io.seqera.wave.api.Visibility
 
-import static io.seqera.wave.util.ContainerHelper.normalisePlatformEndpoint
 
 /**
  * Model the Platform tenant a Wave record belongs to.
@@ -57,14 +56,14 @@ class RecordOwner implements MoshiSerializable {
     /**
      * The tenant this record belongs to: the workspace when there is one, otherwise the user.
      *
-     * The endpoint is canonicalised here rather than on the stored field, so that two spellings
-     * of one Platform give one tenant without the stored address losing the spelling the pairing
-     * lookup resolves.
+     * The endpoint is used exactly as paired, never canonicalised. Pairing, user-info and the
+     * workspace listing all resolve the raw spelling, so folding two spellings into one tenant
+     * would let a Platform paired under another spelling of the same host share this tenant's
+     * ids while still answering its own membership checks.
      */
     String tenant() {
-        final endpoint = normalisePlatformEndpoint(towerEndpoint)
         // not `workspaceId ?:` - 0L is falsy in Groovy
-        return workspaceId != null ? "$endpoint:$workspaceId" : "$endpoint:user:$userId"
+        return workspaceId != null ? "$towerEndpoint:$workspaceId" : "$towerEndpoint:user:$userId"
     }
 
     /**
@@ -72,7 +71,12 @@ class RecordOwner implements MoshiSerializable {
      *      public or anonymous - in which case the id is unchanged from before this existed.
      */
     static String tenantOf(PlatformId identity, String visibility) {
-        return Visibility.isPrivate(visibility) ? of(identity)?.tenant() : null
+        return tenantOf(of(identity), visibility)
+    }
+
+    /** The same tenant seen from a stored record, so a cached one can be matched to a new request */
+    static String tenantOf(RecordOwner owner, String visibility) {
+        return Visibility.isPrivate(visibility) ? owner?.tenant() : null
     }
 
     static RecordOwner of(PlatformId identity) {

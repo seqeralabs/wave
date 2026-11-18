@@ -53,6 +53,7 @@ import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.request.ContainerRequest
+import io.seqera.wave.tower.RecordOwner
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -120,7 +121,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
             return null
         // the store key carries the tenant too, otherwise two tenants scanning the same public
         // image would share one entry and the first arrival would own it for everybody
-        final String key = tenant ? "$tenant/$targetImage".toString() : targetImage
+        final String key = ScanIdStore.key(targetImage, tenant)
         // create a new scan id if there's no entry for the given target image
         final result = scanIdStore
                 .putIfAbsentAndCount(key, ScanId.of(targetImage, digest, tenant))
@@ -379,7 +380,9 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
             // this is needed to prevent the caching of the scanId and
             // allow re-scanning the container in case of a job failure
             if( scan.done() && !scan.succeeded() ) {
-                cleanupService.cleanupScanId(scan.containerImage)
+                // the same key the id was written under
+                cleanupService.cleanupScanId(
+                        ScanIdStore.key(scan.containerImage, RecordOwner.tenantOf(scan.owner, scan.visibility)))
             }
         }
         catch (Throwable t){
