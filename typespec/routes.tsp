@@ -40,6 +40,90 @@ namespace wave {
       };
   }
 
+
+  @route("/v1alpha3")
+  @doc("Reads that apply the record access check. A record is served to anyone while it is public; a private one needs a Seqera Platform token for the workspace that owns it, sent as a bearer token. Supersedes the v1alpha1 and v1alpha2 reads, which carry a Deprecation header.")
+  interface ReadService {
+
+    @route("/builds/{buildId}")
+    @doc("The build record.")
+    @get op getBuildRecordV3(@path buildId: string): {
+      @body response: WaveBuildRecord;
+      @statusCode statusCode: 200;
+    }|{ @statusCode statusCode: 401; }|{ @statusCode statusCode: 403; }|{ @statusCode statusCode: 404; }|{ @statusCode statusCode: 503; };
+
+    @route("/builds/{buildId}/status")
+    @doc("The build status.")
+    @get op getBuildStatusV3(@path buildId: string): {
+      @body response: BuildStatusResponse;
+      @statusCode statusCode: 200;
+    }|{ @statusCode statusCode: 401; }|{ @statusCode statusCode: 403; }|{ @statusCode statusCode: 404; }|{ @statusCode statusCode: 503; };
+
+    @route("/builds/{buildId}/logs")
+    @doc("The build logs.")
+    @get op getBuildLogsV3(@path buildId: string): {
+      @body response: string;
+      @statusCode statusCode: 200;
+    }|{ @statusCode statusCode: 401; }|{ @statusCode statusCode: 403; }|{ @statusCode statusCode: 404; }|{ @statusCode statusCode: 503; };
+
+    @route("/builds/{buildId}/condalock")
+    @doc("The Conda lock file produced by the build.")
+    @get op getCondaLockV3(@path buildId: string): {
+      @body response: string;
+      @statusCode statusCode: 200;
+    }|{ @statusCode statusCode: 401; }|{ @statusCode statusCode: 403; }|{ @statusCode statusCode: 404; }|{ @statusCode statusCode: 503; };
+
+    @route("/mirrors/{mirrorId}")
+    @doc("The mirror record.")
+    @get op getMirrorRecordV3(@path mirrorId: string): {
+      @body response: ContainerMirrorResponse;
+      @statusCode statusCode: 200;
+    }|{ @statusCode statusCode: 401; }|{ @statusCode statusCode: 403; }|{ @statusCode statusCode: 404; }|{ @statusCode statusCode: 503; };
+
+    @route("/mirrors/{mirrorId}/logs")
+    @doc("The mirror logs.")
+    @get op getMirrorLogsV3(@path mirrorId: string): {
+      @body response: string;
+      @statusCode statusCode: 200;
+    }|{ @statusCode statusCode: 401; }|{ @statusCode statusCode: 403; }|{ @statusCode statusCode: 404; }|{ @statusCode statusCode: 503; };
+
+    @route("/scans/{scanId}")
+    @doc("The scan record.")
+    @get op getScanRecordV3(@path scanId: string): {
+      @body response: WaveScanRecord;
+      @statusCode statusCode: 200;
+    }|{ @statusCode statusCode: 401; }|{ @statusCode statusCode: 403; }|{ @statusCode statusCode: 404; }|{ @statusCode statusCode: 503; };
+
+    @route("/scans/{scanId}/spdx")
+    @doc("The SPDX software bill of materials for the scan.")
+    @get op getScanSpdxV3(@path scanId: string): {
+      @body response: string;
+      @statusCode statusCode: 200;
+    }|{ @statusCode statusCode: 401; }|{ @statusCode statusCode: 403; }|{ @statusCode statusCode: 404; }|{ @statusCode statusCode: 503; };
+
+    @route("/scans/{scanId}/logs")
+    @doc("The scan logs.")
+    @get op getScanLogsV3(@path scanId: string): {
+      @body response: string;
+      @statusCode statusCode: 200;
+    }|{ @statusCode statusCode: 401; }|{ @statusCode statusCode: 403; }|{ @statusCode statusCode: 404; }|{ @statusCode statusCode: 503; };
+
+    @route("/container/{requestId}")
+    @doc("The container request record.")
+    @get op getContainerRecordV3(@path requestId: string): {
+      @body response: WaveContainerRecord;
+      @statusCode statusCode: 200;
+    }|{ @statusCode statusCode: 401; }|{ @statusCode statusCode: 403; }|{ @statusCode statusCode: 404; }|{ @statusCode statusCode: 503; };
+
+    @route("/container/{requestId}/status")
+    @doc("The container request status.")
+    @get op getContainerStatusV3(@path requestId: string): {
+      @body response: ContainerStatusResponse;
+      @statusCode statusCode: 200;
+    }|{ @statusCode statusCode: 401; }|{ @statusCode statusCode: 403; }|{ @statusCode statusCode: 404; }|{ @statusCode statusCode: 503; };
+
+  }
+
   @route("/v1alpha1/builds/{buildId}")
   interface BuildService {
 
