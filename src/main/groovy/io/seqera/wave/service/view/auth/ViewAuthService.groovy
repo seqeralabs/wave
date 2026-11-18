@@ -162,6 +162,12 @@ class ViewAuthService {
         return sessionId
     }
 
+    /** @return when this session's token for that Platform was issued, or null when there is none */
+    Long tokenIssuedAt(String sessionId, String towerEndpoint) {
+        final session = sessionId ? sessionStore.get(sessionId) : null
+        return session?.issuedAtFor(towerEndpoint)
+    }
+
     /** Drops a token Platform has rejected, so the next page starts a fresh sign-in */
     void forget(String sessionId, String towerEndpoint) {
         final session = sessionId ? sessionStore.get(sessionId) : null

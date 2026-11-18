@@ -1292,4 +1292,18 @@ class ContainerHelperTest extends Specification {
         'cran-v1-singularity-file'          | BuildTemplate.CRAN_INSTALLR_V1     | 'sif'  | null            | goldenCran(null, [rImage: 'rocker/r-ver:4.3.0', basePackages: 'build-essential', commands: ['apt-get update']])
     }
 
+    def 'should scope a multi-platform container id to the tenant' () {
+        given:
+        def containerFile = 'FROM ubuntu:latest'
+        def repo = 'docker.io/wave'
+
+        expect: 'the parent id of a private multi-arch build is per tenant, like its children'
+        ContainerHelper.makeMultiPlatformContainerId(containerFile, null, repo, null, null, 'https://p.io/api:10') !=
+                ContainerHelper.makeMultiPlatformContainerId(containerFile, null, repo, null, null, 'https://p.io/api:20')
+
+        and: 'a public one is unchanged from before the tenant existed'
+        ContainerHelper.makeMultiPlatformContainerId(containerFile, null, repo, null, null, null) ==
+                ContainerHelper.makeMultiPlatformContainerId(containerFile, null, repo, null, null)
+    }
+
 }

@@ -547,4 +547,40 @@ class MultiPlatformBuildServiceTest extends Specification {
         result.type == job.type
         result.launchTime != null
     }
+
+    def 'should keep the child builds of two workspaces apart on a private request' () {
+        given:
+        def service = new MultiPlatformBuildService()
+        def template = { PlatformId who, String visibility -> BuildRequest.of(
+                containerId: 'abc123',
+                containerFile: 'FROM ubuntu:latest',
+                workspace: Path.of('/tmp'),
+                targetImage: 'docker.io/wave:abc123',
+                identity: who,
+                visibility: visibility,
+                platform: ContainerPlatform.of('linux/amd64'),
+                cacheRepository: 'docker.io/cache',
+                ip: '10.0.0.1',
+                configJson: '{}',
+                offsetId: '+0',
+                format: BuildFormat.DOCKER,
+                maxDuration: Duration.ofMinutes(5),
+                buildTemplate: null ) }
+        and:
+        def ws10 = new PlatformId(new User(id: 1), 10L, 'tok', 'https://platform.io/api')
+        def ws20 = new PlatformId(new User(id: 1), 20L, 'tok', 'https://platform.io/api')
+        def child = { PlatformId who, String vis ->
+            service.createPlatformRequest(template(who, vis), MultiPlatformBuildService.PLATFORM_AMD64, '-linux-amd64') }
+
+        expect: 'the per-architecture id carries the tenant, so neither workspace reads the other'
+        child(ws10, 'private').targetImage != child(ws20, 'private').targetImage
+        child(ws10, 'private').containerId != child(ws20, 'private').containerId
+
+        and: 'the same workspace twice still shares one child build'
+        child(ws10, 'private').targetImage == child(ws10, 'private').targetImage
+
+        and: 'a public multi-arch build is content-addressed, as it was before the tenant existed'
+        child(ws10, null).targetImage == child(ws20, null).targetImage
+    }
+
 }
