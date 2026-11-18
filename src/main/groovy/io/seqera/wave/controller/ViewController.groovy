@@ -199,7 +199,15 @@ class ViewController {
                 .maxAge(600)
     }
 
+    /**
+     * How soon after sign-in a refusal is taken to mean signing in again will not help. Platform
+     * still holds a session, so it returns a code without prompting and the browser loops.
+     */
+    private static final long JUST_SIGNED_IN_MILLIS = 30_000
+
     protected HttpResponse<?> guard(RecordOwner owner, String visibility, String sessionId, String returnTo) {
+        // read before decide(), which drops the token when Platform rejects it
+        final issuedAt = authService.tokenIssuedAt(sessionId, owner?.towerEndpoint)
         final decision = decide(owner, visibility, sessionId)
         if( decision == RecordAccessService.Decision.ALLOW )
             return null
@@ -207,6 +215,11 @@ class ViewController {
         refusedViews?.increment(authService.known(owner?.towerEndpoint), decision.toString())
         switch (decision) {
             case RecordAccessService.Decision.REJECTED:
+                if( issuedAt != null && System.currentTimeMillis() - issuedAt < JUST_SIGNED_IN_MILLIS )
+                    return authError(HttpStatus.UNAUTHORIZED,
+                            'Seqera Platform refused the token it has just issued. Signing in again will not help.',
+                            returnTo)
+                // fall through: an older token has simply expired, so sign in again
             case RecordAccessService.Decision.UNAUTHORIZED:
                 final signIn = authService.startSignIn(owner.towerEndpoint, returnTo)
                 return signIn
