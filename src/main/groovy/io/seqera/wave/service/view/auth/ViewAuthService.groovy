@@ -144,7 +144,8 @@ class ViewAuthService {
         if( !MessageDigest.isEqual(challengeOf(state).bytes, stateHash.bytes) )
             return null
         final pending = pendingStore.get(state)
-        if( !pending )
+        // a claim marker carries no verifier: a state spelled 'claimed/<other>' finds one
+        if( !pending?.codeVerifier )
             return null
         // an empty marker: the store is typed to PendingSignIn, but this need not hold a verifier
         if( !pendingStore.putIfAbsent(CLAIMED + state, new PendingSignIn()) )

@@ -1301,9 +1301,8 @@ class ContainerHelperTest extends Specification {
         ContainerHelper.makeMultiPlatformContainerId(containerFile, null, repo, null, null, 'https://p.io/api:10') !=
                 ContainerHelper.makeMultiPlatformContainerId(containerFile, null, repo, null, null, 'https://p.io/api:20')
 
-        and: 'a public one is unchanged from before the tenant existed'
-        ContainerHelper.makeMultiPlatformContainerId(containerFile, null, repo, null, null, null) ==
-                ContainerHelper.makeMultiPlatformContainerId(containerFile, null, repo, null, null)
+        and: 'a public one still hashes to the id it did before the tenant existed'
+        ContainerHelper.makeMultiPlatformContainerId(containerFile, null, repo, null, null) == '19bc00e2e889a343'
     }
 
 }

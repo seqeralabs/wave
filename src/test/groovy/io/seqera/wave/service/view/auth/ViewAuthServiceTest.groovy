@@ -182,8 +182,8 @@ class ViewAuthServiceTest extends Specification {
         sessions.get(id).tokenFor('https://other.io/api') == 'other-tok'
     }
 
-    def 'should bind the clients from configuration, including from environment variables' () {
-        given: 'the flat property form an env var produces'
+    def 'should bind the clients from flat properties, as an env var supplies them' () {
+        given: 'the flat form, which is what WAVE_VIEW_AUTH_CLIENTS_CLOUD_CLIENT_SECRET resolves to'
         def ctx = ApplicationContext.run(
                 'wave.view.auth.clients.cloud.endpoint': 'https://api.cloud.seqera.io',
                 'wave.view.auth.clients.cloud.client-id': 'the-id',
@@ -203,6 +203,25 @@ class ViewAuthServiceTest extends Specification {
 
         cleanup:
         ctx.close()
+    }
+
+    def 'should not hand back a claim marker as a pending sign-in' () {
+        given: 'a consumed state, whose claim marker is still in the store'
+        def store = [:]
+        def service = svc(usable(), [(EP): 'wave-client|secret'], store)
+        def signIn = service.startSignIn(EP, '/x')
+        def state = store.keySet().first()
+        service.consume(state, signIn.stateHash)
+        def marker = store.keySet().find { it.startsWith('claimed/') }
+
+        expect: 'the marker is there to be found'
+        marker
+
+        when: 'the marker key is presented as a state, with a cookie that hashes it'
+        def hash = ViewAuthService.challengeOf(marker)
+
+        then: 'it carries no verifier, so it is not a sign-in anyone can complete'
+        service.consume(marker, hash) == null
     }
 
 }
