@@ -21,9 +21,11 @@ package io.seqera.wave.controller
 import spock.lang.Specification
 
 import io.micronaut.http.HttpStatus
+import io.micronaut.http.cookie.Cookie
 import io.seqera.wave.service.access.RecordAccessService
 import io.seqera.wave.service.view.auth.SignInRedirect
 import io.seqera.wave.service.view.auth.ViewAuthService
+import io.seqera.wave.service.view.auth.ViewSession
 import io.seqera.wave.tower.RecordOwner
 
 import static io.seqera.wave.service.access.RecordAccessService.Decision
@@ -47,10 +49,14 @@ class ViewGuardTest extends Specification {
     }
 
     private ViewAuthService signsIn(Long issuedAt=null) {
+        final stored = issuedAt != null
+                ? new ViewSession(tokens: [(OWNER.towerEndpoint): 'tok'], issuedAt: [(OWNER.towerEndpoint): issuedAt])
+                : null
         Mock(ViewAuthService) {
             startSignIn(_, _) >> new SignInRedirect('https://platform.io/authorize?state=abc', 'hashed')
-            tokenIssuedAt(_, _) >> issuedAt
+            session(_) >> stored
             secureCookie() >> true
+            stateCookie(_, _) >> { String v, long age -> Cookie.of(ViewAuthService.STATE_COOKIE, v).path('/view/auth').httpOnly(true).maxAge(age) }
         }
     }
 
@@ -68,7 +74,7 @@ class ViewGuardTest extends Specification {
 
     def 'should show the 401 page when that Platform cannot sign viewers in' () {
         given: 'no client registered, so startSignIn has no url to offer'
-        def auth = Mock(ViewAuthService) { startSignIn(_, _) >> null }
+        def auth = Mock(ViewAuthService) { startSignIn(_, _) >> null; session(_) >> null }
 
         when:
         def resp = controller(Decision.UNAUTHORIZED, auth).guard(OWNER, 'private', null, RETURN_TO)

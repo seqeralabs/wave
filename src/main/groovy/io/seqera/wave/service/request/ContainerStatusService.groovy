@@ -29,4 +29,7 @@ interface ContainerStatusService {
 
     ContainerStatusResponse getContainerStatus(String requestId)
 
+    /** For a caller that has already loaded the entry, so a polled route reads it once */
+    ContainerStatusResponse getContainerStatus(ContainerRequest request)
+
 }

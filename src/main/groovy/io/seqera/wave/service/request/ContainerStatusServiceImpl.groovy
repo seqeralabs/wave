@@ -90,8 +90,11 @@ class ContainerStatusServiceImpl implements ContainerStatusService {
 
     @Override
     ContainerStatusResponse getContainerStatus(String requestId) {
+        return getContainerStatus(requestStore.get(requestId))
+    }
 
-        final request = requestStore.get(requestId)
+    @Override
+    ContainerStatusResponse getContainerStatus(ContainerRequest request) {
         if( !request )
             return null
 

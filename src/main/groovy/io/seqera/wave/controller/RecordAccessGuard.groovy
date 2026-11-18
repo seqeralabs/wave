@@ -24,6 +24,7 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.context.ServerRequestContext
 import io.seqera.wave.service.access.RecordAccessService
+import io.seqera.wave.service.view.auth.ViewAuthClient
 import io.seqera.wave.service.view.auth.ViewAuthService
 import io.seqera.wave.tower.RecordOwner
 import jakarta.inject.Inject
@@ -95,11 +96,7 @@ class RecordAccessGuard {
     static protected boolean intendedFor(String towerEndpoint) {
         final req = ServerRequestContext.currentRequest()
         final named = req.isPresent() ? req.get().getHeaders().get(ENDPOINT_HEADER) : null
-        return !named || trimmed(named) == trimmed(towerEndpoint)
-    }
-
-    static private String trimmed(String endpoint) {
-        return endpoint?.trim()?.replaceAll('/+$', '')
+        return !named || ViewAuthClient.key(named) == ViewAuthClient.key(towerEndpoint)
     }
 
     static String bearer(String authorization) {

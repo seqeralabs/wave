@@ -22,11 +22,10 @@ import java.security.MessageDigest
 import java.security.SecureRandom
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Property
-import io.micronaut.core.convert.format.MapFormat
-import io.micronaut.core.naming.conventions.StringConvention
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.http.cookie.Cookie
+import io.micronaut.http.cookie.SameSite
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
@@ -47,6 +46,9 @@ class ViewAuthService {
 
     /** Holds the hash of the state this browser started a sign-in with */
     static final String STATE_COOKIE = 'wave-view-state'
+
+    /** The claim marker outlives the entry it consumes, so the state cannot be replayed */
+    static private final String CLAIMED = 'claimed/'
 
     private static final SecureRandom RANDOM = new SecureRandom()
 
@@ -77,6 +79,19 @@ class ViewAuthService {
 
     protected String clientSecret(String towerEndpoint) {
         return client(towerEndpoint)?.clientSecret
+    }
+
+    /**
+     * The state cookie, set with a lifetime and cleared with zero. Both go through here: a
+     * clearing Set-Cookie only takes effect when its path and attributes match the one that set it.
+     */
+    Cookie stateCookie(String value, long maxAge) {
+        return Cookie.of(STATE_COOKIE, value)
+                .path('/view/auth')
+                .httpOnly(true)
+                .secure(secureCookie())
+                .sameSite(SameSite.Lax)
+                .maxAge(maxAge)
     }
 
     /** A Secure cookie is dropped over plain http, which would loop a dev viewer through sign-in */
@@ -131,14 +146,13 @@ class ViewAuthService {
         final pending = pendingStore.get(state)
         if( !pending )
             return null
-        if( !pendingStore.putIfAbsent(CLAIMED + state, pending) )
+        // an empty marker: the store is typed to PendingSignIn, but this need not hold a verifier
+        if( !pendingStore.putIfAbsent(CLAIMED + state, new PendingSignIn()) )
             return null
         pendingStore.remove(state)
         return pending
     }
 
-    /** The claim marker outlives the entry it consumes, so the state cannot be replayed */
-    static private final String CLAIMED = 'claimed/'
 
     /** @return the new session id, or null when the exchange failed */
     String completeSignIn(PendingSignIn pending, String code, String existingSessionId) {
@@ -162,10 +176,9 @@ class ViewAuthService {
         return sessionId
     }
 
-    /** @return when this session's token for that Platform was issued, or null when there is none */
-    Long tokenIssuedAt(String sessionId, String towerEndpoint) {
-        final session = sessionId ? sessionStore.get(sessionId) : null
-        return session?.issuedAtFor(towerEndpoint)
+    /** @return the viewer's session, or null. One read for a caller that needs more than the token */
+    ViewSession session(String sessionId) {
+        return sessionId ? sessionStore.get(sessionId) : null
     }
 
     /** Drops a token Platform has rejected, so the next page starts a fresh sign-in */

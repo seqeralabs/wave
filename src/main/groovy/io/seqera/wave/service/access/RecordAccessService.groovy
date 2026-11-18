@@ -118,27 +118,13 @@ class RecordAccessService {
         return ws.hasWorkspace(workspaceId) ? Decision.ALLOW : Decision.FORBIDDEN
     }
 
-    /**
-     * @return true when Platform rejected the token, as opposed to being unreachable. The call
-     *      completes through a future, so the rejection arrives wrapped in an ExecutionException.
-     */
-    static private boolean rejected(Throwable e) {
-        for( Throwable t = e; t != null; t = t.cause ) {
-            if( t instanceof HttpResponseException && (t as HttpResponseException).statusCode() == HttpStatus.UNAUTHORIZED )
-                return true
-            if( t.cause === t )
-                break
-        }
-        return false
-    }
-
     /** @return null when Platform could not be reached; throws when it rejected the token */
     private <T> T guarded(String endpoint, String what, Supplier<T> call) {
         try {
             return call.get()
         }
         catch( Exception e ) {
-            if( rejected(e) )
+            if( HttpResponseException.matches(e, HttpStatus.UNAUTHORIZED) )
                 throw new UnauthorizedException("Access denied by Seqera Platform at '$endpoint'")
             log.debug "Access check - $what unavailable for '$endpoint' - cause: ${e.message}"
             return null
