@@ -27,12 +27,15 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpHeaders
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.CookieValue
 import io.micronaut.http.annotation.Delete
 import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.Header
 import io.micronaut.http.annotation.Post
 import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.micronaut.scheduling.TaskExecutors
@@ -91,6 +94,7 @@ import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.service.view.auth.ViewAuthService
 import io.seqera.wave.tower.RecordOwner
 import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.auth.JwtAuthStore
@@ -126,6 +130,9 @@ class ContainerController {
 
     @Inject
     private ContainerRequestService containerService
+
+    @Inject
+    private RecordAccessGuard guard
 
     @Inject
     private UserService userService
@@ -659,7 +666,9 @@ class ContainerController {
             // resolved before the id: a private scan hashes its tenant, so the two cannot disagree
             visibility = resolveVisibility(req, identity, null)
             checkWorkspaceAccess(identity, visibility)
-            scanId = scanService?.getScanId(req.containerImage, digest, req.scanMode, req.format,
+            // the normalised name, not the one as typed: the scan record carries this form, and
+            // the cleanup on failure looks the id up by it
+            scanId = scanService?.getScanId(targetImage, digest, req.scanMode, req.format,
                     RecordOwner.tenantOf(identity, visibility))
             type = ContainerRequest.Type.Container
             // when there's a scan, return null because the scan status is not known
@@ -749,13 +758,15 @@ class ContainerController {
         }
         // check for existing image
         if( request.digest==targetDigest ) {
-            log.debug "== Found cached request for request: $request"
             final cache = persistenceService.loadMirrorSucceed(request.targetImage, targetDigest)
-            return new BuildTrack(cache?.mirrorId, request.targetImage, true, true)
+            // the stored mirror belongs to the tenant that made it, and the lookup matches on the
+            // target alone: another tenant must mirror its own rather than inherit this record
+            if( cache == null || RecordOwner.tenantOf(cache.owner, cache.visibility) == request.tenant() ) {
+                log.debug "== Found cached request for request: $request"
+                return new BuildTrack(cache?.mirrorId, request.targetImage, true, true)
+            }
         }
-        else {
-            return mirrorService.mirrorImage(request)
-        }
+        return mirrorService.mirrorImage(request)
     }
 
     protected String targetImage(String token, ContainerCoordinates container) {
@@ -763,12 +774,12 @@ class ContainerController {
     }
 
     @Get('/container-token/{token}')
-    HttpResponse<DescribeWaveContainerResponse> describeContainerRequest(String token) {
+    HttpResponse<?> describeContainerRequest(String token, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
         final data = containerService.loadContainerRecord(token)
         if( !data )
             throw new NotFoundException("Missing container record for token: $token")
-        // return the response 
-        return HttpResponse.ok( DescribeWaveContainerResponse.create(token, data) )
+        return guard.refuse(data.owner, data.visibility, authorization, sessionId)
+                ?: HttpResponse.ok( DescribeWaveContainerResponse.create(token, data) )
     }
 
     @Secured(SecurityRule.IS_AUTHENTICATED)
@@ -853,15 +864,24 @@ class ContainerController {
     }
 
     @Get('/v1alpha2/container/{requestId}')
-    HttpResponse<WaveContainerRecord> getContainerDetails(String requestId) {
+    HttpResponse<?> getContainerDetails(String requestId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
         final data = containerService.loadContainerRecord(requestId)
         if( !data )
             return HttpResponse.notFound()
-        return HttpResponse.ok(data.withUserIdOnly())
+        return guard.refuse(data.owner, data.visibility, authorization, sessionId)
+                ?: HttpResponse.ok(data.withUserIdOnly())
     }
 
     @Get('/v1alpha2/container/{requestId}/status')
-    HttpResponse<ContainerStatusResponse> getContainerStatus(String requestId) {
+    HttpResponse<?> getContainerStatus(String requestId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
+        // the status has no owner of its own. Take it from the request entry the status path
+        // reads anyway, rather than the record, which is a database load on a polled route
+        final request = containerService.getRequest(requestId)
+        final denied = request
+                ? guard.refuse(RecordOwner.of(request.identity), request.visibility, authorization, sessionId)
+                : null
+        if( denied )
+            return denied
         final ContainerStatusResponse resp = statusService.getContainerStatus(requestId)
         if( !resp )
             return HttpResponse.notFound()

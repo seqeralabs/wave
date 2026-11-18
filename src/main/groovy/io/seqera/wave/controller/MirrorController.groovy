@@ -25,13 +25,15 @@ import io.micronaut.http.HttpHeaders
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.CookieValue
 import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.Header
 import io.micronaut.http.annotation.Produces
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.exception.UnsupportedMirrorServiceException
 import io.seqera.wave.service.mirror.ContainerMirrorService
-import io.seqera.wave.service.mirror.MirrorResult
+import io.seqera.wave.service.view.auth.ViewAuthService
 import jakarta.inject.Inject
 /**
  * Implements a controller for container mirror apis
@@ -48,24 +50,32 @@ class MirrorController {
     @Nullable
     private ContainerMirrorService mirrorService
 
+    @Inject
+    private RecordAccessGuard guard
+
     @Get("/v1alpha1/mirrors/{mirrorId}")
-    HttpResponse<MirrorResult> getMirrorRecord(String mirrorId) {
+    HttpResponse<?> getMirrorRecord(String mirrorId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
         if( !mirrorService )
             throw new UnsupportedMirrorServiceException()
         final result = mirrorService.getMirrorResult(mirrorId)
-        return result
-                ? HttpResponse.ok(result)
-                : HttpResponse.<MirrorResult>notFound()
+        if( !result )
+            return HttpResponse.notFound()
+        return guard.refuse(result.owner, result.visibility, authorization, sessionId) ?: HttpResponse.ok(result)
     }
 
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     @Get("/v1alpha1/mirrors/{mirrorId}/logs")
-    HttpResponse<String> getScanLog(String mirrorId){
-        final logs = mirrorService.getMirrorResult(mirrorId).logs
-        return logs
-                ? (HttpResponse.ok(logs)
+    HttpResponse<?> getScanLog(String mirrorId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId){
+        final result = mirrorService?.getMirrorResult(mirrorId)
+        if( !result )
+            return HttpResponse.notFound()
+        final denied = guard.refuse(result.owner, result.visibility, authorization, sessionId)
+        if( denied )
+            return denied
+        return result.logs
+                ? (HttpResponse.ok(result.logs)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=${mirrorId}.log"))
-                : HttpResponse.<String>notFound()
+                : HttpResponse.notFound()
     }
 
 }

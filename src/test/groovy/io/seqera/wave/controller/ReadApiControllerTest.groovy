@@ -27,6 +27,10 @@ import io.seqera.wave.service.access.RecordAccessService
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.persistence.WaveContainerRecord
+import io.seqera.wave.service.request.ContainerRequestService
+import io.seqera.wave.service.mirror.MirrorResult
+import io.seqera.wave.service.mirror.ContainerMirrorService
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.view.auth.ViewAuthService
@@ -40,9 +44,13 @@ class ReadApiControllerTest extends Specification {
     static final RecordOwner OWNER =
             new RecordOwner(towerEndpoint: 'https://platform.io/api', userId: 1L, workspaceId: 10L)
 
+    private static RecordAccessGuard guard(RecordAccessService access, ViewAuthService auth=null) {
+        new RecordAccessGuard(accessService: access, authService: auth)
+    }
+
     private ReadApiController controller(RecordAccessService.Decision decision, WaveBuildRecord record) {
         new ReadApiController(
-                accessService: Mock(RecordAccessService) { check(_, _, _) >> decision },
+                guard: guard(Mock(RecordAccessService) { check(_, _, _) >> decision }),
                 buildService: Mock(ContainerBuildService) { getBuildRecord(_) >> record } )
     }
 
@@ -55,9 +63,8 @@ class ReadApiControllerTest extends Specification {
         def auth = Mock(ViewAuthService)
         def seen = []
         def ctl = new ReadApiController(
-                accessService: Mock(RecordAccessService) { check(_, _, _) >> { o, v, t -> seen << t; RecordAccessService.Decision.ALLOW } },
-                buildService: Mock(ContainerBuildService) { getBuildRecord(_) >> build('private') },
-                authService: auth )
+                guard: guard(Mock(RecordAccessService) { check(_, _, _) >> { o, v, t -> seen << t; RecordAccessService.Decision.ALLOW } }, auth),
+                buildService: Mock(ContainerBuildService) { getBuildRecord(_) >> build('private') } )
 
         when:
         def resp = ctl.getBuildRecord('bd-1_1', null, 'sess-1')
@@ -73,9 +80,8 @@ class ReadApiControllerTest extends Specification {
         def auth = Mock(ViewAuthService)
         def seen = []
         def ctl = new ReadApiController(
-                accessService: Mock(RecordAccessService) { check(_, _, _) >> { o, v, t -> seen << t; RecordAccessService.Decision.ALLOW } },
-                buildService: Mock(ContainerBuildService) { getBuildRecord(_) >> build('private') },
-                authService: auth )
+                guard: guard(Mock(RecordAccessService) { check(_, _, _) >> { o, v, t -> seen << t; RecordAccessService.Decision.ALLOW } }, auth),
+                buildService: Mock(ContainerBuildService) { getBuildRecord(_) >> build('private') } )
 
         when:
         ctl.getBuildRecord('bd-1_1', 'Bearer header-tok', 'sess-1')
@@ -90,9 +96,8 @@ class ReadApiControllerTest extends Specification {
         def auth = Mock(ViewAuthService)
         def ctl = { ->
             new ReadApiController(
-                accessService: Mock(RecordAccessService) { check(_, _, _) >> RecordAccessService.Decision.REJECTED },
-                buildService: Mock(ContainerBuildService) { getBuildRecord(_) >> build('private') },
-                authService: auth ) }
+                guard: guard(Mock(RecordAccessService) { check(_, _, _) >> RecordAccessService.Decision.REJECTED }, auth),
+                buildService: Mock(ContainerBuildService) { getBuildRecord(_) >> build('private') } ) }
 
         when: 'the credential came from the cookie'
         def a = ctl().getBuildRecord('bd-1_1', null, 'sess-1')
@@ -113,7 +118,7 @@ class ReadApiControllerTest extends Specification {
         def scanRec = new WaveScanRecord(id: 'sc-1_1', owner: OWNER, visibility: 'private', logs: 'secret-logs')
         def ctl = { RecordAccessService.Decision d ->
             new ReadApiController(
-                accessService: Mock(RecordAccessService) { check(_, _, _) >> d },
+                guard: guard(Mock(RecordAccessService) { check(_, _, _) >> d }),
                 buildService: Mock(ContainerBuildService) { getBuildRecord(_) >> build('private') },
                 scanService: Mock(ContainerScanService) { getScanRecord(_) >> scanRec },
                 logService: Mock(BuildLogService) { fetchCondaLockStream(_) >> null } ) }
@@ -177,7 +182,7 @@ class ReadApiControllerTest extends Specification {
 
     def 'should read the bearer token out of the header' () {
         expect:
-        ReadApiController.bearer(VALUE) == EXPECTED
+        RecordAccessGuard.bearer(VALUE) == EXPECTED
 
         where:
         VALUE               | EXPECTED
@@ -188,6 +193,43 @@ class ReadApiControllerTest extends Specification {
         '  Bearer   abc  '  | 'abc'
         'Basic abc'         | null
         'abc'               | null
+    }
+
+    def 'should hand every route the owner and visibility of the record it serves' () {
+        given: 'one private record behind each of the ten routes'
+        def access = Mock(RecordAccessService)
+        def mirror = Mock(MirrorResult) { getOwner() >> OWNER; getVisibility() >> 'private' }
+        def scan = Mock(WaveScanRecord) { getOwner() >> OWNER; getVisibility() >> 'private' }
+        def container = Mock(WaveContainerRecord) { getOwner() >> OWNER; getVisibility() >> 'private' }
+        def ctl = new ReadApiController(
+                guard: guard(access),
+                buildService: Mock(ContainerBuildService) { getBuildRecord(_) >> build('private') },
+                mirrorService: Mock(ContainerMirrorService) { getMirrorResult(_) >> mirror },
+                scanService: Mock(ContainerScanService) { getScanRecord(_) >> scan },
+                containerService: Mock(ContainerRequestService) { loadContainerRecord(_) >> container },
+                logService: Mock(BuildLogService) )
+
+        when:
+        def resp = CALL.call(ctl)
+
+        then: 'the record being served is what gets judged, never a parent or a sibling'
+        1 * access.check(OWNER, 'private', _) >> RecordAccessService.Decision.UNAUTHORIZED
+        resp.status() == HttpStatus.UNAUTHORIZED
+        and: 'nothing of the record leaks with the refusal'
+        resp.body() == null
+
+        where:
+        ROUTE               | CALL
+        'builds'            | { it.getBuildRecord('bd-1_1', null, null) }
+        'builds/status'     | { it.getBuildStatus('bd-1_1', null, null) }
+        'builds/logs'       | { it.getBuildLogs('bd-1_1', null, null) }
+        'builds/condalock'  | { it.getCondaLock('bd-1_1', null, null) }
+        'mirrors'           | { it.getMirrorRecord('mr-1', null, null) }
+        'mirrors/logs'      | { it.getMirrorLogs('mr-1', null, null) }
+        'scans'             | { it.getScanRecord('sc-1', null, null) }
+        'scans/spdx'        | { it.getScanSpdx('sc-1', null, null) }
+        'scans/logs'        | { it.getScanLogs('sc-1', null, null) }
+        'container'         | { it.getContainerRecord('cr-1', null, null) }
     }
 
 }
