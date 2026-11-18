@@ -19,6 +19,7 @@
 package io.seqera.wave.filter
 
 import groovy.transform.CompileStatic
+import io.micronaut.http.HttpMethod
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.MutableHttpResponse
 import io.micronaut.http.annotation.ResponseFilter
@@ -29,12 +30,17 @@ import io.micronaut.http.annotation.ServerFilter
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@ServerFilter(patterns = [
-        '/v1alpha1/builds/**',
-        '/v1alpha1/mirrors/**',
-        '/v1alpha1/scans/**',
-        '/v1alpha2/container/**',
-        '/container-token/**' ])
+@ServerFilter(
+        // the reads only: '/x/**' also matches '/x', which would mark every submit deprecated
+        // and point it at a successor API that has no submit route
+        methods = HttpMethod.GET,
+        patterns = [
+                '/v1alpha1/builds/**',
+                '/v1alpha1/mirrors/**',
+                '/v1alpha1/scans/**',
+                '/v1alpha2/container/*',
+                '/v1alpha2/container/*/status',
+                '/container-token/*' ])
 @CompileStatic
 class DeprecatedReadApiFilter {
 
