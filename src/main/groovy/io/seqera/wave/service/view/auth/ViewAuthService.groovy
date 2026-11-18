@@ -63,17 +63,20 @@ class ViewAuthService {
     private String serverUrl
 
     /** Registered per paired Platform; sign-in is unavailable for any endpoint not listed */
-    @Property(name = 'wave.view.auth.clients')
-    @MapFormat(keyFormat = StringConvention.RAW, transformation = MapFormat.MapTransformation.FLAT)
+    @Inject
     @Nullable
-    private Map<String,String> clients
+    private List<ViewAuthClient> clients
+
+    protected ViewAuthClient client(String towerEndpoint) {
+        return towerEndpoint ? clients?.find { it.matches(towerEndpoint) } : null
+    }
 
     protected String clientId(String towerEndpoint) {
-        return clients?.get(towerEndpoint)?.tokenize('|')?.first()
+        return client(towerEndpoint)?.clientId
     }
 
     protected String clientSecret(String towerEndpoint) {
-        return clients?.get(towerEndpoint)?.tokenize('|')?.getAt(1)
+        return client(towerEndpoint)?.clientSecret
     }
 
     /** A Secure cookie is dropped over plain http, which would loop a dev viewer through sign-in */

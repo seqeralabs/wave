@@ -34,6 +34,9 @@ import io.seqera.wave.service.mirror.ContainerMirrorService
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.view.auth.ViewAuthService
+import io.seqera.wave.service.request.ContainerRequest
+import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.User
 import io.seqera.wave.tower.RecordOwner
 
 /**
@@ -206,7 +209,11 @@ class ReadApiControllerTest extends Specification {
                 buildService: Mock(ContainerBuildService) { getBuildRecord(_) >> build('private') },
                 mirrorService: Mock(ContainerMirrorService) { getMirrorResult(_) >> mirror },
                 scanService: Mock(ContainerScanService) { getScanRecord(_) >> scan },
-                containerService: Mock(ContainerRequestService) { loadContainerRecord(_) >> container },
+                containerService: Mock(ContainerRequestService) {
+                    loadContainerRecord(_) >> container
+                    getRequest(_) >> Mock(ContainerRequest) {
+                        getIdentity() >> new PlatformId(new User(id: OWNER.userId), OWNER.workspaceId, 'tok', OWNER.towerEndpoint)
+                        getVisibility() >> 'private' } },
                 logService: Mock(BuildLogService) )
 
         when:
@@ -230,6 +237,7 @@ class ReadApiControllerTest extends Specification {
         'scans/spdx'        | { it.getScanSpdx('sc-1', null, null) }
         'scans/logs'        | { it.getScanLogs('sc-1', null, null) }
         'container'         | { it.getContainerRecord('cr-1', null, null) }
+        'container/status'  | { it.getContainerStatus('cr-1', null, null) }
     }
 
 }
