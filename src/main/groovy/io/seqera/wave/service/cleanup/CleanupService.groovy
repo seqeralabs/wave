@@ -29,6 +29,6 @@ interface CleanupService {
 
     void cleanupJob(JobSpec job, Integer exitStatus)
 
-    void cleanupScanId(String containerImage)
+    void cleanupScanId(String key)
 
 }
