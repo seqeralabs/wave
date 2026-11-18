@@ -120,9 +120,17 @@ class ViewGuardTest extends Specification {
         controller(Decision.UNAVAILABLE, signsIn()).guard(OWNER, 'private', 'sess-1', RETURN_TO).status() == HttpStatus.SERVICE_UNAVAILABLE
     }
 
-    def 'should let a public record through untouched' () {
-        expect:
-        controller(Decision.ALLOW, signsIn()).guard(OWNER, 'public', null, RETURN_TO) == null
+    def 'should let a public record through without deciding anything' () {
+        given:
+        def access = Mock(RecordAccessService)
+        def ctl = new ViewController(accessService: access, authService: signsIn())
+
+        when:
+        def resp = ctl.guard(OWNER, 'public', 'sess-1', RETURN_TO)
+
+        then: 'no check, and so no session read behind it'
+        0 * access.check(_, _, _)
+        resp == null
     }
 
     def 'should drop unreadable rows from a list without ever starting a sign-in' () {

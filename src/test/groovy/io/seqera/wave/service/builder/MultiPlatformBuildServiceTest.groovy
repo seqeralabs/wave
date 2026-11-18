@@ -579,8 +579,9 @@ class MultiPlatformBuildServiceTest extends Specification {
         and: 'the same workspace twice still shares one child build'
         child(ws10, 'private').targetImage == child(ws10, 'private').targetImage
 
-        and: 'a public multi-arch build is content-addressed, as it was before the tenant existed'
-        child(ws10, null).targetImage == child(ws20, null).targetImage
+        and: 'a public multi-arch build still hashes to the id it did before the tenant existed'
+        child(ws10, null).containerId == 'c342e721ffb1f2a1'
+        child(ws20, null).containerId == 'c342e721ffb1f2a1'
     }
 
 }

@@ -73,7 +73,7 @@ class RecordAccessGuardTest extends Specification {
         withHeader(null) { guard().refuse(OWNER, 'private', 'Bearer tok', null) } == null
     }
 
-    def 'should not read the session store for a public record' () {
+    def 'should decide nothing for a public record' () {
         given:
         def access = Mock(RecordAccessService)
 
