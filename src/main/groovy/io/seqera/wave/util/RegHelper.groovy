@@ -133,7 +133,7 @@ class RegHelper {
 
     static String dumpHeaders(Map<String, List<String>> headers) {
         if( !headers )
-            null
+            return null
         final result = new StringBuilder()
         for( Map.Entry<String,List<String>> entry : headers )  {
             final redacted = isSensitiveHeader(entry.key)

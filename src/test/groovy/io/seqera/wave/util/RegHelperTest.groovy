@@ -116,7 +116,7 @@ class RegHelperTest extends Specification {
 
     def 'should redact credential headers of an inbound request' () {
         given:
-        def request = HttpRequest.GET('/v1alpha3/builds/bd-123')
+        def request = HttpRequest.GET('/v1alpha1/builds/bd-123')
                 .header('Authorization', 'Bearer eyJhbGciOiJIUzI1NiJ9.platform-token')
                 .header('User-Agent', 'googlebot/2.1')
 

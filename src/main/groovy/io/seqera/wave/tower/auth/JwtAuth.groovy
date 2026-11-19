@@ -26,7 +26,7 @@ import io.seqera.wave.api.ContainerInspectRequest
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.DigestFunctions
-import static io.seqera.wave.util.StringUtils.trunc
+import static io.seqera.wave.util.StringUtils.redact
 /**
  * Models JWT authorization tokens
  * used to connect with Tower service
@@ -96,8 +96,8 @@ class JwtAuth {
         return "JwtAuth{" +
                 "key='" + key + '\'' +
                 ", endpoint='" + endpoint + '\'' +
-                ", bearer='" + trunc(bearer,25) + '\'' +
-                ", refresh='" + trunc(refresh,25) + '\'' +
+                ", bearer='" + redact(bearer) + '\'' +
+                ", refresh='" + redact(refresh) + '\'' +
                 ", createdAt=" + createdAt +
                 ", updatedAt=" + updatedAt +
                 '}';
