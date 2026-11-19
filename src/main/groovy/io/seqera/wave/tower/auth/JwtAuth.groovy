@@ -22,7 +22,6 @@ import java.time.Instant
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerInspectRequest
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.tower.PlatformId
@@ -32,7 +31,6 @@ import static io.seqera.wave.util.StringUtils.trunc
  * Models JWT authorization tokens
  * used to connect with Tower service
  */
-@Slf4j
 @Canonical
 @CompileStatic
 class JwtAuth {
@@ -98,15 +96,11 @@ class JwtAuth {
         return "JwtAuth{" +
                 "key='" + key + '\'' +
                 ", endpoint='" + endpoint + '\'' +
-                ", bearer='" + trunc0(bearer) + '\'' +
-                ", refresh='" + trunc0(refresh) + '\'' +
+                ", bearer='" + trunc(bearer,25) + '\'' +
+                ", refresh='" + trunc(refresh,25) + '\'' +
                 ", createdAt=" + createdAt +
                 ", updatedAt=" + updatedAt +
                 '}';
-    }
-
-    private String trunc0(String value) {
-        return log.isTraceEnabled() ? value : trunc(value,25)
     }
 
     static String key(String endpoint, String token) {

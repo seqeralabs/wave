@@ -278,10 +278,11 @@ abstract class TowerConnector {
                 .thenApplyAsync({ resp ->
                     if( resp==null )
                         throw new HttpResponseException(500, "Missing Tower response refreshing JWT token: ${request.uri}")
+                    // the body of this response is an AccessRefreshToken: never log it, at any level
                     if( log.isTraceEnabled() )
-                        log.trace "Tower Refresh '$uri' response; msgId=${msgId}\n- status : ${resp.status}\n- headers: ${RegHelper.dumpHeaders(resp.headers)}\n- content: ${resp.body}"
+                        log.trace "Tower Refresh '$uri' response; msgId=${msgId}\n- status : ${resp.status}\n- headers: ${RegHelper.dumpHeaders(resp.headers)}"
                     else
-                        log.debug "Tower Refresh '$uri' response; msgId=${msgId}; status=${resp.status}; body=${trunc(resp.body, 500)}"
+                        log.debug "Tower Refresh '$uri' response; msgId=${msgId}; status=${resp.status}"
                     if ( resp.status >= 400 ) {
                         final msg = "Unexpected Tower response refreshing JWT token: ${request.uri}"
                         throw new HttpResponseException(resp.status, msg, resp.body)
