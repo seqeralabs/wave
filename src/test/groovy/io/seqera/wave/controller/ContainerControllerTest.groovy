@@ -111,6 +111,7 @@ class ContainerControllerTest extends Specification {
     RegistryProxyService mockProxy() {
         Mock(RegistryProxyService) {
             getImageDigest(_,_) >> 'sha256:mock-digest'
+            getContainerImageDigest(_,_) >> 'sha256:mock-digest'
         }
     }
 
