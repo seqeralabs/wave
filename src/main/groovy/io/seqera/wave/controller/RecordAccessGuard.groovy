@@ -33,9 +33,8 @@ import jakarta.inject.Singleton
 /**
  * Turns an access decision into the refusal to send, for every route that serves a record.
  *
- * It is shared by the deprecated read routes and by /v1, so the two cannot drift: a record
- * is private only once a client asks for it, so guarding the old routes refuses nothing that any
- * released client can produce.
+ * The deprecated v1alpha1 and v1alpha2 reads are left as they were: /v1 is the read API that
+ * applies the check, and clients move to it rather than the old routes gaining it too.
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
