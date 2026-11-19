@@ -121,7 +121,7 @@ class RegHelper {
     }
 
     // Set-Cookie is here because a Platform token refresh returns the minted JWT and refresh token in it
-    private static final List<String> REDACTED_HEADERS = List.of('authorization', 'proxy-authorization', 'cookie', 'set-cookie')
+    private static final List<String> REDACTED_HEADERS = List.of('authorization', 'proxy-authorization', 'cookie', 'set-cookie', 'x-registry-auth')
 
     /** Header names are case-insensitive, so match without regard to case or locale */
     static boolean isSensitiveHeader(String name) {
@@ -138,7 +138,7 @@ class RegHelper {
         for( Map.Entry<String,List<String>> entry : headers )  {
             final redacted = isSensitiveHeader(entry.key)
             for( String val : entry.value )
-                result.append("\n  $entry.key=${redacted ? '[redacted]' : val}")
+                result.append("\n  $entry.key=${redacted ? StringUtils.redact(val) : val}")
         }
         return result.toString()
     }

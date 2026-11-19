@@ -101,14 +101,16 @@ class RegHelperTest extends Specification {
                 'Set-Cookie': ['JWT=eyJhbGciOi.secret', 'JWT_REFRESH_TOKEN=abc123'],
                 'cookie': ['wave-session=opaque-id'],
                 'PROXY-AUTHORIZATION': ['Basic c2VjcmV0'],
+                'X-Registry-Auth': ['eyJ1c2VybmFtZSI6InNlY3JldCJ9'],
                 'WWW-Authenticate': ['Bearer realm="https://auth.docker.io/token"'],
                 'Content-Type': ['application/json']
         ]).trim() == """\
-          Authorization=[redacted]
-          Set-Cookie=[redacted]
-          Set-Cookie=[redacted]
-          cookie=[redacted]
-          PROXY-AUTHORIZATION=[redacted]
+          Authorization=Bea****
+          Set-Cookie=JWT****
+          Set-Cookie=JWT****
+          cookie=wav****
+          PROXY-AUTHORIZATION=Bas****
+          X-Registry-Auth=eyJ****
           WWW-Authenticate=Bearer realm="https://auth.docker.io/token"
           Content-Type=application/json
         """.stripIndent().trim()
@@ -125,7 +127,7 @@ class RegHelperTest extends Specification {
 
         then:
         !dump.contains('platform-token')
-        dump.contains('[redacted]')
+        dump.contains('Authorization=Bea****')
         dump.contains('googlebot/2.1')
     }
 

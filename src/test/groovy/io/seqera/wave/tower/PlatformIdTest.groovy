@@ -29,6 +29,14 @@ import io.seqera.wave.api.SubmitContainerTokenRequest
  */
 class PlatformIdTest extends Specification {
 
+    def 'should not expose the access token in toString' () {
+        given:
+        def id = new PlatformId(new User(id:1), 100, 'access-token-12345-secret', 'http://foo.com')
+
+        expect:
+        !id.toString().contains('access-token-12345-secret')
+    }
+
     def 'should validate groovy truth' (){
         expect:
         !new PlatformId()
