@@ -742,11 +742,11 @@ The `conda/pixi:v1-fast` container content is the same as `conda/pixi:v1` produc
 `conda/micromamba:v2-fast` and `conda/pixi:v1-fast` build Docker images only. Singularity requests (`format: "sif"`) are rejected with HTTP 400 and the message `Build template '<template>' does not support Singularity format`.
 :::
 
-## Reading records: `/v1alpha3`
+## Reading records: `/v1`
 
-The `/v1alpha3` routes supersede the `/v1alpha1` and `/v1alpha2` reads and apply the record access
+The `/v1` routes supersede the `/v1alpha1` and `/v1alpha2` reads and apply the record access
 check. The older routes still work and answer with a `Deprecation: true` header and a `Link` header
-naming `/v1alpha3` as their successor.
+naming `/v1` as their successor.
 
 A public record is served to anyone. A private one needs a Seqera Platform token for the workspace
 that owns it, sent as `Authorization: Bearer <token>`; a browser signed in through a view page uses
@@ -754,17 +754,17 @@ its session cookie instead.
 
 | Route | Returns |
 | --- | --- |
-| GET `/v1alpha3/builds/{buildId}` | the build record |
-| GET `/v1alpha3/builds/{buildId}/status` | the build status |
-| GET `/v1alpha3/builds/{buildId}/logs` | the build logs |
-| GET `/v1alpha3/builds/{buildId}/condalock` | the Conda lock file |
-| GET `/v1alpha3/mirrors/{mirrorId}` | the mirror record |
-| GET `/v1alpha3/mirrors/{mirrorId}/logs` | the mirror logs |
-| GET `/v1alpha3/scans/{scanId}` | the scan record |
-| GET `/v1alpha3/scans/{scanId}/spdx` | the SPDX bill of materials |
-| GET `/v1alpha3/scans/{scanId}/logs` | the scan logs |
-| GET `/v1alpha3/container/{requestId}` | the container request record |
-| GET `/v1alpha3/container/{requestId}/status` | the container request status |
+| GET `/v1/builds/{buildId}` | the build record |
+| GET `/v1/builds/{buildId}/status` | the build status |
+| GET `/v1/builds/{buildId}/logs` | the build logs |
+| GET `/v1/builds/{buildId}/condalock` | the Conda lock file |
+| GET `/v1/mirrors/{mirrorId}` | the mirror record |
+| GET `/v1/mirrors/{mirrorId}/logs` | the mirror logs |
+| GET `/v1/scans/{scanId}` | the scan record |
+| GET `/v1/scans/{scanId}/spdx` | the SPDX bill of materials |
+| GET `/v1/scans/{scanId}/logs` | the scan logs |
+| GET `/v1/container/{requestId}` | the container request record |
+| GET `/v1/container/{requestId}/status` | the container request status |
 
 **Status codes**
 
@@ -782,9 +782,9 @@ sent and does not match the record's owner, Wave answers 401 without forwarding 
 #### Examples
 
 ```shell
-% curl --location 'http://localhost:9090/v1alpha3/builds/6c084f2e43f86a78_1'
+% curl --location 'http://localhost:9090/v1/builds/6c084f2e43f86a78_1'
 
-% curl --location 'http://localhost:9090/v1alpha3/builds/6c084f2e43f86a78_1' \
+% curl --location 'http://localhost:9090/v1/builds/6c084f2e43f86a78_1' \
     --header 'Authorization: Bearer <PLATFORM TOKEN>'
 ```
 

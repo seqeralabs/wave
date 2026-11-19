@@ -43,8 +43,8 @@ class RecordAccessGuardTest extends Specification {
     /** the Supplier overload, so the closure's value comes back rather than the Runnable's void */
     private static Object withHeader(String value, Closure body) {
         final req = value
-                ? HttpRequest.GET('/v1alpha3/builds/bd-1').header(RecordAccessGuard.ENDPOINT_HEADER, value)
-                : HttpRequest.GET('/v1alpha3/builds/bd-1')
+                ? HttpRequest.GET('/v1/builds/bd-1').header(RecordAccessGuard.ENDPOINT_HEADER, value)
+                : HttpRequest.GET('/v1/builds/bd-1')
         return ServerRequestContext.with(req, body as Supplier)
     }
 

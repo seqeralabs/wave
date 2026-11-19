@@ -52,7 +52,7 @@ import jakarta.inject.Inject
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @Slf4j
-@Controller("/v1alpha3")
+@Controller("/v1")
 @ExecuteOn(TaskExecutors.BLOCKING)
 @CompileStatic
 class ReadApiController {
