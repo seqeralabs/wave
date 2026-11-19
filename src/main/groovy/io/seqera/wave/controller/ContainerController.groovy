@@ -27,15 +27,12 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpRequest
-import io.micronaut.http.HttpHeaders
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
-import io.micronaut.http.annotation.CookieValue
 import io.micronaut.http.annotation.Delete
 import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Get
-import io.micronaut.http.annotation.Header
 import io.micronaut.http.annotation.Post
 import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.micronaut.scheduling.TaskExecutors
@@ -94,7 +91,6 @@ import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.PlatformId
-import io.seqera.wave.service.view.auth.ViewAuthService
 import io.seqera.wave.tower.RecordOwner
 import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.auth.JwtAuthStore
@@ -130,9 +126,6 @@ class ContainerController {
 
     @Inject
     private ContainerRequestService containerService
-
-    @Inject
-    private RecordAccessGuard guard
 
     @Inject
     private UserService userService
@@ -774,12 +767,12 @@ class ContainerController {
     }
 
     @Get('/container-token/{token}')
-    HttpResponse<?> describeContainerRequest(String token, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
+    HttpResponse<DescribeWaveContainerResponse> describeContainerRequest(String token) {
         final data = containerService.loadContainerRecord(token)
         if( !data )
             throw new NotFoundException("Missing container record for token: $token")
-        return guard.refuse(data.owner, data.visibility, authorization, sessionId)
-                ?: HttpResponse.ok( DescribeWaveContainerResponse.create(token, data) )
+        // return the response 
+        return HttpResponse.ok( DescribeWaveContainerResponse.create(token, data) )
     }
 
     @Secured(SecurityRule.IS_AUTHENTICATED)
@@ -864,25 +857,16 @@ class ContainerController {
     }
 
     @Get('/v1alpha2/container/{requestId}')
-    HttpResponse<?> getContainerDetails(String requestId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
+    HttpResponse<WaveContainerRecord> getContainerDetails(String requestId) {
         final data = containerService.loadContainerRecord(requestId)
         if( !data )
             return HttpResponse.notFound()
-        return guard.refuse(data.owner, data.visibility, authorization, sessionId)
-                ?: HttpResponse.ok(data.withUserIdOnly())
+        return HttpResponse.ok(data.withUserIdOnly())
     }
 
     @Get('/v1alpha2/container/{requestId}/status')
-    HttpResponse<?> getContainerStatus(String requestId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
-        // the status has no owner of its own. Take it from the request entry the status path
-        // reads anyway, rather than the record, which is a database load on a polled route
-        final request = containerService.getRequest(requestId)
-        final denied = request
-                ? guard.refuse(RecordOwner.of(request.identity), request.visibility, authorization, sessionId)
-                : null
-        if( denied )
-            return denied
-        final ContainerStatusResponse resp = request ? statusService.getContainerStatus(request) : null
+    HttpResponse<ContainerStatusResponse> getContainerStatus(String requestId) {
+        final ContainerStatusResponse resp = statusService.getContainerStatus(requestId)
         if( !resp )
             return HttpResponse.notFound()
         return HttpResponse.ok(resp)

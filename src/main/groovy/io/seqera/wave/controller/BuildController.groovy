@@ -24,18 +24,17 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.MediaType
-import io.micronaut.http.HttpHeaders
 import io.micronaut.http.annotation.Controller
-import io.micronaut.http.annotation.CookieValue
 import io.micronaut.http.annotation.Get
-import io.micronaut.http.annotation.Header
 import io.micronaut.http.annotation.Produces
+import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
+import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.logs.BuildLogService
-import io.seqera.wave.service.view.auth.ViewAuthService
+import io.seqera.wave.service.persistence.WaveBuildRecord
 import jakarta.inject.Inject
 /**
  * Implements a controller for container builds
@@ -53,58 +52,45 @@ class BuildController {
     private ContainerBuildService buildService
 
     @Inject
-    private RecordAccessGuard guard
-
-    @Inject
     @Nullable
     private BuildLogService logService
 
     @Get("/v1alpha1/builds/{buildId}")
-    HttpResponse<?> getBuildRecord(String buildId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
+    HttpResponse<WaveBuildRecord> getBuildRecord(String buildId) {
         final record = buildService.getBuildRecord(buildId)
-        if( !record )
-            return HttpResponse.notFound()
-        return guard.refuse(record.owner, record.visibility, authorization, sessionId) ?: HttpResponse.ok(record)
+        return record
+                ? HttpResponse.ok(record)
+                : HttpResponse.<WaveBuildRecord>notFound()
     }
 
     @Produces(MediaType.TEXT_PLAIN)
     @Get(value="/v1alpha1/builds/{buildId}/logs")
-    HttpResponse<?> getBuildLog(String buildId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId){
+    HttpResponse<StreamedFile> getBuildLog(String buildId){
         if( logService==null )
             throw new IllegalStateException("Build Logs service not configured")
-        final denied = refuseBuild(buildId, authorization, sessionId)
-        if( denied )
-            return denied
         final logs = logService.fetchLogStream(buildId)
-        return logs ? HttpResponse.ok(logs) : HttpResponse.notFound()
+        return logs
+                ? HttpResponse.ok(logs)
+                : HttpResponse.<StreamedFile>notFound()
     }
 
     @Get("/v1alpha1/builds/{buildId}/status")
-    HttpResponse<?> getBuildStatus(String buildId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
+    HttpResponse<BuildStatusResponse> getBuildStatus(String buildId) {
         final build = buildService.getBuildRecord(buildId)
-        if( build == null )
-            return HttpResponse.notFound()
-        return guard.refuse(build.owner, build.visibility, authorization, sessionId) ?: HttpResponse.ok(build.toStatusResponse())
+        build != null
+            ? HttpResponse.ok(build.toStatusResponse())
+            : HttpResponse.<BuildStatusResponse>notFound()
     }
 
     @Produces(MediaType.TEXT_PLAIN)
     @Get(value="/v1alpha1/builds/{buildId}/condalock")
-    HttpResponse<?> getCondaLock(String buildId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId){
+    HttpResponse<StreamedFile> getCondaLock(String buildId){
         if( logService==null )
             throw new IllegalStateException("Build Logs service not configured")
-        final denied = refuseBuild(buildId, authorization, sessionId)
-        if( denied )
-            return denied
         final condaLock = logService.fetchCondaLockStream(buildId)
-        return condaLock ? HttpResponse.ok(condaLock) : HttpResponse.notFound()
-    }
-
-    /** the artifact routes have no record of their own: they are guarded by the build that owns them */
-    private HttpResponse<?> refuseBuild(String buildId, String authorization, String sessionId) {
-        // a record that has aged out leaves the artifact unguarded, as it was before: refusing
-        // here would 404 a route released clients can still read today
-        final record = buildService.getBuildRecord(buildId)
-        return record ? guard.refuse(record.owner, record.visibility, authorization, sessionId) : null
+        return condaLock
+                ? HttpResponse.ok(condaLock)
+                : HttpResponse.<StreamedFile>notFound()
     }
 
 }
