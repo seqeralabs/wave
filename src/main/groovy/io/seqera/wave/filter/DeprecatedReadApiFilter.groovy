@@ -26,7 +26,7 @@ import io.micronaut.http.annotation.ResponseFilter
 import io.micronaut.http.annotation.ServerFilter
 
 /**
- * Marks the read endpoints superseded by /v1alpha3, which applies the access check.
+ * Marks the read endpoints superseded by /v1, which applies the access check.
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
@@ -47,7 +47,7 @@ class DeprecatedReadApiFilter {
     @ResponseFilter
     void markDeprecated(HttpRequest<?> request, MutableHttpResponse<?> response) {
         response.header('Deprecation', 'true')
-        response.header('Link', '</v1alpha3>; rel="successor-version"')
+        response.header('Link', '</v1>; rel="successor-version"')
     }
 
 }

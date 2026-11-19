@@ -53,7 +53,7 @@ class DeprecatedReadApiFilterTest extends Specification {
 
         then:
         headers.get('Deprecation') == 'true'
-        headers.get('Link') == '</v1alpha3>; rel="successor-version"'
+        headers.get('Link') == '</v1>; rel="successor-version"'
 
         where:
         ROUTE << [
@@ -92,7 +92,7 @@ class DeprecatedReadApiFilterTest extends Specification {
 
     def 'should not mark the successor API itself' () {
         when:
-        def headers = headersOf(HttpRequest.GET('/v1alpha3/builds/bd-unknown'))
+        def headers = headersOf(HttpRequest.GET('/v1/builds/bd-unknown'))
 
         then:
         headers.get('Deprecation') == null

@@ -39,7 +39,7 @@ import io.seqera.wave.tower.User
 import io.seqera.wave.tower.RecordOwner
 
 /**
- * The deprecated read routes apply the same check as /v1alpha3.
+ * The deprecated read routes apply the same check as /v1.
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
