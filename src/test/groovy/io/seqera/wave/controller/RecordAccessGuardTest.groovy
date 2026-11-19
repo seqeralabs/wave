@@ -20,11 +20,7 @@ package io.seqera.wave.controller
 
 import spock.lang.Specification
 
-import java.util.function.Supplier
-
-import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpStatus
-import io.micronaut.http.context.ServerRequestContext
 import io.seqera.wave.service.access.RecordAccessService
 import io.seqera.wave.tower.RecordOwner
 
@@ -40,21 +36,13 @@ class RecordAccessGuardTest extends Specification {
         new RecordAccessGuard(accessService: Mock(RecordAccessService) { check(_, _, _) >> decision })
     }
 
-    /** the Supplier overload, so the closure's value comes back rather than the Runnable's void */
-    private static Object withHeader(String value, Closure body) {
-        final req = value
-                ? HttpRequest.GET('/v1/builds/bd-1').header(RecordAccessGuard.ENDPOINT_HEADER, value)
-                : HttpRequest.GET('/v1/builds/bd-1')
-        return ServerRequestContext.with(req, body as Supplier)
-    }
-
     def 'should refuse a bearer meant for a different Platform without forwarding it' () {
         given:
         def access = Mock(RecordAccessService)
         def g = new RecordAccessGuard(accessService: access)
 
         when:
-        def resp = withHeader('https://other.io/api') { g.refuse(OWNER, 'private', 'Bearer tok', null) }
+        def resp = g.refuse(OWNER, 'private', 'Bearer tok', null, 'https://other.io/api')
 
         then: 'the token never leaves Wave'
         0 * access.check(_, _, _)
@@ -63,14 +51,14 @@ class RecordAccessGuardTest extends Specification {
 
     def 'should forward a bearer when the caller names the record owner' () {
         expect:
-        withHeader('https://platform.io/api') { guard().refuse(OWNER, 'private', 'Bearer tok', null) } == null
+        guard().refuse(OWNER, 'private', 'Bearer tok', null, 'https://platform.io/api') == null
         and: 'a trailing slash is not a different Platform'
-        withHeader('https://platform.io/api/') { guard().refuse(OWNER, 'private', 'Bearer tok', null) } == null
+        guard().refuse(OWNER, 'private', 'Bearer tok', null, 'https://platform.io/api/') == null
     }
 
     def 'should forward a bearer when the caller names nothing, as released clients do' () {
         expect:
-        withHeader(null) { guard().refuse(OWNER, 'private', 'Bearer tok', null) } == null
+        guard().refuse(OWNER, 'private', 'Bearer tok', null, null) == null
     }
 
     def 'should decide nothing for a public record' () {
