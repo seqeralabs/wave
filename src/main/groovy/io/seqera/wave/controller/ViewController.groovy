@@ -130,19 +130,18 @@ class ViewController {
     @Nullable
     private RefusedViewCounter refusedViews
 
-    @View("mirror-view")
     @Get('/mirrors/{mirrorId}')
     HttpResponse viewMirror(String mirrorId, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
         if( !mirrorService )
             throw new UnsupportedMirrorServiceException()
         final result = mirrorService.getMirrorResult(mirrorId)
         if( !result ){
-            return HttpResponse.ok(["error_message": "Unknown container mirror id '$mirrorId'"])
+            return HttpResponse.ok(new ModelAndView("mirror-view", ["error_message": "Unknown container mirror id '$mirrorId'"]))
         }
         final denied = guard(result.owner, result.visibility, sessionId, "/view/mirrors/$mirrorId")
         if( denied )
             return denied
-        return HttpResponse.ok(renderMirrorView(result))
+        return HttpResponse.ok(new ModelAndView("mirror-view", renderMirrorView(result)))
     }
 
     protected Map<String,Object> renderMirrorView(MirrorResult result) {
@@ -370,7 +369,6 @@ class ViewController {
         return binding
       }
 
-    @View("container-view")
     @Get('/containers/{token}')
     HttpResponse<?> viewContainer(String token, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
         // Go through ContainerRequestService (not PersistenceService directly) so the view sees the
@@ -421,7 +419,7 @@ class ViewController {
         binding.mirror_url =  data.mirror ? "$serverUrl/view/mirrors/${data.buildId}" : null
         binding.mirror_cached = data.mirror ? !data.buildNew : null
         binding.server_url = serverUrl
-        return HttpResponse.<Map<String,Object>>ok(binding)
+        return HttpResponse.ok(new ModelAndView("container-view", binding))
     }
 
     /**

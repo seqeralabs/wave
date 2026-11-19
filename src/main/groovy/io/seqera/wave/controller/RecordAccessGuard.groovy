@@ -22,7 +22,6 @@ import groovy.transform.CompileStatic
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
-import io.micronaut.http.context.ServerRequestContext
 import io.seqera.wave.service.access.RecordAccessService
 import io.seqera.wave.service.view.auth.ViewAuthClient
 import io.seqera.wave.service.view.auth.ViewAuthService
@@ -64,13 +63,13 @@ class RecordAccessGuard {
      *      A bearer token wins; the view session is the fallback so a signed-in browser can
      *      follow the artifact links rendered on a view page.
      */
-    HttpResponse<?> refuse(RecordOwner owner, String visibility, String authorization, String sessionId) {
+    HttpResponse<?> refuse(RecordOwner owner, String visibility, String authorization, String sessionId, String namedEndpoint=null) {
         // a public record admits everyone, so don't read the session store to resolve a token
         // the check would discard on its first line
         if( !RecordAccessService.isPrivate(owner, visibility) )
             return null
         final bearer = bearer(authorization)
-        if( bearer && !intendedFor(owner.towerEndpoint) )
+        if( bearer && !intendedFor(namedEndpoint, owner.towerEndpoint) )
             return HttpResponse.unauthorized()
         final token = bearer ?: authService?.tokenFor(sessionId, owner?.towerEndpoint)
         final decision = accessService.check(owner, visibility, token)
@@ -92,9 +91,7 @@ class RecordAccessGuard {
     }
 
     /** @return true unless the caller named a different Platform from the one owning the record */
-    static protected boolean intendedFor(String towerEndpoint) {
-        final req = ServerRequestContext.currentRequest()
-        final named = req.isPresent() ? req.get().getHeaders().get(ENDPOINT_HEADER) : null
+    static protected boolean intendedFor(String named, String towerEndpoint) {
         return !named || ViewAuthClient.key(named) == ViewAuthClient.key(towerEndpoint)
     }
 
