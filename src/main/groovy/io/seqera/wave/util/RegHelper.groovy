@@ -120,13 +120,25 @@ class RegHelper {
         return dumpHeaders(response.headers().map())
     }
 
+    // Set-Cookie is here because a Platform token refresh returns the minted JWT and refresh token in it
+    private static final List<String> REDACTED_HEADERS = List.of('authorization', 'proxy-authorization', 'cookie', 'set-cookie', 'x-registry-auth')
+
+    /** Header names are case-insensitive, so match without regard to case or locale */
+    static boolean isSensitiveHeader(String name) {
+        for( String it : REDACTED_HEADERS )
+            if( it.equalsIgnoreCase(name) )
+                return true
+        return false
+    }
+
     static String dumpHeaders(Map<String, List<String>> headers) {
         if( !headers )
-            null
+            return null
         final result = new StringBuilder()
         for( Map.Entry<String,List<String>> entry : headers )  {
+            final redacted = isSensitiveHeader(entry.key)
             for( String val : entry.value )
-                result.append("\n  $entry.key=$val")
+                result.append("\n  $entry.key=${redacted ? StringUtils.redact(val) : val}")
         }
         return result.toString()
     }
