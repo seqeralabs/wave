@@ -13,6 +13,8 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY *.go ./
+# the ztoc library links zlib with `-l:libz.a`, a cgo flag Go 1.27.4 no longer allows by default
+ENV CGO_LDFLAGS_ALLOW='-l:libz\.a'
 RUN CC=$(cat /cc) CGO_ENABLED=1 GOOS=linux GOARCH=$TARGETARCH \
     go build -trimpath -ldflags '-s -w -extldflags "-static"' -o /soci-indexer .
 
