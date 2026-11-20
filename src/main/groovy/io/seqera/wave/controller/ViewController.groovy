@@ -37,6 +37,13 @@ import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
+import io.micronaut.http.annotation.CookieValue
+import io.micronaut.http.HttpStatus
+import io.seqera.wave.exception.UnauthorizedException
+import io.seqera.wave.service.access.RecordAccessService
+import io.seqera.wave.service.view.auth.RefusedViewCounter
+import io.seqera.wave.service.view.auth.ViewAuthService
+import io.seqera.wave.tower.RecordOwner
 import io.micronaut.views.ModelAndView
 import io.micronaut.views.View
 import io.seqera.wave.api.ScanMode
@@ -110,15 +117,28 @@ class ViewController {
     @Client("/")
     private HttpClient httpClient
 
+    @Inject
+    private RecordAccessService accessService
+
+    @Inject
+    private ViewAuthService authService
+
+    @Inject
+    @Nullable
+    private RefusedViewCounter refusedViews
+
     @View("mirror-view")
     @Get('/mirrors/{mirrorId}')
-    HttpResponse viewMirror(String mirrorId) {
+    HttpResponse viewMirror(String mirrorId, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
         if( !mirrorService )
             throw new UnsupportedMirrorServiceException()
         final result = mirrorService.getMirrorResult(mirrorId)
         if( !result ){
             return HttpResponse.ok(["error_message": "Unknown container mirror id '$mirrorId'"])
         }
+        final denied = guard(result.owner, result.visibility, sessionId, "/view/mirrors/$mirrorId")
+        if( denied )
+            return denied
         return HttpResponse.ok(renderMirrorView(result))
     }
 
@@ -144,8 +164,51 @@ class ViewController {
         return binding
     }
 
+
+    /** A rejected token is no longer any use: drop it so the viewer is sent to sign in again */
+    private RecordAccessService.Decision decide(RecordOwner owner, String visibility, String sessionId) {
+        try {
+            return accessService.check(owner, visibility, authService.tokenFor(sessionId, owner?.towerEndpoint))
+        }
+        catch( UnauthorizedException e ) {
+            authService.forget(sessionId, owner?.towerEndpoint)
+            return RecordAccessService.Decision.UNAUTHORIZED
+        }
+    }
+
+    /** Lists never start a sign-in: they use a session only if the viewer already has one */
+    protected boolean isReadable(RecordOwner owner, String visibility, String sessionId) {
+        return decide(owner, visibility, sessionId) == RecordAccessService.Decision.ALLOW
+    }
+
+    static protected HttpResponse<?> authError(HttpStatus status, String message, String platformUrl=null) {
+        final model = new HashMap<String,Object>(2)
+        model.error_message = message
+        if( platformUrl ) model.platform_url = platformUrl
+        return HttpResponse.status(status).body(new ModelAndView("view-auth-error", model))
+    }
+
+    protected HttpResponse<?> guard(RecordOwner owner, String visibility, String sessionId, String returnTo) {
+        final decision = decide(owner, visibility, sessionId)
+        if( decision == RecordAccessService.Decision.ALLOW )
+            return null
+
+        refusedViews?.increment(authService.known(owner?.towerEndpoint), decision.toString())
+        switch (decision) {
+            case RecordAccessService.Decision.UNAUTHORIZED:
+                final url = authService.startSignIn(owner.towerEndpoint, returnTo)
+                return url
+                        ? HttpResponse.seeOther(URI.create(url))
+                        : authError(HttpStatus.UNAUTHORIZED, 'This record belongs to a Seqera Platform workspace. Sign in to Seqera Platform to view it.', owner.towerEndpoint)
+            case RecordAccessService.Decision.FORBIDDEN:
+                return authError(HttpStatus.FORBIDDEN, 'This record belongs to a workspace you do not have access to.')
+            default:
+                return authError(HttpStatus.SERVICE_UNAVAILABLE, 'Seqera Platform could not be reached to check access. Try again shortly.')
+        }
+    }
+
     @Get('/builds/{buildId}')
-    HttpResponse viewBuild(String buildId) {
+    HttpResponse viewBuild(String buildId, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
         if( !buildService )
             throw new UnsupportedBuildServiceException()
         // check redirection for invalid suffix in the form `-nn`
@@ -157,10 +220,14 @@ class ViewController {
 
         // check all builds matching the pattern
         if( isBuildMissingSuffix(buildId) ) {
-            final builds = buildService.getAllBuilds(buildId)
+            def builds = buildService.getAllBuilds(buildId)
             if( !builds ) {
                 log.debug "Found not build with id: $buildId"
                 return HttpResponse.ok(new ModelAndView("build-list", ["error_message": "Unknown build id '$buildId'"]))
+            }
+            builds = builds.findAll { isReadable(it.owner, it.visibility, sessionId) }
+            if( !builds ) {
+                return HttpResponse.ok(new ModelAndView("build-list", ["error_message": "No build visible for id '$buildId'"]))
             }
             if( builds.size()==1 ) {
                 log.debug "Redirect to build page [2]: ${builds.first().buildId}"
@@ -175,6 +242,9 @@ class ViewController {
         if( !record ){
             return HttpResponse.ok(new ModelAndView("build-view", ["error_message": "Unknown build id '$buildId'"]))
         }
+        final denied = guard(record.owner, record.visibility, sessionId, "/view/builds/$buildId")
+        if( denied )
+            return denied
         return HttpResponse.ok(new ModelAndView("build-view", renderBuildView(record)))
     }
 
@@ -278,7 +348,7 @@ class ViewController {
 
     @View("container-view")
     @Get('/containers/{token}')
-    HttpResponse<?> viewContainer(String token) {
+    HttpResponse<?> viewContainer(String token, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
         // Go through ContainerRequestService (not PersistenceService directly) so the view sees the
         // same record — including any watcher-extended expiration — as the rest of the request flow.
         final data = containerService.loadContainerRecord(token)
@@ -286,6 +356,9 @@ class ViewController {
         // view endpoints, instead of returning a bare notFound body into the template.
         if( !data )
             throw new NotFoundException("Unknown container token: $token")
+        final denied = guard(data.owner, data.visibility, sessionId, "/view/containers/$token")
+        if( denied )
+            return denied
         // return the response
         final binding = new HashMap(20)
         binding.request_token = token
@@ -376,7 +449,7 @@ class ViewController {
     }
 
     @Get('/scans/{scanId}')
-    HttpResponse viewScan(String scanId) {
+    HttpResponse viewScan(String scanId, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
         if( !scanService )
             throw new UnsupportedScanServiceException()
         // check redirection for invalid suffix in the form `-nn`
@@ -387,10 +460,14 @@ class ViewController {
         }
         // check all scans matching the pattern
         if( isScanMissingSuffix(scanId) ) {
-            final scans = scanService.getAllScans(scanId)
+            def scans = scanService.getAllScans(scanId)
             if( !scans ) {
                 log.debug "Found not scan with id: $scanId"
                 throw new NotFoundException("Unknown container scan id '$scanId'")
+            }
+            scans = scans.findAll { isReadable(it.owner, it.visibility, sessionId) }
+            if( !scans ) {
+                return HttpResponse.ok(new ModelAndView("scan-list", ["error_message": "No scan visible for id '$scanId'"]))
             }
             if( scans.size()==1 ) {
                 log.debug "Redirect to scan page [2]: ${scans.first().id}"
@@ -398,6 +475,13 @@ class ViewController {
             }
             else
                 return HttpResponse.ok(new ModelAndView("scan-list", renderScansView(scans)))
+        }
+        // a scan inherits its parent's owner, so it is guarded before anything is rendered
+        final scanRecord = scanService.getScanRecord(scanId)
+        if( scanRecord ) {
+            final denied = guard(scanRecord.owner, scanRecord.visibility, sessionId, "/view/scans/$scanId")
+            if( denied )
+                return denied
         }
         final binding = new HashMap(10)
         try {
