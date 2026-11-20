@@ -19,14 +19,9 @@
 package io.seqera.wave.tower.client
 
 import java.time.Duration
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.CompletableFuture
 
-import com.github.benmanes.caffeine.cache.Cache
-import com.github.benmanes.caffeine.cache.Caffeine
 import groovy.transform.CompileStatic
-import io.seqera.wave.exception.HttpResponseException
-import io.micronaut.http.HttpStatus
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
@@ -91,31 +86,10 @@ class TowerClient {
         return getAsPresented(userInfoEndpoint(towerEndpoint), towerEndpoint, authorization, GetUserInfoResponse) as GetUserInfoResponse
     }
 
-    /**
-     * A token Platform has refused, remembered briefly so the same one is not carried back there
-     * on every request. Only successes reach the shared cache, because a throw stores nothing.
-     *
-     * Local to the replica and short-lived on purpose: it spares the owning Platform a repeated
-     * bad token, not a caller rotating a fresh one, which misses on every key either way.
-     */
-    private final Cache<String,Boolean> rejected = Caffeine.newBuilder()
-            .expireAfterWrite(10, TimeUnit.SECONDS)
-            .maximumSize(10_000)
-            .build()
-
     /** Keyed apart from the submit path's entries, which have a far longer ttl */
     private Object getAsPresented(URI uri, String endpoint, JwtAuth auth, Class type) {
         final k = RegHelper.sipHash('access', uri, auth.key)
-        if( rejected.getIfPresent(k) )
-            throw new HttpResponseException(HttpStatus.UNAUTHORIZED, "Access denied by Seqera Platform at '$endpoint'")
-        try {
-            return cache.getOrCompute(k, (it)-> connector.sendAsyncAsPresented(endpoint, uri, auth, type).get(), accessCheckDuration)
-        }
-        catch( Exception e ) {
-            if( HttpResponseException.matches(e, HttpStatus.UNAUTHORIZED) )
-                rejected.put(k, Boolean.TRUE)
-            throw e
-        }
+        return cache.getOrCompute(k, (it)-> connector.sendAsyncAsPresented(endpoint, uri, auth, type).get(), accessCheckDuration)
     }
 
     /**

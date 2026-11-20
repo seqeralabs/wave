@@ -42,7 +42,7 @@ class RecordAccessGuardTest extends Specification {
         def g = new RecordAccessGuard(accessService: access)
 
         when:
-        def resp = g.refuse(OWNER, 'private', 'Bearer tok', null, 'https://other.io/api')
+        def resp = g.refuse(OWNER, 'private', 'Bearer tok', 'https://other.io/api')
 
         then: 'the token never leaves Wave'
         0 * access.check(_, _, _)
@@ -51,14 +51,14 @@ class RecordAccessGuardTest extends Specification {
 
     def 'should forward a bearer when the caller names the record owner' () {
         expect:
-        guard().refuse(OWNER, 'private', 'Bearer tok', null, 'https://platform.io/api') == null
+        guard().refuse(OWNER, 'private', 'Bearer tok', 'https://platform.io/api') == null
         and: 'a trailing slash is not a different Platform'
-        guard().refuse(OWNER, 'private', 'Bearer tok', null, 'https://platform.io/api/') == null
+        guard().refuse(OWNER, 'private', 'Bearer tok', 'https://platform.io/api/') == null
     }
 
     def 'should forward a bearer when the caller names nothing, as released clients do' () {
         expect:
-        guard().refuse(OWNER, 'private', 'Bearer tok', null, null) == null
+        guard().refuse(OWNER, 'private', 'Bearer tok', null) == null
     }
 
     def 'should decide nothing for a public record' () {
@@ -66,7 +66,7 @@ class RecordAccessGuardTest extends Specification {
         def access = Mock(RecordAccessService)
 
         when:
-        def resp = new RecordAccessGuard(accessService: access).refuse(OWNER, 'public', null, 'sess-1')
+        def resp = new RecordAccessGuard(accessService: access).refuse(OWNER, 'public', null)
 
         then: 'a public record admits everyone, so nothing is looked up at all'
         0 * access.check(_, _, _)

@@ -25,7 +25,6 @@ import io.micronaut.http.HttpHeaders
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Controller
-import io.micronaut.http.annotation.CookieValue
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Header
 import io.micronaut.http.annotation.Produces
@@ -41,7 +40,6 @@ import io.seqera.wave.service.request.ContainerRequestService
 import io.seqera.wave.service.request.ContainerStatusService
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanType
-import io.seqera.wave.service.view.auth.ViewAuthService
 import io.seqera.wave.tower.RecordOwner
 import jakarta.inject.Inject
 
@@ -86,33 +84,30 @@ class ReadApiController {
 
     @Get("/builds/{buildId}")
     HttpResponse<?> getBuildRecord(String buildId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization,
-                                 @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId,
                                  @Nullable @Header(RecordAccessGuard.ENDPOINT_HEADER) String namedEndpoint) {
         final record = buildService?.getBuildRecord(buildId)
         if( !record )
             return HttpResponse.notFound()
-        return guard.refuse(record.owner, record.visibility, authorization, sessionId, namedEndpoint) ?: HttpResponse.ok(record)
+        return guard.refuse(record.owner, record.visibility, authorization, namedEndpoint) ?: HttpResponse.ok(record)
     }
 
     @Get("/builds/{buildId}/status")
     HttpResponse<?> getBuildStatus(String buildId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization,
-                                 @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId,
                                  @Nullable @Header(RecordAccessGuard.ENDPOINT_HEADER) String namedEndpoint) {
         final record = buildService?.getBuildRecord(buildId)
         if( !record )
             return HttpResponse.notFound()
-        return guard.refuse(record.owner, record.visibility, authorization, sessionId, namedEndpoint) ?: HttpResponse.ok(record.toStatusResponse())
+        return guard.refuse(record.owner, record.visibility, authorization, namedEndpoint) ?: HttpResponse.ok(record.toStatusResponse())
     }
 
     @Get("/builds/{buildId}/logs")
     @Produces(MediaType.TEXT_PLAIN)
     HttpResponse<?> getBuildLogs(String buildId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization,
-                                 @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId,
                                  @Nullable @Header(RecordAccessGuard.ENDPOINT_HEADER) String namedEndpoint) {
         final record = buildService?.getBuildRecord(buildId)
         if( !record )
             return HttpResponse.notFound()
-        final denied = guard.refuse(record.owner, record.visibility, authorization, sessionId, namedEndpoint)
+        final denied = guard.refuse(record.owner, record.visibility, authorization, namedEndpoint)
         if( denied )
             return denied
         final logs = logService?.fetchLogStream(buildId)
@@ -122,12 +117,11 @@ class ReadApiController {
     @Get("/builds/{buildId}/condalock")
     @Produces(MediaType.TEXT_PLAIN)
     HttpResponse<?> getCondaLock(String buildId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization,
-                                 @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId,
                                  @Nullable @Header(RecordAccessGuard.ENDPOINT_HEADER) String namedEndpoint) {
         final record = buildService?.getBuildRecord(buildId)
         if( !record )
             return HttpResponse.notFound()
-        final denied = guard.refuse(record.owner, record.visibility, authorization, sessionId, namedEndpoint)
+        final denied = guard.refuse(record.owner, record.visibility, authorization, namedEndpoint)
         if( denied )
             return denied
         final condaLock = logService?.fetchCondaLockStream(buildId)
@@ -136,33 +130,30 @@ class ReadApiController {
 
     @Get("/mirrors/{mirrorId}")
     HttpResponse<?> getMirrorRecord(String mirrorId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization,
-                                 @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId,
                                  @Nullable @Header(RecordAccessGuard.ENDPOINT_HEADER) String namedEndpoint) {
         final record = mirrorService?.getMirrorResult(mirrorId)
         if( !record )
             return HttpResponse.notFound()
-        return guard.refuse(record.owner, record.visibility, authorization, sessionId, namedEndpoint) ?: HttpResponse.ok(record)
+        return guard.refuse(record.owner, record.visibility, authorization, namedEndpoint) ?: HttpResponse.ok(record)
     }
 
     @Get("/scans/{scanId}")
     HttpResponse<?> getScanRecord(String scanId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization,
-                                 @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId,
                                  @Nullable @Header(RecordAccessGuard.ENDPOINT_HEADER) String namedEndpoint) {
         final record = scanService?.getScanRecord(scanId)
         if( !record )
             return HttpResponse.notFound()
-        return guard.refuse(record.owner, record.visibility, authorization, sessionId, namedEndpoint) ?: HttpResponse.ok(record)
+        return guard.refuse(record.owner, record.visibility, authorization, namedEndpoint) ?: HttpResponse.ok(record)
     }
 
     @Get("/mirrors/{mirrorId}/logs")
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     HttpResponse<?> getMirrorLogs(String mirrorId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization,
-                                  @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId,
                                  @Nullable @Header(RecordAccessGuard.ENDPOINT_HEADER) String namedEndpoint) {
         final record = mirrorService?.getMirrorResult(mirrorId)
         if( !record )
             return HttpResponse.notFound()
-        final denied = guard.refuse(record.owner, record.visibility, authorization, sessionId, namedEndpoint)
+        final denied = guard.refuse(record.owner, record.visibility, authorization, namedEndpoint)
         if( denied )
             return denied
         return record.logs
@@ -173,12 +164,11 @@ class ReadApiController {
     @Get("/scans/{scanId}/spdx")
     @Produces(MediaType.TEXT_PLAIN)
     HttpResponse<?> getScanSpdx(String scanId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization,
-                                @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId,
                                  @Nullable @Header(RecordAccessGuard.ENDPOINT_HEADER) String namedEndpoint) {
         final record = scanService?.getScanRecord(scanId)
         if( !record )
             return HttpResponse.notFound()
-        final denied = guard.refuse(record.owner, record.visibility, authorization, sessionId, namedEndpoint)
+        final denied = guard.refuse(record.owner, record.visibility, authorization, namedEndpoint)
         if( denied )
             return denied
         final report = scanService.fetchReportStream(scanId, ScanType.Spdx)
@@ -190,12 +180,11 @@ class ReadApiController {
     @Get("/scans/{scanId}/logs")
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     HttpResponse<?> getScanLogs(String scanId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization,
-                                @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId,
                                  @Nullable @Header(RecordAccessGuard.ENDPOINT_HEADER) String namedEndpoint) {
         final record = scanService?.getScanRecord(scanId)
         if( !record )
             return HttpResponse.notFound()
-        final denied = guard.refuse(record.owner, record.visibility, authorization, sessionId, namedEndpoint)
+        final denied = guard.refuse(record.owner, record.visibility, authorization, namedEndpoint)
         if( denied )
             return denied
         return record.logs
@@ -205,23 +194,21 @@ class ReadApiController {
 
     @Get("/container/{requestId}")
     HttpResponse<?> getContainerRecord(String requestId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization,
-                                 @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId,
                                  @Nullable @Header(RecordAccessGuard.ENDPOINT_HEADER) String namedEndpoint) {
         final record = containerService?.loadContainerRecord(requestId)
         if( !record )
             return HttpResponse.notFound()
-        return guard.refuse(record.owner, record.visibility, authorization, sessionId, namedEndpoint) ?: HttpResponse.ok(record.withUserIdOnly())
+        return guard.refuse(record.owner, record.visibility, authorization, namedEndpoint) ?: HttpResponse.ok(record.withUserIdOnly())
     }
 
     @Get("/container/{requestId}/status")
     HttpResponse<?> getContainerStatus(String requestId, @Nullable @Header(HttpHeaders.AUTHORIZATION) String authorization,
-                                 @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId,
                                  @Nullable @Header(RecordAccessGuard.ENDPOINT_HEADER) String namedEndpoint) {
         // the status has no owner of its own. Take it from the request entry the status path
         // reads anyway, rather than the record, which is a database load on a polled route
         final request = containerService?.getRequest(requestId)
         final denied = request
-                ? guard.refuse(RecordOwner.of(request.identity), request.visibility, authorization, sessionId, namedEndpoint)
+                ? guard.refuse(RecordOwner.of(request.identity), request.visibility, authorization, namedEndpoint)
                 : null
         if( denied )
             return denied

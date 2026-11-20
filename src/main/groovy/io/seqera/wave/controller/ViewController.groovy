@@ -41,6 +41,10 @@ import io.micronaut.http.client.annotation.Client
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.http.annotation.CookieValue
+import io.micronaut.http.annotation.Produces
+import io.micronaut.http.MediaType
+import io.micronaut.http.HttpHeaders
+import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.http.HttpStatus
 import io.seqera.wave.service.access.RecordAccessService
 import io.seqera.wave.service.view.auth.RefusedViewCounter
@@ -153,7 +157,7 @@ class ViewController {
         binding.mirror_in_progress = result.exitCode == null
         binding.mirror_exitcode = result.exitCode ?: null
         binding.mirror_logs = result.exitCode ? result.logs : null
-        binding.mirror_log_url = result.logs ? "$serverUrl/v1/mirrors/${result.mirrorId}/logs" : null
+        binding.mirror_log_url = result.logs ? "$serverUrl/view/mirrors/${result.mirrorId}/logs" : null
         binding.mirror_time = formatTimestamp(result.creationTime, result.offsetId) ?: '-'
         binding.mirror_duration = formatDuration(result.duration) ?: '-'
         binding.mirror_source_image = result.sourceImage
@@ -193,19 +197,10 @@ class ViewController {
         return HttpResponse.status(status).body(new ModelAndView("view-auth-error", model))
     }
 
-    /**
-     * How soon after sign-in a refusal is taken to mean signing in again will not help. Platform
-     * still holds a session, so it returns a code without prompting and the browser loops.
-     */
-    private static final long JUST_SIGNED_IN_MILLIS = 30_000
-
     protected HttpResponse<?> guard(RecordOwner owner, String visibility, String sessionId, String returnTo) {
         if( !RecordAccessService.isPrivate(owner, visibility) )
             return null
-        // one read: decide() needs the token, and the loop check below needs when it arrived,
-        // which decide() drops on the way through
         final session = authService.session(sessionId)
-        final issuedAt = session?.issuedAtFor(owner.towerEndpoint)
         final decision = decide(owner, visibility, sessionId, session)
         if( decision == RecordAccessService.Decision.ALLOW )
             return null
@@ -213,11 +208,7 @@ class ViewController {
         refusedViews?.increment(authService.known(owner?.towerEndpoint), decision.toString())
         switch (decision) {
             case RecordAccessService.Decision.REJECTED:
-                if( issuedAt != null && System.currentTimeMillis() - issuedAt < JUST_SIGNED_IN_MILLIS )
-                    return authError(HttpStatus.UNAUTHORIZED,
-                            'Seqera Platform refused the token it has just issued. Signing in again will not help.',
-                            returnTo)
-                // fall through: an older token has simply expired, so sign in again
+                // the token has expired, so sign in again
             case RecordAccessService.Decision.UNAUTHORIZED:
                 final signIn = authService.startSignIn(owner.towerEndpoint, returnTo)
                 return signIn
@@ -358,12 +349,12 @@ class ViewController {
             final buildLog = buildLogService.fetchLogString(result.buildId)
             binding.build_log_data = buildLog?.data
             binding.build_log_truncated = buildLog?.truncated
-            binding.build_log_url = "$serverUrl/v1/builds/${result.buildId}/logs"
+            binding.build_log_url = "$serverUrl/view/builds/${result.buildId}/logs"
         }
         //add conda lock file when available
         if( buildLogService && result.condaFile ) {
             binding.build_conda_lock_data = buildLogService.fetchCondaLockString(result.buildId)
-            binding.build_conda_lock_url = "$serverUrl/v1/builds/${result.buildId}/condalock"
+            binding.build_conda_lock_url = "$serverUrl/view/builds/${result.buildId}/condalock"
         }
         // result the main object
         return binding
@@ -560,6 +551,81 @@ class ViewController {
     }
 
 
+    // ------------------------------------------------------------------
+    // Record artifacts. These carry the same access check as the page that
+    // links to them, and are served here rather than from /v1 so the read
+    // API stays bearer-only - a browser session must not authenticate it.
+    // ------------------------------------------------------------------
+
+    @Get('/builds/{buildId}/logs')
+    @Produces(MediaType.TEXT_PLAIN)
+    HttpResponse<?> viewBuildLogs(String buildId, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
+        final record = buildService?.getBuildRecord(buildId)
+        if( !record )
+            return HttpResponse.notFound()
+        final denied = guard(record.owner, record.visibility, sessionId, "/view/builds/$buildId")
+        if( denied )
+            return denied
+        final logs = buildLogService?.fetchLogStream(buildId)
+        return logs ? HttpResponse.ok(logs) : HttpResponse.notFound()
+    }
+
+    @Get('/builds/{buildId}/condalock')
+    @Produces(MediaType.TEXT_PLAIN)
+    HttpResponse<?> viewCondaLock(String buildId, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
+        final record = buildService?.getBuildRecord(buildId)
+        if( !record )
+            return HttpResponse.notFound()
+        final denied = guard(record.owner, record.visibility, sessionId, "/view/builds/$buildId")
+        if( denied )
+            return denied
+        final condaLock = buildLogService?.fetchCondaLockStream(buildId)
+        return condaLock ? HttpResponse.ok(condaLock) : HttpResponse.<StreamedFile>notFound()
+    }
+
+    @Get('/mirrors/{mirrorId}/logs')
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    HttpResponse<?> viewMirrorLogs(String mirrorId, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
+        final record = mirrorService?.getMirrorResult(mirrorId)
+        if( !record )
+            return HttpResponse.notFound()
+        final denied = guard(record.owner, record.visibility, sessionId, "/view/mirrors/$mirrorId")
+        if( denied )
+            return denied
+        return record.logs
+                ? HttpResponse.ok(record.logs).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=${mirrorId}.log".toString())
+                : HttpResponse.notFound()
+    }
+
+    @Get('/scans/{scanId}/spdx')
+    @Produces(MediaType.TEXT_PLAIN)
+    HttpResponse<?> viewScanSpdx(String scanId, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
+        final record = scanService?.getScanRecord(scanId)
+        if( !record )
+            return HttpResponse.notFound()
+        final denied = guard(record.owner, record.visibility, sessionId, "/view/scans/$scanId")
+        if( denied )
+            return denied
+        final report = scanService.fetchReportStream(scanId, ScanType.Spdx)
+        return report
+                ? HttpResponse.ok(report).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"spdx-${scanId}.json\"".toString())
+                : HttpResponse.<StreamedFile>notFound()
+    }
+
+    @Get('/scans/{scanId}/logs')
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    HttpResponse<?> viewScanLogs(String scanId, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
+        final record = scanService?.getScanRecord(scanId)
+        if( !record )
+            return HttpResponse.notFound()
+        final denied = guard(record.owner, record.visibility, sessionId, "/view/scans/$scanId")
+        if( denied )
+            return denied
+        return record.logs
+                ? HttpResponse.ok(record.logs).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=${scanId}.log".toString())
+                : HttpResponse.notFound()
+    }
+
     @View("inspect-view")
     @Get('/inspect')
     HttpResponse<Map<String,Object>> viewInspect(@QueryValue String image, @Nullable @QueryValue String platform) {
@@ -606,9 +672,9 @@ class ViewController {
         binding.scan_failed = result.status == ScanEntry.FAILED
         binding.scan_succeeded = result.status == ScanEntry.SUCCEEDED
         binding.scan_exitcode = result.exitCode
-        binding.scan_sbom_spdx_url = hasSpdx(result) ? "$serverUrl/v1/scans/${result.id}/spdx" : null
+        binding.scan_sbom_spdx_url = hasSpdx(result) ? "$serverUrl/view/scans/${result.id}/spdx" : null
         binding.scan_logs = result.logs
-        binding.scan_log_url = result.logs ? "$serverUrl/v1/scans/${result.id}/logs" : null
+        binding.scan_log_url = result.logs ? "$serverUrl/view/scans/${result.id}/logs" : null
         // build info
         binding.build_id = result.buildId
         binding.build_url = result.buildId ? "$serverUrl/view/builds/${result.buildId}" : null

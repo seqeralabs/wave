@@ -749,8 +749,8 @@ check. The older routes still work and answer with a `Deprecation: true` header 
 naming `/v1` as their successor.
 
 A public record is served to anyone. A private one needs a Seqera Platform token for the workspace
-that owns it, sent as `Authorization: Bearer <token>`; a browser signed in through a view page uses
-its session cookie instead.
+that owns it, sent as `Authorization: Bearer <token>`. A browser session does not authenticate
+these routes: the view pages serve their own artifact links from `/view` instead.
 
 | Route | Returns |
 | --- | --- |
