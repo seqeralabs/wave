@@ -659,9 +659,7 @@ class ContainerController {
             // resolved before the id: a private scan hashes its tenant, so the two cannot disagree
             visibility = resolveVisibility(req, identity, null)
             checkWorkspaceAccess(identity, visibility)
-            // the normalised name, not the one as typed: the scan record carries this form, and
-            // the cleanup on failure looks the id up by it
-            scanId = scanService?.getScanId(targetImage, digest, req.scanMode, req.format,
+            scanId = scanService?.getScanId(req.containerImage, digest, req.scanMode, req.format,
                     RecordOwner.tenantOf(identity, visibility))
             type = ContainerRequest.Type.Container
             // when there's a scan, return null because the scan status is not known
@@ -751,15 +749,13 @@ class ContainerController {
         }
         // check for existing image
         if( request.digest==targetDigest ) {
+            log.debug "== Found cached request for request: $request"
             final cache = persistenceService.loadMirrorSucceed(request.targetImage, targetDigest)
-            // the stored mirror belongs to the tenant that made it, and the lookup matches on the
-            // target alone: another tenant must mirror its own rather than inherit this record
-            if( cache == null || RecordOwner.tenantOf(cache.owner, cache.visibility) == request.tenant() ) {
-                log.debug "== Found cached request for request: $request"
-                return new BuildTrack(cache?.mirrorId, request.targetImage, true, true)
-            }
+            return new BuildTrack(cache?.mirrorId, request.targetImage, true, true)
         }
-        return mirrorService.mirrorImage(request)
+        else {
+            return mirrorService.mirrorImage(request)
+        }
     }
 
     protected String targetImage(String token, ContainerCoordinates container) {

@@ -95,7 +95,7 @@ class JobFactory {
     JobSpec mirror(MirrorRequest request) {
         assert request.mirrorId.startsWith(MirrorRequest.ID_PREFIX)
         JobSpec.mirror(
-                request.entryKey(),
+                request.targetImage,
                 request.mirrorId.replace('_', '-'),
                 request.creationTime,
                 mirrorConfig.maxDuration,
