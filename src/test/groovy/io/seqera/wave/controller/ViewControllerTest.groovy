@@ -463,6 +463,7 @@ class ViewControllerTest extends Specification {
                 "sc-12456",
                 MirrorResult.Status.COMPLETED,
                 null,   // owner
+                null,   // visibility
                 Duration.ofMinutes(1),
                 0,
                 'No logs'

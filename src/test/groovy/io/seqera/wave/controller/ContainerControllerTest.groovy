@@ -42,6 +42,7 @@ import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.config.CondaOpts
+import io.seqera.wave.api.Visibility
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.service.soci.SociPushService
@@ -440,10 +441,49 @@ class ContainerControllerTest extends Specification {
         anonymous.scanId == userA.scanId
         anonymous.scanId == userB.scanId
 
+        and: 'asking for private does not change the id either'
+        controller.makeBuildRequest(
+                new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), visibility: 'private'),
+                new PlatformId(new User(id: 1), 10L, 'tok-a', 'https://api.cloud.seqera.io'), '').buildId == anonymous.buildId
+
         and: 'while the identity itself is still carried on the request'
         anonymous.identity == PlatformId.NULL
         userA.identity.userId == 1
         userB.identity.userId == 2
+    }
+
+    static final String COMMUNITY_REPO = 'public.cr.seqera.io/wave'
+
+    static final PlatformId VISIBILITY_AUTH =
+            new PlatformId(new User(id: 100), 200L, 'tok', 'https://api.cloud.seqera.io')
+
+    private ContainerController visibilityController() {
+        new ContainerController(buildConfig: new BuildConfig(defaultPublicRepository: COMMUNITY_REPO))
+    }
+
+    @Unroll
+    def 'should resolve visibility [#DESC]' () {
+        given:
+        def controller = visibilityController()
+        def req = new SubmitContainerTokenRequest(visibility: ASKED)
+
+        expect:
+        controller.resolveVisibility(req, IDENTITY, REPO) == EXPECTED
+
+        where:
+        DESC                             | ASKED              | IDENTITY        | REPO                      | EXPECTED
+        'absent'                         | null               | VISIBILITY_AUTH            | 'docker.io/foo'           | Visibility.PUBLIC
+        'explicit public'                | 'public'           | VISIBILITY_AUTH            | 'docker.io/foo'           | Visibility.PUBLIC
+        'private + authenticated'        | 'private'          | VISIBILITY_AUTH            | 'docker.io/foo'           | Visibility.PRIVATE
+        'private + anonymous'            | 'private'          | PlatformId.NULL | 'docker.io/foo'           | Visibility.PUBLIC
+        'private + null identity'        | 'private'          | null            | 'docker.io/foo'           | Visibility.PUBLIC
+        'private + community repo'       | 'private'          | VISIBILITY_AUTH            | COMMUNITY_REPO                 | Visibility.PUBLIC
+        'private + community subpath'    | 'private'          | VISIBILITY_AUTH            | "$COMMUNITY_REPO/some/image"   | Visibility.PUBLIC
+        'private + no repo'              | 'private'          | VISIBILITY_AUTH            | null                      | Visibility.PRIVATE
+        // merely containing the community name is not the community repository
+        'private + lookalike repo'       | 'private'          | VISIBILITY_AUTH            | 'other.io/public.cr.seqera.io/wave' | Visibility.PRIVATE
+        // an endpoint with no user is still anonymous: ContainerController defaults the endpoint in
+        'private + endpoint, no user'    | 'private'          | new PlatformId(null, null, null, 'https://api.cloud.seqera.io') | 'docker.io/foo' | Visibility.PUBLIC
     }
 
     def 'should create build request' () {

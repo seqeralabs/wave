@@ -192,11 +192,15 @@ class WaveContainerRecord {
     @PersistOnly
     final RecordOwner owner
 
+    /** a Visibility value; null is read as public */
+    final String visibility
+
     WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequest data, String waveImage, String addr, Instant expiration) {
         this.id = data.requestId
         this.user = data.identity.user
         this.workspaceId = request.towerWorkspaceId
         this.owner = RecordOwner.of(data.identity)
+        this.visibility = data.visibility
         this.containerImage = request.containerImage
         this.containerConfig = ContainerConfig.copy(request.containerConfig, true)
         this.platform = request.containerPlatform
@@ -227,6 +231,7 @@ class WaveContainerRecord {
         this.user = that.user
         this.workspaceId = that.workspaceId
         this.owner = that.owner
+        this.visibility = that.visibility
         this.containerImage = that.containerImage
         this.containerConfig = that.containerConfig
         this.platform = that.platform
@@ -261,6 +266,7 @@ class WaveContainerRecord {
         this.user = that.user
         this.workspaceId = that.workspaceId
         this.owner = that.owner
+        this.visibility = that.visibility
         this.containerImage = that.containerImage
         this.containerConfig = that.containerConfig
         this.platform = that.platform
@@ -306,6 +312,7 @@ class WaveContainerRecord {
         this.user = user
         this.workspaceId = that.workspaceId
         this.owner = that.owner
+        this.visibility = that.visibility
         this.containerImage = that.containerImage
         this.containerConfig = that.containerConfig
         this.platform = that.platform

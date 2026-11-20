@@ -47,6 +47,7 @@ import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.ScanMode
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
+import io.seqera.wave.api.Visibility
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.core.ContainerPlatform
@@ -85,6 +86,7 @@ import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.RecordOwner
 import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
@@ -344,7 +346,7 @@ class ContainerController {
         // ignore everything that's not a public (community) repo
         if( !buildConfig.defaultPublicRepository )
             return repo
-        if( !repo.startsWith(buildConfig.defaultPublicRepository) )
+        if( !buildConfig.isCommunityRepo(repo) )
             return repo
 
         // check if the repository does use any reserved word
@@ -366,6 +368,21 @@ class ContainerController {
             // to community registry which only allows build with Packages spec
             return repo + (strategy==null || strategy==ImageNameStrategy.imageSuffix ? '/library' : '/library/build')
         }
+    }
+
+    /**
+     * The visibility a record is actually created with. {@code private} is honoured only when the
+     * request has an owner and does not target the community repository. Anything else is public
+     * silently, never an error: an anonymous {@code private} is ignored so no released client breaks.
+     */
+    protected String resolveVisibility(SubmitContainerTokenRequest req, PlatformId identity, String buildRepository) {
+        if( !Visibility.isPrivate(req.visibility) )
+            return Visibility.PUBLIC
+        if( RecordOwner.of(identity) == null )
+            return Visibility.PUBLIC
+        if( buildConfig.isCommunityRepo(buildRepository) )
+            return Visibility.PUBLIC
+        return Visibility.PRIVATE
     }
 
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
@@ -399,8 +416,7 @@ class ContainerController {
         // use 'imageSuffix' strategy by default for public repo images
         final nameStrategy = req.nameStrategy==null
                 && buildRepository
-                && buildConfig.defaultPublicRepository
-                && buildRepository.startsWith(buildConfig.defaultPublicRepository) ? ImageNameStrategy.imageSuffix : req.nameStrategy
+                && buildConfig.isCommunityRepo(buildRepository) ? ImageNameStrategy.imageSuffix : req.nameStrategy
 
         checkContainerSpec(containerSpec)
 
@@ -431,7 +447,9 @@ class ContainerController {
                 format,
                 maxDuration,
                 req.buildCompression,
-                req.buildTemplate
+                req.buildTemplate,
+                false,          // noEmail
+                resolveVisibility(req, identity, buildRepository)
         )
     }
 
@@ -547,6 +565,7 @@ class ContainerController {
         String scanId
         ChildRefs scanChildIds = null
         Boolean succeeded
+        String visibility
         if( req.containerFile && ContainerPlatform.of(req.containerPlatform).isMultiArch() ) {
             if( !buildService ) throw new UnsupportedBuildServiceException()
             final build0 = makeBuildRequest(req, identity, ip)
@@ -562,6 +581,7 @@ class ContainerController {
             scanId = build.scanId
             scanChildIds = build.scanChildIds
             succeeded = track.succeeded
+            visibility = build.visibility
             type = ContainerRequest.Type.Build
         }
         else if( req.containerFile ) {
@@ -575,11 +595,13 @@ class ContainerController {
             buildNew = !track.cached
             scanId = build.scanId
             succeeded = track.succeeded
+            visibility = build.visibility
             type = ContainerRequest.Type.Build
         }
         else if( req.mirror ) {
             if( !mirrorService ) throw new UnsupportedMirrorServiceException()
             final mirror = makeMirrorRequest(req, identity, digest)
+            visibility = mirror.visibility
             final track = checkMirror(mirror, identity, req.dryRun)
             targetImage = track.targetImage
             targetContent = null
@@ -608,6 +630,8 @@ class ContainerController {
             type = ContainerRequest.Type.Container
             // when there's a scan, return null because the scan status is not known
             succeeded = scanId==null ? true : null
+            // no build or mirror on this path, so there is no target repository to check
+            visibility = resolveVisibility(req, identity, null)
         }
         else
             throw new IllegalStateException("Specify either 'containerImage' or 'containerFile' attribute")
@@ -634,7 +658,8 @@ class ContainerController {
                 req.dryRun,
                 succeeded,
                 Instant.now(),
-                req.soci && sociConfig!=null
+                req.soci && sociConfig!=null,
+                visibility
         )
     }
 
@@ -671,7 +696,8 @@ class ContainerController {
                 scanId,
                 Instant.now(),
                 offset,
-                identity
+                identity,
+                resolveVisibility(request, identity, request.buildRepository)
         )
     }
 
@@ -720,6 +746,8 @@ class ContainerController {
     }
 
     void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException {
+        if( !Visibility.isValid(req.visibility) )
+            throw new BadRequestException("Invalid value for attribute `visibility`: $req.visibility")
         String msg
         //check conda file size
         if( req.condaFile && buildConfig && req.condaFile.length() > buildConfig.maxCondaFileSize )

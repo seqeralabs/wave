@@ -99,6 +99,8 @@ model ContainerRequest {
   towerRefreshToken?: string;
   @doc("ID of the Seqera Platform workspace from where the container registry credentials are retrieved (optional). When omitted the personal workspace is used.")
   towerWorkspaceId?: int64;
+  @doc("Visibility of the records produced by this request. When omitted the records are public. `private` applies only to a request carrying a Seqera Platform access token, and never to the community repository; in both cases it is ignored and the records are public.")
+  visibility?: "public" | "private";
   @doc("ID of the Seqera Platform workspace from which this container request originates (optional).")
   workflowId?: string;
   @doc("The build template that should be used to build the container image. Supported templates:\n- 'conda-pixi/v1': Uses Pixi package manager for modern, reproducible conda environments with multi-stage builds\n- 'conda-micromamba/v2': Uses Micromamba 2.x with multi-stage builds for optimized conda environments\n- Default: Uses standard conda/micromamba v1 template when not specified")
