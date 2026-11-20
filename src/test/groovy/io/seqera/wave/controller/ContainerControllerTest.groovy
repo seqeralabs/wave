@@ -110,7 +110,7 @@ class ContainerControllerTest extends Specification {
     @MockBean(RegistryProxyService)
     RegistryProxyService mockProxy() {
         Mock(RegistryProxyService) {
-            getContainerImageDigest(_,_) >> 'sha256:mock-digest'
+            getImageDigestOrUnavailable(_,_) >> 'sha256:mock-digest'
         }
     }
 
@@ -276,7 +276,7 @@ class ContainerControllerTest extends Specification {
         when:
         def data = controller.makeRequestData(req, user, "")
         then:
-        1 * proxyRegistry.getContainerImageDigest(_,_) >> null
+        1 * proxyRegistry.getImageDigestOrUnavailable(_,_) >> null
         1 * builder.buildImage(_) >> new BuildTrack('1', 'wave/build:be9ee6ac1eeff4b5', false, true)
         and:
         data.containerFile == DOCKER
@@ -305,7 +305,7 @@ class ContainerControllerTest extends Specification {
         when:
         def data = controller.makeRequestData(req, user, "")
         then:
-        1 * proxyRegistry.getContainerImageDigest(_,_) >> 'abc'
+        1 * proxyRegistry.getImageDigestOrUnavailable(_,_) >> 'abc'
         1 * persistenceService.loadBuildSucceed(_,'abc')
         0 * builder.buildImage(_) >> null
         and:
@@ -334,7 +334,7 @@ class ContainerControllerTest extends Specification {
         when:
         def data = controller.makeRequestData(req, user, "")
         then:
-        1 * proxyRegistry.getContainerImageDigest(_,_) >> '123'
+        1 * proxyRegistry.getImageDigestOrUnavailable(_,_) >> '123'
         0 * builder.buildImage(_) >> null
         and:
         data.containerFile == DOCKER
@@ -360,8 +360,8 @@ class ContainerControllerTest extends Specification {
         when:
         def data = controller.makeRequestData(req, user, "")
         then:
-        1 * proxyRegistry.getContainerImageDigest(SOURCE, user) >> 'sha256:12345'
-        1 * proxyRegistry.getContainerImageDigest(TARGET, user) >> null
+        1 * proxyRegistry.getImageDigestOrUnavailable(SOURCE, user) >> 'sha256:12345'
+        1 * proxyRegistry.getImageDigestOrUnavailable(TARGET, user) >> null
         and:
         data.identity.userId == 100
         data.containerImage ==  TARGET
@@ -390,8 +390,8 @@ class ContainerControllerTest extends Specification {
         when:
         def data = controller.makeRequestData(req, user, "")
         then:
-        1 * proxyRegistry.getContainerImageDigest('docker.io/source/image:latest', user) >> 'sha256:12345'
-        1 * proxyRegistry.getContainerImageDigest('quay.io/source/image:latest', user) >> null
+        1 * proxyRegistry.getImageDigestOrUnavailable('docker.io/source/image:latest', user) >> 'sha256:12345'
+        1 * proxyRegistry.getImageDigestOrUnavailable('quay.io/source/image:latest', user) >> null
         1 * mirrorService.mirrorImage(_) >> new BuildTrack('mr-1', 'quay.io/source/image:latest', false, null)
         and: 'the mirror is in progress'
         1 * sociPush.sociTarget('quay.io/source/image:latest', ContainerPlatform.of('arm64'), user, null) >> RESULT

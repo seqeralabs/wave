@@ -193,13 +193,13 @@ class RegistryProxyServiceTest extends Specification {
         new ExecutionException(new HttpResponseException(403, 'Forbidden'))                                         | false
     }
 
-    def 'should get the container image digest' () {
+    def 'should get the image digest or fail when unavailable' () {
         given:
         def service = Spy(RegistryProxyService)
         def IMAGE = 'docker.io/library/ubuntu:24.04'
 
         when:
-        def result = service.getContainerImageDigest(IMAGE, PlatformId.NULL)
+        def result = service.getImageDigestOrUnavailable(IMAGE, PlatformId.NULL)
         then:
         1 * service.getImageDigest0(IMAGE, PlatformId.NULL, false) >> { if( RESPONSE instanceof Exception ) throw RESPONSE; CompletableFuture.completedFuture(RESPONSE) }
         and:
@@ -217,7 +217,7 @@ class RegistryProxyServiceTest extends Specification {
         def IMAGE = 'docker.io/library/ubuntu:24.04'
 
         when:
-        service.getContainerImageDigest(IMAGE, PlatformId.NULL)
+        service.getImageDigestOrUnavailable(IMAGE, PlatformId.NULL)
         then:
         1 * service.getImageDigest0(IMAGE, PlatformId.NULL, false) >> { throw new ExecutionException(new HttpResponseException(HttpStatus.REQUEST_TIMEOUT, 'Timeout error connecting to platform', (Throwable)null)) }
         and:

@@ -375,7 +375,7 @@ class RegistryProxyService {
      * @return The image digest or {@code null} when the image does not exist or access is not authorized
      * @throws HttpResponseException with status 503 when Seqera Platform cannot be reached
      */
-    String getContainerImageDigest(String containerImage, PlatformId identity) {
+    String getImageDigestOrUnavailable(String containerImage, PlatformId identity) {
         try {
             return getImageDigest0(containerImage, identity, false).get()
         }
