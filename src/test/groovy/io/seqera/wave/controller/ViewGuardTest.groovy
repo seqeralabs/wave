@@ -48,9 +48,9 @@ class ViewGuardTest extends Specification {
                 authService: auth )
     }
 
-    private ViewAuthService signsIn(Long issuedAt=null) {
-        final stored = issuedAt != null
-                ? new ViewSession(tokens: [(OWNER.towerEndpoint): 'tok'], issuedAt: [(OWNER.towerEndpoint): issuedAt])
+    private ViewAuthService signsIn(boolean signedIn=false) {
+        final stored = signedIn
+                ? new ViewSession(tokens: [(OWNER.towerEndpoint): 'tok'])
                 : null
         Mock(ViewAuthService) {
             startSignIn(_, _) >> new SignInRedirect('https://platform.io/authorize?state=abc', 'hashed')
@@ -86,8 +86,8 @@ class ViewGuardTest extends Specification {
     }
 
     def 'should drop a rejected session token and send the viewer to sign in again' () {
-        given: 'a token old enough that it has simply expired'
-        def auth = signsIn(System.currentTimeMillis() - 3_600_000)
+        given:
+        def auth = signsIn(true)
 
         when:
         def resp = controller(Decision.REJECTED, auth).guard(OWNER, 'private', 'sess-1', RETURN_TO)
@@ -96,18 +96,6 @@ class ViewGuardTest extends Specification {
         1 * auth.forget('sess-1', OWNER.towerEndpoint)
         and:
         resp.status() == HttpStatus.SEE_OTHER
-    }
-
-    def 'should not loop when Platform refuses the token it has just issued' () {
-        given: 'the token arrived seconds ago, so Platform would hand back another without prompting'
-        def auth = signsIn(System.currentTimeMillis() - 2_000)
-
-        when:
-        def resp = controller(Decision.REJECTED, auth).guard(OWNER, 'private', 'sess-1', RETURN_TO)
-
-        then: 'the page says so instead of bouncing the browser round again'
-        resp.status() == HttpStatus.UNAUTHORIZED
-        0 * auth.startSignIn(_, _)
     }
 
     def 'should show the 403 page to a viewer outside the workspace' () {

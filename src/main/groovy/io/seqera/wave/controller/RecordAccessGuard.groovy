@@ -19,12 +19,10 @@
 package io.seqera.wave.controller
 
 import groovy.transform.CompileStatic
-import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.seqera.wave.service.access.RecordAccessService
 import io.seqera.wave.service.view.auth.ViewAuthClient
-import io.seqera.wave.service.view.auth.ViewAuthService
 import io.seqera.wave.tower.RecordOwner
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -44,10 +42,6 @@ class RecordAccessGuard {
     @Inject
     private RecordAccessService accessService
 
-    @Inject
-    @Nullable
-    private ViewAuthService authService
-
     /**
      * Lets a caller name the Platform it believes it is talking to.
      *
@@ -60,26 +54,20 @@ class RecordAccessGuard {
 
     /**
      * @return null when the caller may read the record, otherwise the refusal to send.
-     *      A bearer token wins; the view session is the fallback so a signed-in browser can
-     *      follow the artifact links rendered on a view page.
+     *      Bearer only: a browser session must not authenticate this API, so the view pages
+     *      serve their artifact links from /view instead.
      */
-    HttpResponse<?> refuse(RecordOwner owner, String visibility, String authorization, String sessionId, String namedEndpoint=null) {
-        // a public record admits everyone, so don't read the session store to resolve a token
-        // the check would discard on its first line
+    HttpResponse<?> refuse(RecordOwner owner, String visibility, String authorization, String namedEndpoint=null) {
         if( !RecordAccessService.isPrivate(owner, visibility) )
             return null
         final bearer = bearer(authorization)
         if( bearer && !intendedFor(namedEndpoint, owner.towerEndpoint) )
             return HttpResponse.unauthorized()
-        final token = bearer ?: authService?.tokenFor(sessionId, owner?.towerEndpoint)
-        final decision = accessService.check(owner, visibility, token)
+        final decision = accessService.check(owner, visibility, bearer)
         switch (decision) {
             case RecordAccessService.Decision.ALLOW:
                 return null
             case RecordAccessService.Decision.REJECTED:
-                // a rejected session token is no longer any use: drop it so the next page signs in again
-                if( !bearer )
-                    authService?.forget(sessionId, owner?.towerEndpoint)
                 return HttpResponse.unauthorized()
             case RecordAccessService.Decision.UNAUTHORIZED:
                 return HttpResponse.unauthorized()
