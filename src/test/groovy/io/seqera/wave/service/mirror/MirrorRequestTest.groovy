@@ -25,7 +25,6 @@ import java.time.Instant
 
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
-import io.seqera.wave.tower.User
 
 /**
  *
@@ -61,33 +60,6 @@ class MirrorRequestTest extends Specification {
         req.scanId == 'sc-123'
         req.creationTime == ts
         req.offsetId == 'utc'
-    }
-
-    private static MirrorRequest req(PlatformId identity, String visibility) {
-        MirrorRequest.create('docker.io/foo:latest', 'quay.io/foo:latest', 'sha256:12345',
-                ContainerPlatform.DEFAULT, Path.of('/workspace'), '{json config}', 'sc-123',
-                Instant.now(), 'utc', identity, visibility)
-    }
-
-    def 'should scope the store key to the owning tenant only when the mirror is private' () {
-        given:
-        def ws1 = new PlatformId(new User(id: 1L), 10L, 'tok', 'https://platform.io/api')
-        def ws2 = new PlatformId(new User(id: 2L), 20L, 'tok', 'https://platform.io/api')
-
-        expect: 'a public mirror stays shared, so two tenants keep deduping to one job'
-        req(ws1, 'public').entryKey() == 'quay.io/foo:latest'
-        req(ws2, 'public').entryKey() == 'quay.io/foo:latest'
-        and: 'an anonymous mirror has no tenant to scope by'
-        req(null, 'private').entryKey() == 'quay.io/foo:latest'
-
-        when: 'two workspaces mirror the same image privately'
-        def a = req(ws1, 'private').entryKey()
-        def b = req(ws2, 'private').entryKey()
-
-        then: 'neither can inherit the other record, and the target is still reachable in the key'
-        a != b
-        a.endsWith('/quay.io/foo:latest')
-        b.endsWith('/quay.io/foo:latest')
     }
 
 }

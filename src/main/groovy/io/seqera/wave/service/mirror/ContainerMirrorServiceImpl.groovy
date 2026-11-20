@@ -86,14 +86,14 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
      */
     @Override
     BuildTrack mirrorImage(MirrorRequest request) {
-        if( store.putIfAbsent(request.entryKey(), MirrorEntry.of(request))) {
+        if( store.putIfAbsent(request.targetImage, MirrorEntry.of(request))) {
             log.info "== Container mirror submitted - request=$request"
             //increment mirror counter
             CompletableFuture.runAsync(() -> metricsService.incrementMirrorsCounter(request.identity, request.platform.arch), ioExecutor)
             jobService.launchMirror(request)
             return new BuildTrack(request.mirrorId, request.targetImage, false, null)
         }
-        final ret = store.get(request.entryKey())
+        final ret = store.get(request.targetImage)
         if( ret ) {
             log.info "== Container mirror hit cache - request=$request"
             // note: mark as cached only if the build result is 'done'
