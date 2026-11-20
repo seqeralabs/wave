@@ -503,7 +503,7 @@ class ContainerController {
 
     protected String getContainerDigest(String containerImage, PlatformId identity) {
         containerImage
-                ? registryProxyService.getContainerImageDigest(containerImage, identity)
+                ? registryProxyService.getImageDigest(containerImage, identity)
                 : null
     }
 

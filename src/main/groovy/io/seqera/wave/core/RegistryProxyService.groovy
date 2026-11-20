@@ -359,42 +359,18 @@ class RegistryProxyService {
         }
         catch(Exception e) {
             log.warn "Unable to retrieve digest for image '${containerImage}' -- cause: ${e.message}"
-            return null
-        }
-    }
-
-    /**
-     * Retrieve the digest of the image in a container request.
-     *
-     * Unlike {@link #getImageDigest(java.lang.String, io.seqera.wave.tower.PlatformId, boolean)} it does not report
-     * the image as missing when the registry credentials cannot be fetched because Seqera Platform is unreachable
-     * (e.g. a pairing connection drop): it fails with a 503 instead, so that the client retries the request.
-     *
-     * @param containerImage The container image name
-     * @param identity The identity used to resolve the registry credentials
-     * @return The image digest or {@code null} when the image does not exist or access is not authorized
-     * @throws HttpResponseException with status 503 when Seqera Platform cannot be reached
-     */
-    String getContainerImageDigest(String containerImage, PlatformId identity) {
-        try {
-            return getImageDigest0(containerImage, identity, false).get()
-        }
-        catch(Exception e) {
-            log.warn "Unable to retrieve digest for image '${containerImage}' -- cause: ${e.message}"
+            // fail with 503 instead of reporting the image as missing, so that the client retries the request
             if( isPlatformUnavailable(e) )
                 throw new HttpResponseException(HttpStatus.SERVICE_UNAVAILABLE, "Unable to fetch the registry credentials for image '${containerImage}' from Seqera Platform - try again later", e)
             return null
         }
     }
 
-    /**
-     * Check whether an error is caused by Seqera Platform being unreachable or failing, i.e. a timeout,
-     * a rate limit or a server error. Only the Platform client raises {@link HttpResponseException}.
-     */
+    // a Platform timeout, rate limit or server error -- only the Platform client raises HttpResponseException
     static protected boolean isPlatformUnavailable(Throwable t) {
         for( Throwable it=t; it!=null; it=it.cause ) {
             if( it instanceof HttpResponseException ) {
-                final code = it.statusCode()?.code ?: 0
+                final code = it.statusCode().code
                 return code==408 || code==429 || code>=500
             }
         }

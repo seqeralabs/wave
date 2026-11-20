@@ -111,7 +111,6 @@ class ContainerControllerTest extends Specification {
     RegistryProxyService mockProxy() {
         Mock(RegistryProxyService) {
             getImageDigest(_,_) >> 'sha256:mock-digest'
-            getContainerImageDigest(_,_) >> 'sha256:mock-digest'
         }
     }
 
@@ -361,7 +360,7 @@ class ContainerControllerTest extends Specification {
         when:
         def data = controller.makeRequestData(req, user, "")
         then:
-        1 * proxyRegistry.getContainerImageDigest(SOURCE, user) >> 'sha256:12345'
+        1 * proxyRegistry.getImageDigest(SOURCE, user) >> 'sha256:12345'
         1 * proxyRegistry.getImageDigest(TARGET, user) >> null
         and:
         data.identity.userId == 100
@@ -391,7 +390,7 @@ class ContainerControllerTest extends Specification {
         when:
         def data = controller.makeRequestData(req, user, "")
         then:
-        1 * proxyRegistry.getContainerImageDigest('docker.io/source/image:latest', user) >> 'sha256:12345'
+        1 * proxyRegistry.getImageDigest('docker.io/source/image:latest', user) >> 'sha256:12345'
         1 * proxyRegistry.getImageDigest('quay.io/source/image:latest', user) >> null
         1 * mirrorService.mirrorImage(_) >> new BuildTrack('mr-1', 'quay.io/source/image:latest', false, null)
         and: 'the mirror is in progress'
