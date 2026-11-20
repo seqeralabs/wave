@@ -193,13 +193,13 @@ class RegistryProxyServiceTest extends Specification {
         new ExecutionException(new HttpResponseException(403, 'Forbidden'))                                         | false
     }
 
-    def 'should get the image digest' () {
+    def 'should get the container image digest' () {
         given:
         def service = Spy(RegistryProxyService)
         def IMAGE = 'docker.io/library/ubuntu:24.04'
 
         when:
-        def result = service.getImageDigest(IMAGE, PlatformId.NULL)
+        def result = service.getContainerImageDigest(IMAGE, PlatformId.NULL)
         then:
         1 * service.getImageDigest0(IMAGE, PlatformId.NULL, false) >> { if( RESPONSE instanceof Exception ) throw RESPONSE; CompletableFuture.completedFuture(RESPONSE) }
         and:
@@ -217,13 +217,26 @@ class RegistryProxyServiceTest extends Specification {
         def IMAGE = 'docker.io/library/ubuntu:24.04'
 
         when:
-        service.getImageDigest(IMAGE, PlatformId.NULL)
+        service.getContainerImageDigest(IMAGE, PlatformId.NULL)
         then:
         1 * service.getImageDigest0(IMAGE, PlatformId.NULL, false) >> { throw new ExecutionException(new HttpResponseException(HttpStatus.REQUEST_TIMEOUT, 'Timeout error connecting to platform', (Throwable)null)) }
         and:
         def e = thrown(HttpResponseException)
         e.statusCode() == HttpStatus.SERVICE_UNAVAILABLE
         e.message.startsWith("Unable to fetch the registry credentials for image '$IMAGE' from Seqera Platform")
+    }
+
+    def 'should return null digest when platform is unavailable' () {
+        given:
+        def service = Spy(RegistryProxyService)
+        def IMAGE = 'docker.io/library/ubuntu:24.04'
+
+        when:
+        def result = service.getImageDigest(IMAGE, PlatformId.NULL)
+        then:
+        1 * service.getImageDigest0(IMAGE, PlatformId.NULL, false) >> { throw new ExecutionException(new HttpResponseException(HttpStatus.REQUEST_TIMEOUT, 'Timeout error connecting to platform', (Throwable)null)) }
+        and:
+        result == null
     }
 
 }

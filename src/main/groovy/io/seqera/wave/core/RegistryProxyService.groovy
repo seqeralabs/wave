@@ -359,7 +359,28 @@ class RegistryProxyService {
         }
         catch(Exception e) {
             log.warn "Unable to retrieve digest for image '${containerImage}' -- cause: ${e.message}"
-            // fail with 503 instead of reporting the image as missing, so that the client retries the request
+            return null
+        }
+    }
+
+    /**
+     * Retrieve the digest of an image for a container request.
+     *
+     * Unlike {@link #getImageDigest(java.lang.String, io.seqera.wave.tower.PlatformId, boolean)} it does not report
+     * the image as missing when the registry credentials cannot be fetched because Seqera Platform is unreachable
+     * (e.g. a pairing connection drop): it fails with a 503 instead, so that the client retries the request.
+     *
+     * @param containerImage The container image name
+     * @param identity The identity used to resolve the registry credentials
+     * @return The image digest or {@code null} when the image does not exist or access is not authorized
+     * @throws HttpResponseException with status 503 when Seqera Platform cannot be reached
+     */
+    String getContainerImageDigest(String containerImage, PlatformId identity) {
+        try {
+            return getImageDigest0(containerImage, identity, false).get()
+        }
+        catch(Exception e) {
+            log.warn "Unable to retrieve digest for image '${containerImage}' -- cause: ${e.message}"
             if( isPlatformUnavailable(e) )
                 throw new HttpResponseException(HttpStatus.SERVICE_UNAVAILABLE, "Unable to fetch the registry credentials for image '${containerImage}' from Seqera Platform - try again later", e)
             return null
