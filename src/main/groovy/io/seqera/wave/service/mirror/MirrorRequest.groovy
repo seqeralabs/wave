@@ -26,6 +26,7 @@ import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.RecordOwner
 import io.seqera.random.LongRndKey
 /**
  * Model a container mirror request
@@ -94,7 +95,7 @@ class MirrorRequest {
      */
     final PlatformId identity
 
-    /** a Visibility value; null is read as public */
+    /** a Visibility value */
     final String visibility
 
     static MirrorRequest create(String sourceImage, String targetImage, String digest, ContainerPlatform platform, Path workspace, String authJson, String scanId, Instant ts, String offsetId, PlatformId identity, String visibility = null) {
@@ -118,6 +119,20 @@ class MirrorRequest {
                 identity,
                 visibility
         )
+    }
+
+    /**
+     * The mirror store key. A private mirror is scoped to the owning tenant, so two workspaces
+     * mirroring the same image keep their own record rather than the first arrival owning it.
+     */
+    String entryKey() {
+        final tenant = tenant()
+        return tenant ? "$tenant/$targetImage".toString() : targetImage
+    }
+
+    /** Null for a public mirror, which stays shared across tenants */
+    String tenant() {
+        return RecordOwner.tenantOf(identity, visibility)
     }
 
     String getMirrorId() {

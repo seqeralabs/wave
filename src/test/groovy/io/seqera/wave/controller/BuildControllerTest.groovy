@@ -47,6 +47,7 @@ import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.ContainerHelper
+import io.seqera.wave.tower.RecordOwner
 import jakarta.inject.Inject
 /**
  *
@@ -171,4 +172,28 @@ class BuildControllerTest extends Specification {
         res.body() == condaLock
     }
 
+
+    def 'should not return the owner in the build record response' () {
+        given:
+        def owner = new RecordOwner(towerEndpoint: 'https://api.cloud.seqera.io', userId: 100L, workspaceId: 200L)
+        def record = new WaveBuildRecord(
+                buildId: 'bd-owner1234_1',
+                targetImage: 'foo.com/repo:latest',
+                startTime: Instant.now(),
+                owner: owner )
+        and:
+        persistenceService.saveBuildAsync(record)
+
+        when: 'the record is read back over HTTP, as a client sees it'
+        def res = client.toBlocking().exchange(HttpRequest.GET("/v1alpha1/builds/${record.buildId}"), String)
+
+        then:
+        res.status.code == 200
+        res.body().contains(record.buildId)
+        and: 'the owner is absent from the response'
+        !res.body().contains('"owner"')
+        !res.body().contains('api.cloud.seqera.io')
+        and: 'while the stored record still carries it'
+        persistenceService.loadBuild(record.buildId).owner == owner
+    }
 }

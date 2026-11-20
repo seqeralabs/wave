@@ -136,8 +136,8 @@ class CleanupServiceImpl implements Runnable, CleanupService {
         }
     }
 
-    protected void cleanupScanId0(String scanId) {
-        scanIdStore.remove(scanId)
+    protected void cleanupScanId0(String key) {
+        scanIdStore.remove(key)
     }
 
     @Override
@@ -161,7 +161,7 @@ class CleanupServiceImpl implements Runnable, CleanupService {
     }
 
     @Override
-    void cleanupScanId(String containerImage) {
-        store.add(SCANID_PREFIX + containerImage, scanConfig.failureDuration.toSeconds())
+    void cleanupScanId(String key) {
+        store.add(SCANID_PREFIX + key, scanConfig.failureDuration.toSeconds())
     }
 }

@@ -51,6 +51,20 @@ class HttpResponseException extends WaveException implements HttpError {
 
     HttpStatus statusCode() { statusCode }
 
+    /**
+     * @return true when this status appears anywhere in the cause chain. The call completes
+     *      through a future, so the answer usually arrives wrapped in an ExecutionException.
+     */
+    static boolean matches(Throwable e, HttpStatus status) {
+        for( Throwable t = e; t != null; t = t.cause ) {
+            if( t instanceof HttpResponseException && (t as HttpResponseException).statusCode() == status )
+                return true
+            if( t.cause === t )
+                break
+        }
+        return false
+    }
+
     @Override
     String getMessage() {
         def result = super.getMessage()

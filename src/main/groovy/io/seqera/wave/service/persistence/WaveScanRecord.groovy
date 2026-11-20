@@ -56,7 +56,7 @@ class WaveScanRecord implements Cloneable {
     String logs
     Path workDir
     @JsonIgnore @PersistOnly RecordOwner owner   // inherited from the parent; stored, not returned by the API
-    String visibility                            // inherited from the parent; null is read as public
+    String visibility                            // inherited from the parent; a Visibility value
 
     /* required by jackson deserialization - do not remove */
     WaveScanRecord() {}

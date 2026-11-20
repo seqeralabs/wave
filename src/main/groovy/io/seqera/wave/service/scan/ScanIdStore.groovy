@@ -46,6 +46,14 @@ class ScanIdStore extends AbstractStateStore<ScanId> {
         super(provider, new MoshiEncodeStrategy<ScanId>() {})
     }
 
+    /**
+     * The entry key. A private scan is scoped to the owning tenant, so the key must be built
+     * here by every caller - writing with the tenant and deleting without it silently misses.
+     */
+    static String key(String containerImage, String tenant) {
+        return tenant ? "$tenant/$containerImage".toString() : containerImage
+    }
+
     @Override
     protected String getPrefix() {
         return 'wave-scanid/v1'

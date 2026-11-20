@@ -35,6 +35,7 @@ import io.seqera.wave.tower.client.DescribeWorkflowResponse
 import io.seqera.wave.tower.client.GetCredentialsKeysResponse
 import io.seqera.wave.tower.client.ListCredentialsResponse
 import io.seqera.wave.tower.client.GetUserInfoResponse
+import io.seqera.wave.tower.client.ListWorkspacesResponse
 import io.seqera.wave.tower.client.Workflow
 import io.seqera.wave.tower.compute.ComputeEnv
 import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
@@ -88,6 +89,7 @@ class ClientCache extends AbstractTieredCache {
                 .withSubtype(GetCredentialsKeysResponse.class, GetCredentialsKeysResponse.simpleName)
                 .withSubtype(ListCredentialsResponse.class, ListCredentialsResponse.simpleName)
                 .withSubtype(GetUserInfoResponse.class, GetUserInfoResponse.simpleName)
+                .withSubtype(ListWorkspacesResponse.class, ListWorkspacesResponse.simpleName)
                 .withSubtype(User.class, User.simpleName)
                 .withSubtype(WorkflowLaunch.class, WorkflowLaunch.simpleName)
         // add legacy classes

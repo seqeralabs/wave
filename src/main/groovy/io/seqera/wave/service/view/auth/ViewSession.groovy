@@ -37,20 +37,31 @@ class ViewSession implements MoshiSerializable {
 
     Map<String,String> tokens = new HashMap<>()
 
+    /** When each token was issued, so a refusal moments after sign-in is not met with another one */
+    Map<String,Long> issuedAt = new HashMap<>()
+
     String tokenFor(String towerEndpoint) {
         return towerEndpoint ? tokens?.get(towerEndpoint) : null
     }
 
+    Long issuedAtFor(String towerEndpoint) {
+        return towerEndpoint ? issuedAt?.get(towerEndpoint) : null
+    }
+
     ViewSession without(String towerEndpoint) {
         final copy = new HashMap<String,String>(tokens ?: [:])
+        final when = new HashMap<String,Long>(issuedAt ?: [:])
         copy.remove(towerEndpoint)
-        return new ViewSession(tokens: copy)
+        when.remove(towerEndpoint)
+        return new ViewSession(tokens: copy, issuedAt: when)
     }
 
     ViewSession withToken(String towerEndpoint, String token) {
         final copy = new HashMap<String,String>(tokens ?: [:])
+        final when = new HashMap<String,Long>(issuedAt ?: [:])
         copy.put(towerEndpoint, token)
-        return new ViewSession(tokens: copy)
+        when.put(towerEndpoint, System.currentTimeMillis())
+        return new ViewSession(tokens: copy, issuedAt: when)
     }
 
 }

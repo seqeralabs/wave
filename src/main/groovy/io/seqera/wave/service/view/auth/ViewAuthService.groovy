@@ -22,11 +22,10 @@ import java.security.MessageDigest
 import java.security.SecureRandom
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Property
-import io.micronaut.core.convert.format.MapFormat
-import io.micronaut.core.naming.conventions.StringConvention
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.http.cookie.Cookie
+import io.micronaut.http.cookie.SameSite
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
@@ -45,6 +44,12 @@ class ViewAuthService {
 
     static final String COOKIE = 'wave-view-session'
 
+    /** Holds the hash of the state this browser started a sign-in with */
+    static final String STATE_COOKIE = 'wave-view-state'
+
+    /** The claim marker outlives the entry it consumes, so the state cannot be replayed */
+    static private final String CLAIMED = 'claimed/'
+
     private static final SecureRandom RANDOM = new SecureRandom()
 
     @Inject
@@ -60,17 +65,33 @@ class ViewAuthService {
     private String serverUrl
 
     /** Registered per paired Platform; sign-in is unavailable for any endpoint not listed */
-    @Property(name = 'wave.view.auth.clients')
-    @MapFormat(keyFormat = StringConvention.RAW, transformation = MapFormat.MapTransformation.FLAT)
+    @Inject
     @Nullable
-    private Map<String,String> clients
+    private List<ViewAuthClient> clients
+
+    protected ViewAuthClient client(String towerEndpoint) {
+        return towerEndpoint ? clients?.find { it.matches(towerEndpoint) } : null
+    }
 
     protected String clientId(String towerEndpoint) {
-        return clients?.get(towerEndpoint)?.tokenize('|')?.first()
+        return client(towerEndpoint)?.clientId
     }
 
     protected String clientSecret(String towerEndpoint) {
-        return clients?.get(towerEndpoint)?.tokenize('|')?.getAt(1)
+        return client(towerEndpoint)?.clientSecret
+    }
+
+    /**
+     * The state cookie, set with a lifetime and cleared with zero. Both go through here: a
+     * clearing Set-Cookie only takes effect when its path and attributes match the one that set it.
+     */
+    Cookie stateCookie(String value, long maxAge) {
+        return Cookie.of(STATE_COOKIE, value)
+                .path('/view/auth')
+                .httpOnly(true)
+                .secure(secureCookie())
+                .sameSite(SameSite.Lax)
+                .maxAge(maxAge)
     }
 
     /** A Secure cookie is dropped over plain http, which would loop a dev viewer through sign-in */
@@ -86,10 +107,14 @@ class ViewAuthService {
      * @return The Platform URL to redirect the browser to, or null when that Platform cannot
      *      sign viewers in.
      */
-    String startSignIn(String towerEndpoint, String returnTo) {
-        final discovery = discoveryClient.discover(towerEndpoint)
+    SignInRedirect startSignIn(String towerEndpoint, String returnTo) {
+        // the client id first: it is a config lookup, and it keeps the discovery fetch - and its
+        // cache - to the endpoints Wave can actually sign in to
         final id = clientId(towerEndpoint)
-        if( !id || !discovery?.usable() )
+        if( !id )
+            return null
+        final discovery = discoveryClient.discover(towerEndpoint)
+        if( !discovery?.usable() )
             return null
 
         final state = rnd()
@@ -104,17 +129,31 @@ class ViewAuthService {
                 state: state,
                 code_challenge: challengeOf(verifier),
                 code_challenge_method: 'S256' ]
-        return "${discovery.authorization_endpoint}?${OidcDiscoveryClient.formEncode(params)}".toString()
+        final url = "${discovery.authorization_endpoint}?${OidcDiscoveryClient.formEncode(params)}".toString()
+        return new SignInRedirect(url, challengeOf(state))
     }
 
-    PendingSignIn consume(String state) {
-        if( !state )
+    /**
+     * @return the pending sign-in, or null unless this is the browser that started it and the
+     *      first caller to claim the state. The claim is the atomic step: get-then-remove would
+     *      let two callbacks carrying one state both through.
+     */
+    PendingSignIn consume(String state, String stateHash) {
+        if( !state || !stateHash )
+            return null
+        if( !MessageDigest.isEqual(challengeOf(state).bytes, stateHash.bytes) )
             return null
         final pending = pendingStore.get(state)
-        if( pending )
-            pendingStore.remove(state)
+        // a claim marker carries no verifier: a state spelled 'claimed/<other>' finds one
+        if( !pending?.codeVerifier )
+            return null
+        // an empty marker: the store is typed to PendingSignIn, but this need not hold a verifier
+        if( !pendingStore.putIfAbsent(CLAIMED + state, new PendingSignIn()) )
+            return null
+        pendingStore.remove(state)
         return pending
     }
+
 
     /** @return the new session id, or null when the exchange failed */
     String completeSignIn(PendingSignIn pending, String code, String existingSessionId) {
@@ -136,6 +175,11 @@ class ViewAuthService {
         if( existingSessionId )
             sessionStore.remove(existingSessionId)
         return sessionId
+    }
+
+    /** @return the viewer's session, or null. One read for a caller that needs more than the token */
+    ViewSession session(String sessionId) {
+        return sessionId ? sessionStore.get(sessionId) : null
     }
 
     /** Drops a token Platform has rejected, so the next page starts a fresh sign-in */

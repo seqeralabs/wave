@@ -47,6 +47,28 @@ class TowerClientTest extends Specification{
         r2.workflow.id == 'wf-1'
     }
 
+    def 'listWorkspaces should refresh on the submit path and present as-is on the read path'() {
+        given:
+        def connector = Mock(TowerConnector)
+        def client = new TowerClient(connector: connector, cache: new ClientCache(null), accessCheckDuration: Duration.ofSeconds(60))
+        def auth = JwtAuth.of('http://foo.com', 'tok')
+        def resp = new ListWorkspacesResponse(orgsAndWorkspaces: [])
+
+        when: 'the submit path asks'
+        client.listWorkspaces('http://foo.com', auth, 7L)
+
+        then: 'it goes through the refreshing connector, so an expired token is swapped for the stored one'
+        1 * connector.sendAsync('http://foo.com', _, auth, ListWorkspacesResponse) >> CompletableFuture.completedFuture(resp)
+        0 * connector.sendAsyncAsPresented(_, _, _, _)
+
+        when: 'the read path asks'
+        client.listWorkspacesForAccess('http://foo.com', auth, 7L)
+
+        then: 'the token is sent exactly as presented, so a revoked one stops working'
+        1 * connector.sendAsyncAsPresented('http://foo.com', _, auth, ListWorkspacesResponse) >> CompletableFuture.completedFuture(resp)
+        0 * connector.sendAsync(_, _, _, _)
+    }
+
     def 'compose user info endpoint'() {
         expect:
         TowerClient.userInfoEndpoint(endpoint).toString() == expected

@@ -31,6 +31,7 @@ import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.client.GetCredentialsKeysResponse
 import io.seqera.wave.tower.client.GetUserInfoResponse
 import io.seqera.wave.tower.client.ListCredentialsResponse
+import io.seqera.wave.tower.client.ListWorkspacesResponse
 import io.seqera.wave.tower.compute.ComputeEnv
 import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
 import io.seqera.wave.tower.compute.WorkflowLaunch
@@ -62,6 +63,24 @@ class ClientCacheTest extends Specification implements RedisTestContainer {
         when:
         cache1.put(k, resp, TTL)
         then:
+        cache2.get(k) == resp
+    }
+
+    def 'should cache list workspaces response' () {
+        given: 'an unregistered subtype fails only on the L2 write, so it needs a real Redis to surface'
+        def TTL = Duration.ofSeconds(1)
+        def store = applicationContext.getBean(RedisL2TieredCache)
+        def cache1 = new ClientCache(store)
+        def cache2 = new ClientCache(store)
+        and:
+        def k = UUID.randomUUID().toString()
+        def resp = new ListWorkspacesResponse(orgsAndWorkspaces: [
+                new ListWorkspacesResponse.OrgAndWorkspace(orgId: 1L, orgName: 'org',
+                        workspaceId: 10L, workspaceName: 'wsp', roles: ['owner'] as Set) ])
+
+        when:
+        cache1.put(k, resp, TTL)
+        then: 'the entry survives the Redis round trip into another replica'
         cache2.get(k) == resp
     }
 
