@@ -26,8 +26,10 @@ import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
+import com.fasterxml.jackson.annotation.JsonIgnore
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
+import io.seqera.wave.tower.RecordOwner
 /**
  * Model a Wave container scan result
  *
@@ -53,6 +55,7 @@ class WaveScanRecord implements Cloneable {
     Integer exitCode
     String logs
     Path workDir
+    @JsonIgnore @PersistOnly RecordOwner owner   // inherited from the parent; stored, not returned by the API
 
     /* required by jackson deserialization - do not remove */
     WaveScanRecord() {}
@@ -106,6 +109,7 @@ class WaveScanRecord implements Cloneable {
         this.exitCode = scan.exitCode
         this.logs = sanitize0(scan.logs)
         this.workDir = scan.workDir
+        this.owner = scan.owner
     }
 
     private static String sanitize0(String str) {

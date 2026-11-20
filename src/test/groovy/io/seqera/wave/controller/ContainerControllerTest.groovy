@@ -70,6 +70,9 @@ import io.seqera.wave.service.request.ContainerRequestService
 import io.seqera.wave.service.request.TokenData
 import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.service.validation.ValidationServiceImpl
+import io.seqera.wave.service.scan.ContainerScanService
+import io.seqera.wave.service.scan.ScanId
+import io.seqera.wave.api.ScanMode
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
@@ -401,6 +404,46 @@ class ContainerControllerTest extends Specification {
 
         where:
         RESULT << ['quay.io/source/image:latest-soci', 'quay.io/source/image:latest']
+    }
+
+    def 'should not let the caller identity reach the build id or the scan id' () {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        // the scan id follows the target image, which embeds the container id
+        def scanService = Mock(ContainerScanService) {
+            getScanId(_, _, _, _) >> { String img, String d, ScanMode m, String f -> ScanId.of(img).toString() }
+        }
+        def controller = new ContainerController(
+                inspectService: dockerAuth,
+                buildConfig: buildConfig,
+                validationService: validationService,
+                scanService: scanService )
+        def submit = { new SubmitContainerTokenRequest(containerFile: encode('FROM foo')) }
+
+        when: 'the same content is submitted by three different callers'
+        def anonymous = controller.makeBuildRequest(submit(), PlatformId.NULL, '')
+        def userA = controller.makeBuildRequest(submit(),
+                new PlatformId(new User(id: 1), 10L, 'tok-a', 'https://api.cloud.seqera.io'), '')
+        def userB = controller.makeBuildRequest(submit(),
+                new PlatformId(new User(id: 2), 20L, 'tok-b', 'https://other.platform.io'), '')
+
+        then: 'the ids are content-addressed, so the caller cannot change them'
+        anonymous.containerId == userA.containerId
+        anonymous.containerId == userB.containerId
+        and:
+        anonymous.buildId == userA.buildId
+        anonymous.buildId == userB.buildId
+        and:
+        anonymous.targetImage == userA.targetImage
+        anonymous.targetImage == userB.targetImage
+        and:
+        anonymous.scanId == userA.scanId
+        anonymous.scanId == userB.scanId
+
+        and: 'while the identity itself is still carried on the request'
+        anonymous.identity == PlatformId.NULL
+        userA.identity.userId == 1
+        userB.identity.userId == 2
     }
 
     def 'should create build request' () {
