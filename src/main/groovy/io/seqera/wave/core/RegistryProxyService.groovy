@@ -388,7 +388,7 @@ class RegistryProxyService {
     }
 
     // a Platform timeout, rate limit or server error -- only the Platform client raises HttpResponseException
-    static protected boolean isPlatformUnavailable(Throwable t) {
+    static boolean isPlatformUnavailable(Throwable t) {
         for( Throwable it=t; it!=null; it=it.cause ) {
             if( it instanceof HttpResponseException ) {
                 final code = it.statusCode().code
