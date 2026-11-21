@@ -43,7 +43,9 @@ import static io.seqera.wave.model.ContentType.OCI_IMAGE_MANIFEST_V1
  * SOCI index manifest v2 to its image index.
  *
  * The manifest request is held until the zTOCs of the image layers are available, like for a container
- * build. When the indexing fails or times out, the container is served as it is. The documents are saved
+ * build, when the layers still to index are at least {@link SociConfig#awaitMinSize}; a smaller image is
+ * served as it is while its layers are indexed. When the indexing fails or times out, the container is
+ * served as it is. The documents are saved
  * in the {@link Storage}, the zTOC blobs are served from the zTOC repository.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -148,8 +150,12 @@ class SociInjector {
         Map<String,ZtocEntry> ztocs = service.findZtocs(digests)
         final missing = layers.findAll((Map it) -> !ztocs.containsKey(it.digest as String))
         if( missing ) {
-            log.debug "SOCI index awaiting for image ${client.registry.name}/${imageName} - indexed ${ztocs.size()} of ${layers.size()} layers"
             service.indexLayers("${client.registry.name}/${imageName}".toString(), missing, identity)
+            if( !worthAwaiting(missing) ) {
+                log.debug "SOCI index not awaited for image ${client.registry.name}/${imageName} - indexed ${ztocs.size()} of ${layers.size()} layers, the missing ones are below ${config.awaitMinSize} bytes"
+                return null
+            }
+            log.debug "SOCI index awaiting for image ${client.registry.name}/${imageName} - indexed ${ztocs.size()} of ${layers.size()} layers"
             if( !service.awaitLayers(missing.collect((Map it) -> it.digest as String), Duration.between(Instant.now(), deadline)) )
                 log.warn "SOCI index timed out for image ${client.registry.name}/${imageName} - serving it without SOCI index"
             ztocs = service.findZtocs(digests)
@@ -159,6 +165,17 @@ class SociInjector {
         final docs = SociManifestAssembler.assemble(manifest, ztocs, config.spanSize)
         saveDocs(imageName, docs)
         return docs
+    }
+
+    /**
+     * @return {@code true} when the layers still to index are large enough that holding the pull for
+     * their indexing pays off, see {@link SociConfig#awaitMinSize}
+     */
+    protected boolean worthAwaiting(List<Map> missing) {
+        long size = 0
+        for( Map it : missing )
+            size += it.size as long
+        return size >= config.awaitMinSize
     }
 
     protected void saveDocs(String imageName, SociDocs docs) {

@@ -16,7 +16,10 @@ image sharing that layer. Indexing starts when the container is requested, and t
 **Ephemeral containers** (pulled through Wave). Wave adds the SOCI index manifest to the image
 index it serves. As for a container build, the manifest request is held until the zTOCs of all the
 eligible layers are available, at most `wave.soci.await-timeout`. A layer is indexed once, so only
-the first pull of new layers waits.
+the first pull of new layers waits. The request is held only when the layers still to index add up to
+at least `wave.soci.await-min-size` (1 GiB): a regular pull of a smaller image takes less than the
+indexing it would wait for, so it is served without SOCI index while its layers are indexed in the
+background, and the next container request gets it.
 
 The indexing is warmed up when the container is requested: the request launches, in the background,
 the indexing of the eligible layers of the requested platform, and returns without waiting for it.

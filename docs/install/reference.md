@@ -510,6 +510,9 @@ Configure the SOCI lazy loading support, enabled by `wave.soci.enabled`. See [SO
 `wave.soci.await-timeout` *(optional)*
 : How long a container manifest request is held while its layers are indexed. When the indexing does not complete in time, the container is served without SOCI index. It covers all the platforms of the image and must stay below the containerd `image_pull_progress_timeout` (default: `3m`).
 
+`wave.soci.await-min-size` *(optional)*
+: A container manifest request is held for the indexing only when the eligible layers still to index add up to at least this size in bytes. A smaller image is served without SOCI index while its layers are indexed in the background (default: `1073741824`).
+
 `wave.soci.ztoc.duration` *(optional)*
 : How long a zTOC lookup is cached (default: `30d`).
 
