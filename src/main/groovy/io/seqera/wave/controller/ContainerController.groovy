@@ -277,14 +277,14 @@ class ContainerController {
 
         // prevent the use of container file and freeze without a custom build repository
         if( req.containerFile && req.freeze && !validationService.isCustomRepo(req.buildRepository) && (!v2 || (v2 && !req.packages)))
-            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode [1]")
+            throw new BadRequestException("Attribute `buildRepository` must be specified when freezing a Dockerfile: only Conda and pip packages can be frozen to the default Seqera Containers repository")
 
         // prevent the use of container image and freeze without a custom build repository
         if( req.containerImage && req.freeze && !validationService.isCustomRepo(req.buildRepository) )
-            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode [2]")
+            throw new BadRequestException("Attribute `buildRepository` must be specified when freezing an existing container image: only Conda and pip packages can be frozen to the default Seqera Containers repository")
 
         if( v2 && req.packages && req.freeze && !validationService.isCustomRepo(req.buildRepository) && !buildConfig.defaultPublicRepository )
-            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode [3]")
+            throw new BadRequestException("Attribute `buildRepository` must be specified when freezing packages: no default public repository is configured in this Wave deployment")
 
         if( v2 && req.packages ) {
             // generate the container file required to assemble the container
