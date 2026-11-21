@@ -23,6 +23,7 @@ import java.util.regex.Pattern
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
@@ -60,6 +61,7 @@ import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.service.scan.ScanType
 import io.seqera.wave.service.scan.ScanVulnerability
+import io.seqera.wave.service.visibility.RecordVisibilityService
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import org.reactivestreams.Publisher
@@ -103,6 +105,13 @@ class ViewController {
     private ContainerScanService scanService
 
     @Inject
+    private RecordVisibilityService visibilityService
+
+    @Inject
+    @Nullable
+    private MeterRegistry meterRegistry
+
+    @Inject
     @Nullable
     private ContainerMirrorService mirrorService
 
@@ -110,16 +119,43 @@ class ViewController {
     @Client("/")
     private HttpClient httpClient
 
-    @View("mirror-view")
     @Get('/mirrors/{mirrorId}')
     HttpResponse viewMirror(String mirrorId) {
         if( !mirrorService )
             throw new UnsupportedMirrorServiceException()
         final result = mirrorService.getMirrorResult(mirrorId)
         if( !result ){
-            return HttpResponse.ok(["error_message": "Unknown container mirror id '$mirrorId'"])
+            return HttpResponse.ok(new ModelAndView("mirror-view", ["error_message": "Unknown container mirror id '$mirrorId'"]))
         }
-        return HttpResponse.ok(renderMirrorView(result))
+        if( !visibilityService.isPublic(result.isPublic) )
+            return privateRecordView('mirror-view', "mirror '${mirrorId}'")
+        return HttpResponse.ok(new ModelAndView("mirror-view", renderMirrorView(result)))
+    }
+
+    static final private String PRIVATE_RECORD_MESSAGE =
+            'This record is not public. Sign in to Seqera Platform and open it in the Containers section.'
+
+    /**
+     * Shown in place of a record whose submitter marked it private. Each route renders its own
+     * template, putting the message in the slot those templates already use for an unknown id —
+     * the record body sits in the other branch, so nothing of it reaches the page.
+     *
+     * It answers 200: the record exists and the viewer is not being refused — Wave does not know
+     * who is asking and makes no authorisation decision, so a 403 would claim a decision it never
+     * made. These responses never appear in error-rate monitoring, which is why they are counted.
+     */
+    protected HttpResponse privateRecordView(String template, String what) {
+        return HttpResponse.ok(new ModelAndView(template, [error_message: withheld(what)]))
+    }
+
+    /**
+     * Records the withholding and returns the message to render. Separate from the response so the
+     * scan route, whose template gates the message behind its own keys, can reuse the rule.
+     */
+    protected String withheld(String what) {
+        log.debug "Withholding ${what} - record is not public"
+        meterRegistry?.counter('wave.view.private.records')?.increment()
+        return PRIVATE_RECORD_MESSAGE
     }
 
     protected Map<String,Object> renderMirrorView(MirrorResult result) {
@@ -157,8 +193,13 @@ class ViewController {
 
         // check all builds matching the pattern
         if( isBuildMissingSuffix(buildId) ) {
-            final builds = buildService.getAllBuilds(buildId)
+            final all = buildService.getAllBuilds(buildId)
+            final builds = all?.findAll( it -> visibilityService.isPublic(it.isPublic) )
             if( !builds ) {
+                // the matches exist but every one is private - saying "unknown id" would both
+                // mislead the viewer and hide the withholding from the counter
+                if( all )
+                    return privateRecordView('build-list', "builds matching '${buildId}'")
                 log.debug "Found not build with id: $buildId"
                 return HttpResponse.ok(new ModelAndView("build-list", ["error_message": "Unknown build id '$buildId'"]))
             }
@@ -175,6 +216,8 @@ class ViewController {
         if( !record ){
             return HttpResponse.ok(new ModelAndView("build-view", ["error_message": "Unknown build id '$buildId'"]))
         }
+        if( !visibilityService.isPublic(record.isPublic) )
+            return privateRecordView('build-view', "build '${buildId}'")
         return HttpResponse.ok(new ModelAndView("build-view", renderBuildView(record)))
     }
 
@@ -276,7 +319,6 @@ class ViewController {
         return binding
       }
 
-    @View("container-view")
     @Get('/containers/{token}')
     HttpResponse<?> viewContainer(String token) {
         // Go through ContainerRequestService (not PersistenceService directly) so the view sees the
@@ -286,6 +328,8 @@ class ViewController {
         // view endpoints, instead of returning a bare notFound body into the template.
         if( !data )
             throw new NotFoundException("Unknown container token: $token")
+        if( !visibilityService.isPublic(data.isPublic) )
+            return privateRecordView('container-view', "container request '${token}'")
         // return the response
         final binding = new HashMap(20)
         binding.request_token = token
@@ -324,7 +368,7 @@ class ViewController {
         binding.mirror_url =  data.mirror ? "$serverUrl/view/mirrors/${data.buildId}" : null
         binding.mirror_cached = data.mirror ? !data.buildNew : null
         binding.server_url = serverUrl
-        return HttpResponse.<Map<String,Object>>ok(binding)
+        return HttpResponse.ok(new ModelAndView("container-view", binding))
     }
 
     /**
@@ -387,8 +431,12 @@ class ViewController {
         }
         // check all scans matching the pattern
         if( isScanMissingSuffix(scanId) ) {
-            final scans = scanService.getAllScans(scanId)
+            final all = scanService.getAllScans(scanId)
+            final scans = all?.findAll( it -> visibilityService.isScanPublic(it) )
             if( !scans ) {
+                // withheld answers 200 here too - a 404 would claim the record does not exist
+                if( all )
+                    return privateRecordView('scan-list', "scans matching '${scanId}'")
                 log.debug "Found not scan with id: $scanId"
                 throw new NotFoundException("Unknown container scan id '$scanId'")
             }
@@ -402,19 +450,32 @@ class ViewController {
         final binding = new HashMap(10)
         try {
             final result = loadScanRecord(scanId)
-            log.debug "Render scan record=$result"
-            makeScanViewBinding(result, binding)
+            if( !visibilityService.isScanPublic(result) )
+                scanNotRendered(binding, withheld("scan '${scanId}'"))
+            else {
+                log.debug "Render scan record=$result"
+                makeScanViewBinding(result, binding)
+            }
         }
         catch (NotFoundException e){
-            binding.scan_exist = false
-            binding.scan_completed = true
-            binding.error_message = e.getMessage()
-            binding.should_refresh = false
+            scanNotRendered(binding, e.getMessage())
         }
 
         // return the response
         binding.put('server_url', serverUrl)
         return HttpResponse.ok(new ModelAndView("scan-view", binding))
+    }
+
+    /**
+     * The scan-view keys that suppress the report body. Shared by the withheld and not-found arms
+     * so the contract has one definition - scan-view.hbs gates the message behind these, unlike the
+     * build, mirror and container templates where error_message stands on its own.
+     */
+    private static void scanNotRendered(Map binding, String message) {
+        binding.scan_exist = false
+        binding.scan_completed = true
+        binding.error_message = message
+        binding.should_refresh = false
     }
 
     Map<String,?> renderScansView(List<WaveScanRecord> results) {

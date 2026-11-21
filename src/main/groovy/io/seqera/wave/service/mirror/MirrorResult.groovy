@@ -56,6 +56,8 @@ class MirrorResult {
     final Duration duration
     final Integer exitCode
     final String logs
+    /** Whether this record's metadata may be rendered by Wave's view pages; null means public */
+    final Boolean isPublic
 
     boolean succeeded() {
         status==Status.COMPLETED && exitCode==0
@@ -77,7 +79,8 @@ class MirrorResult {
                 Status.COMPLETED,
                 Duration.between(this.creationTime, Instant.now()),
                 exitCode,
-                logs
+                logs,
+                this.isPublic
         )
     }
 
@@ -94,7 +97,11 @@ class MirrorResult {
                 request.identity?.user?.email,
                 request.identity?.user?.id,
                 request.scanId,
-                Status.PENDING
+                Status.PENDING,
+                null,   // duration
+                null,   // exitCode
+                null,   // logs
+                request.isPublic
         )
     }
 

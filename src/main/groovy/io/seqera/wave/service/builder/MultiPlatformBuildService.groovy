@@ -138,6 +138,7 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
                 format: templateRequest.format,
                 compression: templateRequest.compression,
                 buildTemplate: templateRequest.buildTemplate,
+                isPublic: templateRequest.isPublic,
                 buildChildIds: buildChildIds,
                 scanChildIds: templateRequest.scanChildIds
         )
@@ -333,7 +334,8 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
                 template.maxDuration,
                 template.compression,
                 template.buildTemplate,
-                true    // noEmail - suppress individual sub-build notifications
+                true,   // noEmail - suppress individual sub-build notifications
+                template.isPublic
         )
     }
 }

@@ -295,6 +295,8 @@ class ContainerController {
         if( !req.containerPlatform )
             req.containerPlatform = ContainerPlatform.DEFAULT.toString()
 
+        requireIdentityForPrivate(req, identity)
+
         // multi-platform validation
         final parsedPlatform = ContainerPlatform.of(req.containerPlatform)
         if( parsedPlatform.isMultiArch() ) {
@@ -368,6 +370,21 @@ class ContainerController {
         }
     }
 
+    /**
+     * A private record has to be readable somewhere else, and Platform indexes only what it
+     * launched. Honouring {@code isPublic=false} for a caller Wave cannot identify would withhold
+     * the page and point the viewer at a Platform holding no record of it, leaving the build
+     * readable nowhere.
+     *
+     * This refuses rather than quietly recording the request as public: silently doing the opposite
+     * of what a privacy flag asked for is the worse failure, because the caller walks away believing
+     * the record is private. No client sends the field yet, so nothing in the field can hit this.
+     */
+    protected void requireIdentityForPrivate(SubmitContainerTokenRequest req, PlatformId identity) {
+        if( Boolean.FALSE == req.isPublic && identity?.userId == null )
+            throw new BadRequestException("Attribute `isPublic=false` requires a Seqera Platform access token")
+    }
+
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
         if( !buildConfig )
             throw new UnsupportedBuildServiceException()
@@ -431,7 +448,9 @@ class ContainerController {
                 format,
                 maxDuration,
                 req.buildCompression,
-                req.buildTemplate
+                req.buildTemplate,
+                false,          // noEmail
+                req.isPublic
         )
     }
 
@@ -671,7 +690,8 @@ class ContainerController {
                 scanId,
                 Instant.now(),
                 offset,
-                identity
+                identity,
+                request.isPublic
         )
     }
 

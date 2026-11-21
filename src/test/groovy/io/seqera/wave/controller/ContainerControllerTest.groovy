@@ -118,6 +118,44 @@ class ContainerControllerTest extends Specification {
         jwtAuthStore.clear()
     }
 
+    def 'should reject isPublic=false without a Platform identity'() {
+        given: 'a caller Platform cannot resolve - the page would point at a record it never indexed'
+        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry)
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', isPublic: false)
+
+        when:
+        controller.requireIdentityForPrivate(req, PlatformId.NULL)
+
+        then: 'it refuses rather than silently recording the record as public'
+        def e = thrown(BadRequestException)
+        e.message.contains('isPublic=false')
+        and: 'the request is left untouched'
+        req.isPublic == false
+    }
+
+    @Unroll
+    def 'should accept isPublic=#flag with identity=#hasIdentity'() {
+        given:
+        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry)
+        def identity = hasIdentity ? new PlatformId(new User(id: 100)) : PlatformId.NULL
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', isPublic: flag)
+
+        when:
+        controller.requireIdentityForPrivate(req, identity)
+
+        then:
+        noExceptionThrown()
+        req.isPublic == flag
+
+        where:
+        flag  | hasIdentity
+        false | true        // private with an identity Platform can resolve
+        true  | false
+        true  | true
+        null  | false       // the compatibility case - no client sends the field
+        null  | true
+    }
+
     def 'should create request data' () {
         given:
         def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry)
