@@ -106,10 +106,11 @@ graalvmNative {
                 buildArgs(['--static', '--libc=musl', '-march=compatibility', '-R:ReservedAddressSpaceSize=512m'])
             }
 
-            javaLauncher = javaToolchains.launcherFor {
+            // keep `.set(...)`: the Groovy `javaLauncher = ...` form breaks on native-build-tools 1.x
+            javaLauncher.set(javaToolchains.launcherFor {
                 languageVersion = JavaLanguageVersion.of(25)
                 vendor = JvmVendorSpec.matching("Oracle Corporation")
-            }
+            })
             buildArgs.add('--enable-url-protocols=https')
             buildArgs.add('-R:MaxHeapSize=100M')
             buildArgs.add('-R:MinHeapSize=10M')

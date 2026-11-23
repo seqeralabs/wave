@@ -21,8 +21,13 @@ package io.seqera.wave.core
 import java.net.http.HttpHeaders
 import java.net.http.HttpResponse
 import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionException
+import java.util.concurrent.ExecutionException
 
+import io.micronaut.http.HttpStatus
 import io.seqera.wave.auth.RegistryInfo
+import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.proxy.ProxyClient
 
 import io.seqera.wave.proxy.DelegateResponse
@@ -167,6 +172,71 @@ class RegistryProxyServiceTest extends Specification {
         307    | '/v2/blobs/sha256:abc'           | 'https://quay.io/v2/blobs/sha256:abc'
         307    | 'https://s3.amazonaws.com/blob'  | 'https://s3.amazonaws.com/blob'
         200    | '/v2/blobs/sha256:abc'           | null
+    }
+
+    def 'should detect when platform is unavailable' () {
+        expect:
+        RegistryProxyService.isPlatformUnavailable(ERROR) == EXPECTED
+
+        where:
+        ERROR                                                                                                       | EXPECTED
+        null                                                                                                        | false
+        new IllegalStateException('boom')                                                                           | false
+        new HttpResponseException(HttpStatus.REQUEST_TIMEOUT, 'Timeout error connecting to platform', (Throwable)null) | true
+        new HttpResponseException(HttpStatus.SERVICE_UNAVAILABLE, 'Unexpected I/O error')                          | true
+        new HttpResponseException(429, 'Too many requests')                                                         | true
+        new HttpResponseException(500, 'Server error')                                                              | true
+        new HttpResponseException(401, 'Unauthorized')                                                              | false
+        new HttpResponseException(404, 'Not found')                                                                 | false
+        new ExecutionException(new HttpResponseException(HttpStatus.REQUEST_TIMEOUT, 'Timeout', (Throwable)null))  | true
+        new CompletionException(new ExecutionException(new HttpResponseException(503, 'Unavailable')))             | true
+        new ExecutionException(new HttpResponseException(403, 'Forbidden'))                                         | false
+    }
+
+    def 'should get the image digest or fail when unavailable' () {
+        given:
+        def service = Spy(RegistryProxyService)
+        def IMAGE = 'docker.io/library/ubuntu:24.04'
+
+        when:
+        def result = service.getImageDigestOrUnavailable(IMAGE, PlatformId.NULL)
+        then:
+        1 * service.getImageDigest0(IMAGE, PlatformId.NULL, false) >> { if( RESPONSE instanceof Exception ) throw RESPONSE; CompletableFuture.completedFuture(RESPONSE) }
+        and:
+        result == EXPECTED
+
+        where:
+        RESPONSE                                                                     | EXPECTED
+        'sha256:12345'                                                               | 'sha256:12345'
+        new ExecutionException(new HttpResponseException(401, 'Unauthorized access')) | null
+    }
+
+    def 'should fail with 503 when platform is unavailable' () {
+        given:
+        def service = Spy(RegistryProxyService)
+        def IMAGE = 'docker.io/library/ubuntu:24.04'
+
+        when:
+        service.getImageDigestOrUnavailable(IMAGE, PlatformId.NULL)
+        then:
+        1 * service.getImageDigest0(IMAGE, PlatformId.NULL, false) >> { throw new ExecutionException(new HttpResponseException(HttpStatus.REQUEST_TIMEOUT, 'Timeout error connecting to platform', (Throwable)null)) }
+        and:
+        def e = thrown(HttpResponseException)
+        e.statusCode() == HttpStatus.SERVICE_UNAVAILABLE
+        e.message.startsWith("Unable to fetch the registry credentials for image '$IMAGE' from Seqera Platform")
+    }
+
+    def 'should return null digest when platform is unavailable' () {
+        given:
+        def service = Spy(RegistryProxyService)
+        def IMAGE = 'docker.io/library/ubuntu:24.04'
+
+        when:
+        def result = service.getImageDigest(IMAGE, PlatformId.NULL)
+        then:
+        1 * service.getImageDigest0(IMAGE, PlatformId.NULL, false) >> { throw new ExecutionException(new HttpResponseException(HttpStatus.REQUEST_TIMEOUT, 'Timeout error connecting to platform', (Throwable)null)) }
+        and:
+        result == null
     }
 
 }
