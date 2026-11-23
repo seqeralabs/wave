@@ -25,6 +25,7 @@ import io.micronaut.context.annotation.Requires
 import io.seqera.data.store.state.AbstractStateStore
 import io.seqera.data.store.state.impl.StateProvider
 import io.seqera.serde.moshi.MoshiEncodeStrategy
+import io.seqera.wave.store.crypto.StoreEncryption
 import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.configuration.SociEnabled
 import jakarta.inject.Inject
@@ -42,8 +43,8 @@ class SociPushStateStore extends AbstractStateStore<SociPushEntry> {
     @Inject
     private SociConfig config
 
-    SociPushStateStore(StateProvider<String,String> provider) {
-        super(provider, new MoshiEncodeStrategy<SociPushEntry>() {})
+    SociPushStateStore(StateProvider<String,String> provider, StoreEncryption encryption) {
+        super(provider, new MoshiEncodeStrategy<SociPushEntry>(encryption.factory()) {})
     }
 
     @Override

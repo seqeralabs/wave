@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.soci
 
+import io.seqera.wave.store.crypto.StoreEncryption
+
 import spock.lang.Specification
 
 import java.nio.file.Files
@@ -275,7 +277,7 @@ class SociPushServiceImplTest extends Specification {
 
     def 'should double the failure backoff up to one day' () {
         given:
-        def store = new SociPushStateStore(Mock(io.seqera.data.store.state.impl.StateProvider))
+        def store = new SociPushStateStore(Mock(io.seqera.data.store.state.impl.StateProvider), StoreEncryption.disabled())
         store.@config = config.tap { failureDuration = Duration.ofMinutes(10) }
 
         expect:

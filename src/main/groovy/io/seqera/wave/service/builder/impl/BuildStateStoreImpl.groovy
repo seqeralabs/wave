@@ -29,6 +29,7 @@ import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.serde.moshi.MoshiEncodeStrategy
+import io.seqera.wave.store.crypto.StoreEncryption
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildStateStore
@@ -53,8 +54,8 @@ class BuildStateStoreImpl extends AbstractStateStore<BuildEntry> implements Buil
 
     private ExecutorService ioExecutor
 
-    BuildStateStoreImpl(StateProvider<String, String> provider, BuildConfig buildConfig, @Named(TaskExecutors.BLOCKING) ExecutorService ioExecutor) {
-        super(provider, new MoshiEncodeStrategy<BuildEntry>() {})
+    BuildStateStoreImpl(StateProvider<String, String> provider, BuildConfig buildConfig, @Named(TaskExecutors.BLOCKING) ExecutorService ioExecutor, StoreEncryption encryption) {
+        super(provider, new MoshiEncodeStrategy<BuildEntry>(encryption.factory()) {})
         this.buildConfig = buildConfig
         this.ioExecutor = ioExecutor
     }

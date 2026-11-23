@@ -24,6 +24,7 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import io.seqera.wave.api.ContainerInspectRequest
 import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.store.crypto.SecretField
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.DigestFunctions
 import static io.seqera.wave.util.StringUtils.redact
@@ -48,11 +49,13 @@ class JwtAuth {
     /**
      * The bearer authorization token
      */
+    @SecretField
     final String bearer
 
     /**
      * The refresh token to request an updated authorization token
      */
+    @SecretField
     final String refresh
 
     /**

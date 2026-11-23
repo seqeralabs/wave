@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.builder
 
+import io.seqera.wave.store.crypto.StoreEncryption
+
 import spock.lang.Specification
 
 import java.nio.file.Path
@@ -87,7 +89,7 @@ class BuildStoreLocalTest extends Specification {
     def 'should get and put key values' () {
         given:
         def provider = new LocalStateProvider()
-        def cache = new BuildStateStoreImpl(provider, buildConfig, ioExecutor)
+        def cache = new BuildStateStoreImpl(provider, buildConfig, ioExecutor, StoreEncryption.disabled())
 
         expect:
         cache.getBuild('foo') == null
@@ -103,7 +105,7 @@ class BuildStoreLocalTest extends Specification {
         def DURATION = Duration.ofSeconds(2)
         def provider = new LocalStateProvider()
         def config = new BuildConfig(statusDuration: DURATION)
-        def cache = new BuildStateStoreImpl(provider, config, ioExecutor)
+        def cache = new BuildStateStoreImpl(provider, config, ioExecutor, StoreEncryption.disabled())
 
         expect:
         cache.getBuild('foo') == null
@@ -124,7 +126,7 @@ class BuildStoreLocalTest extends Specification {
     def 'should store if absent' () {
         given:
         def provider = new LocalStateProvider()
-        def cache = new BuildStateStoreImpl(provider, buildConfig, ioExecutor)
+        def cache = new BuildStateStoreImpl(provider, buildConfig, ioExecutor, StoreEncryption.disabled())
 
         expect:
         cache.storeIfAbsent('foo', zero)
@@ -142,7 +144,7 @@ class BuildStoreLocalTest extends Specification {
     def 'should remove a build entry' () {
         given:
         def provider = new LocalStateProvider()
-        def cache = new BuildStateStoreImpl(provider, buildConfig, ioExecutor)
+        def cache = new BuildStateStoreImpl(provider, buildConfig, ioExecutor, StoreEncryption.disabled())
 
         when:
         cache.storeBuild('foo', zero)
@@ -159,7 +161,7 @@ class BuildStoreLocalTest extends Specification {
     def 'should await for a value' () {
         given:
         def provider = new LocalStateProvider()
-        def cache = new BuildStateStoreImpl(provider, buildConfig, ioExecutor)
+        def cache = new BuildStateStoreImpl(provider, buildConfig, ioExecutor, StoreEncryption.disabled())
 
         expect:
         cache.awaitBuild('foo') == null
@@ -186,7 +188,7 @@ class BuildStoreLocalTest extends Specification {
         def _100ms = 100
         def config = Mock(BuildConfig) { getStatusDuration()>>Duration.ofMillis(_100ms) }
         def provider = new LocalStateProvider()
-        def store = new BuildStateStoreImpl(provider, config, ioExecutor)
+        def store = new BuildStateStoreImpl(provider, config, ioExecutor, StoreEncryption.disabled())
         and:
         def request = BuildRequest.of(
                 containerId: '12345',

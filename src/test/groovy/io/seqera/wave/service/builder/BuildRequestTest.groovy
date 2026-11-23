@@ -35,6 +35,7 @@ import io.seqera.wave.tower.User
 import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.util.ContainerHelper
 import io.seqera.serde.moshi.MoshiEncodeStrategy
+import io.seqera.wave.store.crypto.StoreEncryption
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -308,7 +309,7 @@ class BuildRequestTest extends Specification {
                 scanChildIds: scanChildIds
         )
         // use the same encode strategy as BuildStateStoreImpl
-        def encoder = new MoshiEncodeStrategy<BuildEntry>() {}
+        def encoder = new MoshiEncodeStrategy<BuildEntry>(StoreEncryption.disabled().factory()) {}
         def entry = BuildEntry.create(request)
 
         when:

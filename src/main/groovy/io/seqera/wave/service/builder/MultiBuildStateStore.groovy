@@ -25,6 +25,7 @@ import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.serde.moshi.MoshiEncodeStrategy
+import io.seqera.wave.store.crypto.StoreEncryption
 import io.seqera.data.store.state.AbstractStateStore
 import io.seqera.data.store.state.impl.StateProvider
 import jakarta.inject.Inject
@@ -42,8 +43,8 @@ class MultiBuildStateStore extends AbstractStateStore<MultiBuildEntry> {
     @Inject
     private BuildConfig config
 
-    MultiBuildStateStore(StateProvider<String,String> provider) {
-        super(provider, new MoshiEncodeStrategy<MultiBuildEntry>() {})
+    MultiBuildStateStore(StateProvider<String,String> provider, StoreEncryption encryption) {
+        super(provider, new MoshiEncodeStrategy<MultiBuildEntry>(encryption.factory()) {})
     }
 
     @Override

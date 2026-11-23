@@ -24,6 +24,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.configuration.ContainerRequestConfig
 import io.seqera.serde.moshi.MoshiEncodeStrategy
+import io.seqera.wave.store.crypto.StoreEncryption
 import io.seqera.data.store.state.AbstractStateStore
 import io.seqera.data.store.state.impl.StateProvider
 import jakarta.inject.Singleton
@@ -39,8 +40,8 @@ class ContainerRequestStoreImpl extends AbstractStateStore<ContainerRequest> imp
 
     private ContainerRequestConfig config
 
-    ContainerRequestStoreImpl(StateProvider<String, String> delegate, ContainerRequestConfig config) {
-        super(delegate, new MoshiEncodeStrategy<ContainerRequest>(){})
+    ContainerRequestStoreImpl(StateProvider<String, String> delegate, ContainerRequestConfig config, StoreEncryption encryption) {
+        super(delegate, new MoshiEncodeStrategy<ContainerRequest>(encryption.factory()){})
         this.config = config
         log.info "Creating Tokens cache store ― duration=${config.cacheDuration}"
     }

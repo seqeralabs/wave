@@ -24,6 +24,7 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.serde.moshi.MoshiEncodeStrategy
+import io.seqera.wave.store.crypto.StoreEncryption
 import io.seqera.data.store.state.AbstractStateStore
 import io.seqera.data.store.state.impl.StateProvider
 import jakarta.inject.Inject
@@ -41,8 +42,8 @@ class JwtAuthStore extends AbstractStateStore<JwtAuth> {
     @Inject
     private JwtTimeStore jwtTimeStore
 
-    JwtAuthStore(StateProvider<String, String> provider) {
-        super(provider, new MoshiEncodeStrategy<JwtAuth>() {})
+    JwtAuthStore(StateProvider<String, String> provider, StoreEncryption encryption) {
+        super(provider, new MoshiEncodeStrategy<JwtAuth>(encryption.factory()) {})
     }
 
     @Override

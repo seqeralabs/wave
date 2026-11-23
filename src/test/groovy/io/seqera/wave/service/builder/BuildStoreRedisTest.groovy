@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.builder
 
+import io.seqera.wave.store.crypto.StoreEncryption
+
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Timeout
@@ -246,7 +248,7 @@ class BuildStoreRedisTest extends Specification implements RedisTestContainer {
         def _100ms = 100
         def config = Mock(BuildConfig) { getStatusDuration()>>Duration.ofMillis(_100ms) }
         def provider = applicationContext.getBean(RedisStateProvider)
-        def store = new BuildStateStoreImpl(provider, config, null)
+        def store = new BuildStateStoreImpl(provider, config, null, StoreEncryption.disabled())
         and:
         def request = BuildRequest.of(
                 containerId: '12345',

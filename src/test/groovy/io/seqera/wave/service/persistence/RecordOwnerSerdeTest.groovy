@@ -23,6 +23,7 @@ import spock.lang.Specification
 import java.time.Instant
 
 import io.seqera.serde.moshi.MoshiEncodeStrategy
+import io.seqera.wave.store.crypto.StoreEncryption
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.mirror.MirrorEntry
 import io.seqera.wave.service.mirror.MirrorRequest
@@ -100,7 +101,7 @@ class RecordOwnerSerdeTest extends Specification {
     def 'should round-trip the mirror owner through the Redis state store' () {
         given:
         // the same encode strategy as MirrorStateStore
-        def encoder = new MoshiEncodeStrategy<MirrorEntry>() {}
+        def encoder = new MoshiEncodeStrategy<MirrorEntry>(StoreEncryption.disabled().factory()) {}
         def request = MirrorRequest.create(
                 'docker.io/foo',
                 'quay.io/foo',

@@ -24,6 +24,7 @@ import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.serde.moshi.MoshiEncodeStrategy
+import io.seqera.wave.store.crypto.StoreEncryption
 import io.seqera.data.store.state.AbstractStateStore
 import io.seqera.data.store.state.impl.StateProvider
 import io.seqera.wave.configuration.MirrorEnabled
@@ -42,8 +43,8 @@ class MirrorStateStore extends AbstractStateStore<MirrorEntry> {
     @Inject
     private MirrorConfig config
 
-    MirrorStateStore(StateProvider<String,String> provider) {
-        super(provider, new MoshiEncodeStrategy<MirrorEntry>() {})
+    MirrorStateStore(StateProvider<String,String> provider, StoreEncryption encryption) {
+        super(provider, new MoshiEncodeStrategy<MirrorEntry>(encryption.factory()) {})
     }
 
     @Override
