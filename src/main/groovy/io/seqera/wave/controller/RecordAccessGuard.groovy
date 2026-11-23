@@ -28,7 +28,7 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
 /**
- * Turns an access decision into the refusal to send, for every route that serves a record.
+ * Turns an access decision into the refusal the read API sends.
  *
  * The deprecated v1alpha1 and v1alpha2 reads are left as they were: /v1 is the read API that
  * applies the check, and clients move to it rather than the old routes gaining it too.
@@ -54,8 +54,8 @@ class RecordAccessGuard {
 
     /**
      * @return null when the caller may read the record, otherwise the refusal to send.
-     *      Bearer only: a browser session must not authenticate this API, so the view pages
-     *      serve their artifact links from /view instead.
+     *      Bearer only: a cookie-authenticated JSON GET is readable cross-site under
+     *      SameSite=Lax, so the view pages serve their artifact links from /view instead.
      */
     HttpResponse<?> refuse(RecordOwner owner, String visibility, String authorization, String namedEndpoint=null) {
         if( !RecordAccessService.isPrivate(owner, visibility) )
@@ -67,14 +67,12 @@ class RecordAccessGuard {
         switch (decision) {
             case RecordAccessService.Decision.ALLOW:
                 return null
-            case RecordAccessService.Decision.REJECTED:
-                return HttpResponse.unauthorized()
-            case RecordAccessService.Decision.UNAUTHORIZED:
-                return HttpResponse.unauthorized()
             case RecordAccessService.Decision.FORBIDDEN:
                 return HttpResponse.status(HttpStatus.FORBIDDEN)
-            default:
+            case RecordAccessService.Decision.UNAVAILABLE:
                 return HttpResponse.status(HttpStatus.SERVICE_UNAVAILABLE)
+            default:    // REJECTED and UNAUTHORIZED
+                return HttpResponse.unauthorized()
         }
     }
 

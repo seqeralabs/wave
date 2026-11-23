@@ -182,9 +182,12 @@ class ViewAuthService {
         return sessionId ? sessionStore.get(sessionId) : null
     }
 
-    /** Drops a token Platform has rejected, so the next page starts a fresh sign-in */
-    void forget(String sessionId, String towerEndpoint) {
-        final session = sessionId ? sessionStore.get(sessionId) : null
+    /**
+     * Drops a token Platform has rejected, so the next page starts a fresh sign-in.
+     * Takes the session the caller already read: the store has no local tier, so re-reading
+     * it here would cost a second round-trip.
+     */
+    void forget(String sessionId, ViewSession session, String towerEndpoint) {
         if( session?.tokenFor(towerEndpoint) )
             sessionStore.put(sessionId, session.without(towerEndpoint))
     }
@@ -192,10 +195,6 @@ class ViewAuthService {
     /** @return the endpoint when Wave can sign in to it, otherwise a constant - keeps metric labels bounded */
     String known(String towerEndpoint) {
         return clientId(towerEndpoint) ? towerEndpoint : 'other'
-    }
-
-    String tokenFor(String sessionId, String towerEndpoint) {
-        return sessionId ? sessionStore.get(sessionId)?.tokenFor(towerEndpoint) : null
     }
 
     static private String rnd() {

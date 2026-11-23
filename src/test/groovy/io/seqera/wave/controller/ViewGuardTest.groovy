@@ -93,7 +93,7 @@ class ViewGuardTest extends Specification {
         def resp = controller(Decision.REJECTED, auth).guard(OWNER, 'private', 'sess-1', RETURN_TO)
 
         then: 'the dead token is forgotten'
-        1 * auth.forget('sess-1', OWNER.towerEndpoint)
+        1 * auth.forget('sess-1', _, OWNER.towerEndpoint)
         and:
         resp.status() == HttpStatus.SEE_OTHER
     }

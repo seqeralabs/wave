@@ -207,12 +207,12 @@ class ReadApiController {
         // the status has no owner of its own. Take it from the request entry the status path
         // reads anyway, rather than the record, which is a database load on a polled route
         final request = containerService?.getRequest(requestId)
-        final denied = request
-                ? guard.refuse(RecordOwner.of(request.identity), request.visibility, authorization, namedEndpoint)
-                : null
+        if( !request )
+            return HttpResponse.notFound()
+        final denied = guard.refuse(RecordOwner.of(request.identity), request.visibility, authorization, namedEndpoint)
         if( denied )
             return denied
-        final resp = request ? statusService?.getContainerStatus(request) : null
+        final resp = statusService?.getContainerStatus(request)
         return resp ? HttpResponse.ok(resp) : HttpResponse.notFound()
     }
 
