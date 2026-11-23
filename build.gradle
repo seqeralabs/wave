@@ -4,7 +4,7 @@ import java.time.format.DateTimeFormatter
 buildscript {
     dependencies {
         // jib pulls a vulnerable jackson on the plugins classpath, see the jackson-bom of the dependencies
-        classpath platform('com.fasterxml.jackson:jackson-bom:2.22.4')
+        classpath platform('com.fasterxml.jackson:jackson-bom:2.23.0')
     }
 }
 
@@ -93,7 +93,7 @@ dependencies {
     implementation 'io.micronaut.reactor:micronaut-reactor'
     implementation 'io.micronaut.reactor:micronaut-reactor-http-client'
     implementation 'org.apache.commons:commons-compress:1.28.0'
-    implementation 'org.apache.commons:commons-lang3:3.21.0'
+    implementation 'org.apache.commons:commons-lang3:3.22.0'
     implementation 'io.kubernetes:client-java:27.0.1'
     implementation 'io.kubernetes:client-java-api-fluent:27.0.1'
     implementation 'com.google.code.gson:gson:2.15.0'
@@ -107,7 +107,7 @@ dependencies {
     implementation 'io.micronaut.cache:micronaut-cache-core'
     implementation 'io.micronaut.cache:micronaut-cache-caffeine'
     // swagger ui via webjars (served at /webjars/swagger-ui/*)
-    implementation 'org.webjars:swagger-ui:5.34.1'
+    implementation 'org.webjars:swagger-ui:5.35.0'
     implementation 'io.micronaut.aws:micronaut-aws-parameter-store'
     implementation 'software.amazon.awssdk:ecr'
     implementation 'software.amazon.awssdk:ecrpublic'
@@ -122,7 +122,7 @@ dependencies {
     //object storage dependency
     implementation 'io.micronaut.objectstorage:micronaut-object-storage-aws'
     implementation 'software.amazon.awssdk:sts'
-    runtimeOnly 'io.netty:netty-tcnative-boringssl-static:2.0.85.Final'
+    runtimeOnly 'io.netty:netty-tcnative-boringssl-static:2.0.86.Final'
     runtimeOnly 'javax.xml.bind:jaxb-api:2.3.1'
     testImplementation platform('org.testcontainers:testcontainers-bom:2.0.5')
     testImplementation 'org.testcontainers:testcontainers'
@@ -133,8 +133,8 @@ dependencies {
     // rate limit
     implementation 'com.coveo:spillway:3.0.0'
     // logging
-    implementation 'ch.qos.logback:logback-classic:1.6.6'
-    implementation 'ch.qos.logback:logback-core:1.6.6'
+    implementation 'ch.qos.logback:logback-classic:1.6.7'
+    implementation 'ch.qos.logback:logback-core:1.6.7'
     // monitoring
     implementation 'io.micronaut.micrometer:micronaut-micrometer-core'
     implementation 'io.micronaut.micrometer:micronaut-micrometer-registry-prometheus'
@@ -143,18 +143,18 @@ dependencies {
     //views
     implementation 'io.micronaut.views:micronaut-views-handlebars'
     // bump version to prevent security issue
-    runtimeOnly 'org.apache.commons:commons-lang3:3.21.0'
+    runtimeOnly 'org.apache.commons:commons-lang3:3.22.0'
     runtimeOnly platform("io.netty:netty-bom:$nettyVersion")
-    implementation platform('com.fasterxml.jackson:jackson-bom:2.22.4')
+    implementation platform('com.fasterxml.jackson:jackson-bom:2.23.0')
     constraints {
         implementation 'org.jsoup:jsoup:1.24.1'
-        implementation 'org.apache.httpcomponents.core5:httpcore5-h2:5.4.4'
+        implementation 'org.apache.httpcomponents.core5:httpcore5-h2:5.5'
         implementation 'org.apache.httpcomponents.client5:httpclient5:5.6.5'
         implementation 'com.github.jknack:handlebars:4.5.8'
     }
-    implementation 'org.bouncycastle:bcpkix-jdk18on:1.86'
-    implementation 'org.bouncycastle:bcprov-jdk18on:1.86'
-    implementation 'org.bouncycastle:bcutil-jdk18on:1.86'
+    implementation 'org.bouncycastle:bcpkix-jdk18on:1.87'
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.87'
+    implementation 'org.bouncycastle:bcutil-jdk18on:1.87'
 }
 
 application {
