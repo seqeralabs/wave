@@ -39,6 +39,31 @@ class ScanIdStoreLocalTest extends Specification {
         store.key0('foo') == 'wave-scanid/v1:foo'
     }
 
+    def 'should normalise the entry key' () {
+        expect:
+        ScanIdStore.key(IMAGE) == EXPECTED
+        and: 'normalising twice is the same as once, so the write and the cleanup agree'
+        ScanIdStore.key(EXPECTED) == EXPECTED
+
+        where:
+        IMAGE                                   | EXPECTED
+        'ubuntu'                                | 'docker.io/library/ubuntu:latest'
+        'ubuntu:22.04'                          | 'docker.io/library/ubuntu:22.04'
+        'docker.io/ubuntu:22.04'                | 'docker.io/library/ubuntu:22.04'
+        'docker.io/library/ubuntu:22.04'        | 'docker.io/library/ubuntu:22.04'
+        'quay.io/foo/bar:v1'                    | 'quay.io/foo/bar:v1'
+        'host:5000/foo/bar:v1'                  | 'host:5000/foo/bar:v1'
+        'oras://quay.io/foo/bar:v1'             | 'oras://quay.io/foo/bar:v1'
+    }
+
+    def 'should key an unusable name verbatim rather than throwing' () {
+        expect: 'the cleanup runs where a throw would lose the scan record'
+        ScanIdStore.key(IMAGE) == IMAGE
+
+        where:
+        IMAGE << [null, '', 'has a space']
+    }
+
     def 'should return counter key' () {
         expect:
         store.counterKey('foo', Mock(ScanId)) == new CountParams('wave-scanid/v1/counter','foo')

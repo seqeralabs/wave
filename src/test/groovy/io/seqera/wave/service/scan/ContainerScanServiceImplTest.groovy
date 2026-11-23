@@ -89,6 +89,22 @@ class ContainerScanServiceImplTest extends Specification {
         workDir?.deleteDir()
     }
 
+    def 'should write the scan id under the key the failure cleanup deletes' () {
+        given: 'the name as a client types it, and the normalised name the scan record carries'
+        def typed = 'ubuntu:22.04'
+        def stored = 'docker.io/library/ubuntu:22.04'
+
+        when:
+        def scanId = scanService.getScanId(typed, 'sha256:12345', ScanMode.required, null)
+        then: 'the entry is reachable under the key built from the stored name, not only the typed one'
+        scanId
+        ScanIdStore.key(typed) == ScanIdStore.key(stored)
+        scanIdStore.get(ScanIdStore.key(stored))?.toString() == scanId
+
+        cleanup:
+        scanIdStore.clear()
+    }
+
     def 'should handle job completion event and update scan record'() {
         given:
         def trivyDockerResulJson = """
@@ -507,6 +523,8 @@ class ContainerScanServiceImplTest extends Specification {
         def config = Mock(ScanConfig) { getFailureDuration()>>duration }
         def container = "ubuntu:${LongRndKey.rndHex()}"
         def scanId = ScanId.of(container).toString()
+        // the cleanup deletes the store key, which is normalised, not the image as stored
+        def key = ScanIdStore.key(container)
         and:
         def scanStore = Mock(ScanStateStore)
         def persistenceService = Mock(PersistenceService)
@@ -522,20 +540,20 @@ class ContainerScanServiceImplTest extends Specification {
         then:
         1 * scanStore.storeScan(scanSucceeded) >> null
         1 * persistenceService.saveScanRecordAsync(new WaveScanRecord(scanSucceeded)) >> null
-        0 * cleanupService.cleanupScanId(container) >> null
+        0 * cleanupService.cleanupScanId(key) >> null
 
         when:
         scanService.storeScanEntry(scanNotDone)
         then:
         1 * scanStore.storeScan(scanNotDone) >> null
         1 * persistenceService.saveScanRecordAsync(new WaveScanRecord(scanNotDone)) >> null
-        0 * cleanupService.cleanupScanId(container) >> null
+        0 * cleanupService.cleanupScanId(key) >> null
 
         when:
         scanService.storeScanEntry(scanFailed)
         then:
         1 * scanStore.storeScan(scanFailed) >> null
         1 * persistenceService.saveScanRecordAsync(new WaveScanRecord(scanFailed)) >> null
-        1 * cleanupService.cleanupScanId(container) >> null
+        1 * cleanupService.cleanupScanId(key) >> null
     }
 }
