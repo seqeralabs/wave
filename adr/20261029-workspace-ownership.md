@@ -91,7 +91,6 @@ caller = userInfo(record.owner.towerEndpoint, token)
 record.owner.workspaceId == null
     caller.id == record.owner.userId                 → allow
 record.owner.workspaceId in workspaces(caller)       → allow
-caller is 'owner' of org record.owner.orgId          → allow
 otherwise                                            → 403
 
 any Platform call above: unpaired, timeout or 5xx,
@@ -100,7 +99,8 @@ and no cached result                                 → 503
 
 - The Platform asked is always the one stored on the record. Clients send no endpoint on the read path, so a request can't point Wave at another host
 - `workspaces(caller)` comes from Platform's `GET /user/{userId}/workspaces` on the record's endpoint, called with the caller's own token. It returns the caller's workspaces with their `orgId`, and Platform allows a caller to list only their own. This needs a new `TowerClient` method and response model
-- That listing has one row per role the caller holds (`WorkspaceDao.findAllByParticipantUserId`): a workspace participant role gives a row with the `workspaceId`, an organisation role gives a row with the `orgId`, a null `workspaceId` and the org `roles`. An organisation owner who isn't also a participant of a workspace gets no row for it, yet administers it in Platform. The org-owner rule covers them from the same response, with no extra Platform call. Organisation `member` and `collaborator` roles alone don't grant access, as in Platform
+- That listing has one row per role the caller holds (`WorkspaceDao.findAllByParticipantUserId`): a workspace participant role gives a row with the `workspaceId`, an organisation role gives a row with the `orgId`, a null `workspaceId` and the org `roles`. Organisation `member` and `collaborator` roles alone don't grant access, as in Platform
+- An organisation owner needs no rule of its own: Platform adds every org owner to a system "owners" team, which is an `owner` participant of each workspace in the organisation, and existing organisations were backfilled. So the listing already returns a workspace row for them and the membership check admits them
 - The token is validated exactly as presented. The submit path's `TowerConnector.sendAsync1` swaps in a newer token from `JwtAuthStore` and refreshes on a 401. The access path calls Platform without the store lookup and without refresh: a 401 from Platform is a 401 from Wave
 - The user-info and workspace results are each cached for 60 seconds, under keys separate from the submit path's `userInfo` cache entries
 - When the record's Platform is unpaired or doesn't answer (timeout or 5xx) and no cached result is left, the check fails closed with 503. Wave never serves an expired user-info or workspace result. Public records are unaffected
@@ -128,7 +128,7 @@ owner {
   towerEndpoint   // normalised, see 2.3
   userId
   workspaceId     // null for a personal workspace
-  orgId           // set on private records with a workspace
+  orgId           // set on private records with a workspace, for accounting
 }
 visibility        // "public" | "private"
 ```
@@ -145,7 +145,7 @@ visibility        // "public" | "private"
 **Rationale:**
 - Each table stores its record in a `data JSONB` column, so no DDL is needed. Records without `owner` deserialise as today
 - `workspaceId` is the key the access check uses (1.4), so it must be on every record, not only on container requests
-- `orgId` is required on private records with a workspace: the access check lets the organisation owner in (1.4). The workspace listing called for private requests (1.5) already returns it, so it comes at no extra cost. Public records may leave it null
+- `orgId` is recorded on private records with a workspace for stats, accounting and later use. Nothing in the access check reads it (1.4). The workspace listing called for private requests (1.5) already returns it, so it comes at no extra cost, and recording it now avoids a backfill later. Public records and personal workspaces leave it null
 
 #### 2.2 Owner in the build id, for private builds only
 
@@ -239,7 +239,7 @@ Each pull request can be merged and released on its own. The first three change 
 | 1 | Record the owner | Endpoint normalisation (2.3). `owner` on the four records (2.1). Scan identity carried through `ScanEntry`. Serialisation tests for records without `owner` | S |
 | 2 | Visibility field | `visibility` on the submit request, v1 and v2, and on mirror requests. Ignored when anonymous or for the community repository (1.2). Stored on records; scans inherit from their parent | S |
 | 3 | Owner in build id | `makeContainerId` takes the owner for private builds only (2.2). Tests that public and anonymous ids don't change | S |
-| 4 | Access check | Service returning allow, 401 or 403 (1.3, 1.4). `TowerClient` user-info call without token store or refresh; `GET /user/{userId}/workspaces` call and response model; 60s caches. Workspace check at submit (1.5) | M |
+| 4 | Access check | Service returning allow, 401 or 403 (1.3, 1.4). `TowerClient` user-info call without token store or refresh; `GET /user/{userId}/workspaces` call and response model; 60s caches. Workspace check at submit (1.5). `owner.orgId` from that listing (2.1) | M |
 | 5 | View pages | OpenID Connect sign-in against the record's Platform: discovery, authorization code with PKCE, callback, Wave session cookie (3). Access check on the record pages, filtering on the list pages, 401 and 403 templates, refused-view counter (3) | L |
 | 6 | New read API | New API version with optional bearer auth (4.2). `Deprecation` header on the current API (4.1) | M |
 
@@ -261,7 +261,7 @@ Rollout: PRs 1 to 6 change nothing visible, because no record is private yet; te
 - `private` on an anonymous request, or on the community repository, gives a public record and an unchanged build id
 - The same Containerfile sent as private from two workspaces, or from the same workspace id on two endpoints, gives two build ids; from one workspace, or sent as public, it gives one
 - A private request naming a workspace the caller doesn't belong to is rejected with 403
-- Access check: a token from another endpoint gets 401; an expired token gets 401 and isn't refreshed; a member of the record's workspace passes; an owner of the record's organisation who isn't a workspace participant passes; an organisation member who isn't a workspace participant gets 403; a valid user outside the workspace gets 403; on a personal-workspace record only the same user passes; results are cached for 60 seconds; with the record's Platform unpaired, timing out or returning 5xx, a cached result is still used and an expired one gives 503
+- Access check: a token from another endpoint gets 401; an expired token gets 401 and isn't refreshed; a member of the record's workspace passes; an owner of the record's organisation passes, through the workspace row its system "owners" team gives it rather than a rule of its own; an organisation member who isn't a workspace participant gets 403; a valid user outside the workspace gets 403; on a personal-workspace record only the same user passes; results are cached for 60 seconds; with the record's Platform unpaired, timing out or returning 5xx, a cached result is still used and an expired one gives 503
 - View pages: a private record with no session redirects to the record's Platform `/authorize`, never to another endpoint; a callback with an unknown or expired `state`, or a failed PKCE exchange, gives 401; the session cookie is host-only and `HttpOnly`; list pages never redirect
 - The current API still returns private records; the new API applies the check
 - Records written before this change still load and are public
