@@ -111,6 +111,29 @@ class RecordAccessService {
         return membership(ws, identity.workspaceId)
     }
 
+    /**
+     * The organisation owning the workspace the request names, for the record's owner.
+     *
+     * Reads the same listing the membership check just fetched, which is cached for the access
+     * check's ttl, so it costs no further Platform call.
+     *
+     * @return null when the request names no workspace, or the listing does not say
+     */
+    Long orgIdOf(PlatformId identity) {
+        if( identity?.workspaceId == null )
+            return null
+        try {
+            final ws = towerClient.listWorkspaces(identity.towerEndpoint, JwtAuth.of(identity), identity.userId)
+            return ws?.orgsAndWorkspaces?.find { it.workspaceId == identity.workspaceId }?.orgId
+        }
+        catch( Exception e ) {
+            // membership has already been granted on this listing, and the org id is recorded for
+            // accounting only, so failing to read it must not fail the request
+            log.debug "Access check - org id unavailable for '$identity.towerEndpoint' - cause: ${e.message}"
+            return null
+        }
+    }
+
     /** @return UNAVAILABLE when there is no listing to judge by, so the caller fails closed */
     private static Decision membership(ListWorkspacesResponse ws, Long workspaceId) {
         if( ws == null )

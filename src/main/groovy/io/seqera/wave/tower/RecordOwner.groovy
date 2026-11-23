@@ -54,6 +54,12 @@ class RecordOwner implements MoshiSerializable {
     Long workspaceId
 
     /**
+     * The organisation owning the workspace, recorded for stats and accounting. Null on public
+     * records and personal workspaces. Nothing in the access check reads it.
+     */
+    Long orgId
+
+    /**
      * The tenant this record belongs to: the workspace when there is one, otherwise the user.
      *
      * The endpoint is used exactly as paired, never canonicalised. Pairing, user-info and the
@@ -87,7 +93,8 @@ class RecordOwner implements MoshiSerializable {
         new RecordOwner(
                 towerEndpoint: identity.towerEndpoint,
                 userId: identity.userId,
-                workspaceId: identity.workspaceId )
+                workspaceId: identity.workspaceId,
+                orgId: identity.orgId )
     }
 
 }

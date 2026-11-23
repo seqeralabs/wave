@@ -166,6 +166,40 @@ class RecordAccessServiceTest extends Specification {
         bad == Decision.REJECTED
     }
 
+    def 'should read the org id from the listing the membership check fetched' () {
+        given:
+        def client = Mock(TowerClient)
+        def svc = new RecordAccessService(towerClient: client)
+
+        when: 'the workspace is in the listing'
+        def found = svc.orgIdOf(identity(10L))
+        then: 'the same cached call the membership check uses, never the read path one'
+        1 * client.listWorkspaces(EP, _, 7L) >> listing([[1L, 10L, ['owner'] as Set]])
+        0 * client.listWorkspacesForAccess(_, _, _)
+        found == 1L
+
+        expect: 'a personal workspace has no organisation and needs no listing'
+        svc.orgIdOf(identity(null)) == null
+
+        when: 'the listing does not mention the workspace'
+        def missing = svc.orgIdOf(identity(10L))
+        then:
+        1 * client.listWorkspaces(_, _, _) >> listing([[1L, 99L, ['owner'] as Set]])
+        missing == null
+
+        when: 'Platform cannot be reached'
+        def unreachable = svc.orgIdOf(identity(10L))
+        then: 'accounting data must not fail a request whose membership already passed'
+        1 * client.listWorkspaces(_, _, _) >> { throw new RuntimeException('unreachable') }
+        unreachable == null
+
+        when: 'Platform rejects the token'
+        def rejected = svc.orgIdOf(identity(10L))
+        then:
+        1 * client.listWorkspaces(_, _, _) >> { throw rejection() }
+        rejected == null
+    }
+
     def 'should refuse when Platform answers without a user' () {
         expect:
         svc(new GetUserInfoResponse(user: null)).check(owner(1L, 10L), 'private', 'tok') == Decision.UNAUTHORIZED

@@ -52,6 +52,23 @@ class RecordOwnerTest extends Specification {
         owner.userId == 100L
         owner.workspaceId == 200L
         owner.towerEndpoint == 'https://api.cloud.seqera.io'
+        and: 'no organisation until the submit check has read the workspace listing'
+        owner.orgId == null
+    }
+
+    def 'should carry the organisation the submit check attached' () {
+        given:
+        def identity = new PlatformId(new User(id: 100), 200L, 'token', 'https://api.cloud.seqera.io')
+                .withOrgId(300L)
+
+        when:
+        def owner = RecordOwner.of(identity)
+
+        then:
+        owner.orgId == 300L
+        and: 'the organisation is accounting data, so it changes neither the tenant nor the id'
+        owner.tenant() == 'https://api.cloud.seqera.io:200'
+        identity.stableHash() == new PlatformId(new User(id: 100), 200L, 'token', 'https://api.cloud.seqera.io').stableHash()
     }
 
     def 'should keep the endpoint exactly as the request carried it' () {

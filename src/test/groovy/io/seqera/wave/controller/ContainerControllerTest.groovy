@@ -534,6 +534,29 @@ class ContainerControllerTest extends Specification {
         noExceptionThrown()
     }
 
+    def 'should record the organisation of the workspace on a private build' () {
+        given:
+        def access = Mock(RecordAccessService) {
+            memberOf(_) >> RecordAccessService.Decision.ALLOW
+            orgIdOf(_) >> { PlatformId pid -> pid.workspaceId == 10L ? 300L : null }
+        }
+        def controller = new ContainerController(
+                inspectService: Mock(ContainerInspectServiceImpl), buildConfig: buildConfig,
+                validationService: validationService, accessService: access )
+        def build = { String vis, Long wsp -> controller.makeBuildRequest(
+                new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), visibility: vis),
+                new PlatformId(new User(id: 1), wsp, 'tok', 'https://api.cloud.seqera.io'), '') }
+
+        expect: 'the org the listing reported reaches the record owner'
+        build('private', 10L).identity.orgId == 300L
+
+        and: 'a personal workspace has none'
+        build('private', null).identity.orgId == null
+
+        and: 'a public request never asks, so it records none'
+        build(null, 10L).identity.orgId == null
+    }
+
     def 'should fail closed when the workspace listing is unavailable' () {
         given:
         def access = Mock(RecordAccessService) { memberOf(_) >> RecordAccessService.Decision.UNAVAILABLE }

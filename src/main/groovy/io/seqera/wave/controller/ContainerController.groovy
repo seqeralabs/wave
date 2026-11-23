@@ -393,13 +393,18 @@ class ContainerController {
         return Visibility.PRIVATE
     }
 
-    /** A private request must belong to the workspace it names, so one tenant cannot stamp a record onto another's */
-    protected void checkWorkspaceAccess(PlatformId identity, String visibility) {
+    /**
+     * A private request must belong to the workspace it names, so one tenant cannot stamp a
+     * record onto another's.
+     *
+     * @return the identity with the workspace's organisation attached, for the record's owner
+     */
+    protected PlatformId checkWorkspaceAccess(PlatformId identity, String visibility) {
         if( !Visibility.isPrivate(visibility) )
-            return
+            return identity
         final decision = accessService.memberOf(identity)
         if( decision == RecordAccessService.Decision.ALLOW )
-            return
+            return identity.withOrgId(accessService.orgIdOf(identity))
         if( decision == RecordAccessService.Decision.FORBIDDEN )
             throw new ForbiddenException("Request denied - workspace $identity.workspaceId is not accessible with the given credentials")
         if( decision == RecordAccessService.Decision.REJECTED )
@@ -445,7 +450,7 @@ class ContainerController {
         // create a unique digest to identify the build req
         // resolved before the id: a private build hashes its tenant, so the two cannot disagree
         final visibility = resolveVisibility(req, identity, buildRepository)
-        checkWorkspaceAccess(identity, visibility)
+        identity = checkWorkspaceAccess(identity, visibility)
         final tenant = RecordOwner.tenantOf(identity, visibility)
         final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext, containerConfig, tenant)
         final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, nameStrategy)
@@ -658,7 +663,7 @@ class ContainerController {
             // no build or mirror on this path, so there is no target repository to check
             // resolved before the id: a private scan hashes its tenant, so the two cannot disagree
             visibility = resolveVisibility(req, identity, null)
-            checkWorkspaceAccess(identity, visibility)
+            identity = checkWorkspaceAccess(identity, visibility)
             scanId = scanService?.getScanId(req.containerImage, digest, req.scanMode, req.format,
                     RecordOwner.tenantOf(identity, visibility))
             type = ContainerRequest.Type.Container
@@ -718,7 +723,7 @@ class ContainerController {
         final offset = DataTimeUtils.offsetId(request.timestamp)
         // resolved before the id: a private scan hashes its tenant, so the two cannot disagree
         final visibility = resolveVisibility(request, identity, request.buildRepository)
-        checkWorkspaceAccess(identity, visibility)
+        identity = checkWorkspaceAccess(identity, visibility)
         final scanId = scanService?.getScanId(targetImage, digest, request.scanMode, request.format,
                 RecordOwner.tenantOf(identity, visibility))
 
