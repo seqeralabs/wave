@@ -171,12 +171,12 @@ class ViewController {
     }
 
 
-    /** @param session the viewer's session, already read by the caller when it needs it too */
+    /** @param session the viewer's session, read once by the caller and reused for the refusal */
     private RecordAccessService.Decision decide(RecordOwner owner, String visibility, String sessionId, ViewSession session) {
         final decision = accessService.check(owner, visibility, session?.tokenFor(owner?.towerEndpoint))
         // a rejected token is no longer any use: drop it so the viewer is sent to sign in again
         if( decision == RecordAccessService.Decision.REJECTED )
-            authService.forget(sessionId, owner?.towerEndpoint)
+            authService.forget(sessionId, session, owner?.towerEndpoint)
         return decision
     }
 

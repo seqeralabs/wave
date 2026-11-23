@@ -44,7 +44,7 @@ class RecordOwner implements MoshiSerializable {
      * This is the address the access check dials, and the pairing lookup resolves it by the
      * spelling Platform itself registered - the submit path already refused anything else. A
      * normalised value could miss both, and the owner is persisted, so that would need a
-     * backfill. The tenant key normalises this when it is computed; the stored value stays raw.
+     * backfill. The tenant key uses this value as stored.
      */
     String towerEndpoint
 

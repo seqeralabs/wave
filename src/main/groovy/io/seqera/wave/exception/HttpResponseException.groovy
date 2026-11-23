@@ -20,6 +20,7 @@ package io.seqera.wave.exception
 
 import groovy.transform.CompileStatic
 import io.micronaut.http.HttpStatus
+import org.apache.commons.lang3.exception.ExceptionUtils
 
 /**
  * Generic Http response exception
@@ -56,13 +57,9 @@ class HttpResponseException extends WaveException implements HttpError {
      *      through a future, so the answer usually arrives wrapped in an ExecutionException.
      */
     static boolean matches(Throwable e, HttpStatus status) {
-        for( Throwable t = e; t != null; t = t.cause ) {
-            if( t instanceof HttpResponseException && (t as HttpResponseException).statusCode() == status )
-                return true
-            if( t.cause === t )
-                break
+        return ExceptionUtils.getThrowableList(e).any {
+            it instanceof HttpResponseException && (it as HttpResponseException).statusCode() == status
         }
-        return false
     }
 
     @Override

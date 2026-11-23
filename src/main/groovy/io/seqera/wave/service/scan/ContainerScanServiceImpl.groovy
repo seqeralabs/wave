@@ -380,7 +380,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
             // this is needed to prevent the caching of the scanId and
             // allow re-scanning the container in case of a job failure
             if( scan.done() && !scan.succeeded() ) {
-                // the same key the id was written under
+                // tenant-scoped like the write, but the pull path writes under the image as typed
+                // while this deletes the normalised one, so a failed pass-through scan never clears
                 cleanupService.cleanupScanId(
                         ScanIdStore.key(scan.containerImage, RecordOwner.tenantOf(scan.owner, scan.visibility)))
             }
