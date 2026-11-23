@@ -56,6 +56,7 @@ import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanType
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.RecordOwner
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 import static io.seqera.wave.controller.ViewController.Colour
@@ -566,6 +567,75 @@ class ViewControllerTest extends Specification {
         then:
         response.body().contains("Unknown build id")
 
+    }
+
+    def 'should render the unknown build id message on the builds history page' () {
+        when:
+        def request = HttpRequest.GET("/view/builds/bd-00000000aaaaaaaa")
+        def response = client.toBlocking().exchange(request, String)
+        then:
+        response.body().contains('Unknown build id')
+        response.body().contains('bd-00000000aaaaaaaa')
+        and:
+        !response.body().contains('No Build Record Found')
+    }
+
+    def 'should render the withheld message when no build is visible' () {
+        given:
+        def record = new WaveBuildRecord(
+                buildId: 'bd-00000000bbbbbbbb_1',
+                dockerFile: 'FROM docker.io/test:foo',
+                targetImage: 'test',
+                userName: 'test',
+                userEmail: 'test',
+                userId: 1,
+                requestIp: '127.0.0.1',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                format: BuildFormat.DOCKER,
+                platform: ContainerPlatform.DEFAULT_ARCH,
+                exitStatus: 0,
+                owner: new RecordOwner(towerEndpoint: 'http://platform.com', userId: 1),
+                visibility: 'private' )
+
+        when:
+        persistenceService.saveBuildAsync(record)
+        and:
+        def request = HttpRequest.GET("/view/builds/bd-00000000bbbbbbbb")
+        def response = client.toBlocking().exchange(request, String)
+        then:
+        response.body().contains('No build visible for id')
+        response.body().contains('bd-00000000bbbbbbbb')
+        and:
+        !response.body().contains(record.buildId)
+        !response.body().contains('No Build Record Found')
+    }
+
+    def 'should render the withheld message when no scan is visible' () {
+        given:
+        def scan = new WaveScanRecord(
+                id: 'sc-00000000cccccccc_1',
+                buildId: 'bd-00000000cccccccc_1',
+                containerImage: 'docker.io/foo:bar',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                status: 'SUCCEEDED',
+                vulnerabilities: List.of(),
+                exitCode: 0,
+                owner: new RecordOwner(towerEndpoint: 'http://platform.com', userId: 1),
+                visibility: 'private' )
+
+        when:
+        persistenceService.saveScanRecordAsync(scan)
+        and:
+        def request = HttpRequest.GET("/view/scans/sc-00000000cccccccc")
+        def response = client.toBlocking().exchange(request, String)
+        then:
+        response.body().contains('No scan visible for id')
+        response.body().contains('sc-00000000cccccccc')
+        and:
+        !response.body().contains(scan.id)
+        !response.body().contains('No Scan Record Found')
     }
 
     def 'should render build page after fixing buildId' () {
