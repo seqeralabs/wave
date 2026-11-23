@@ -48,8 +48,8 @@ dependencies {
     implementation 'org.slf4j:slf4j-api:2.0.20'
     implementation 'org.slf4j:slf4j-jdk-platform-logging:2.0.20'
 
-    testImplementation 'ch.qos.logback:logback-core:1.6.6'
-    testImplementation 'ch.qos.logback:logback-classic:1.6.6'
+    testImplementation 'ch.qos.logback:logback-core:1.6.7'
+    testImplementation 'ch.qos.logback:logback-classic:1.6.7'
     testImplementation 'org.apache.groovy:groovy:4.0.33'
     testImplementation 'org.apache.groovy:groovy-nio:4.0.33'
     testImplementation 'org.apache.groovy:groovy-test:4.0.33'

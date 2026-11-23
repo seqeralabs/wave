@@ -492,7 +492,7 @@ class ContainerController {
     }
 
     protected BuildTrack checkBuild(BuildRequest build, boolean dryRun) {
-        final digest = registryProxyService.getImageDigest(build)
+        final digest = registryProxyService.getImageDigestOrUnavailable(build.targetImage, build.identity)
         // check for dry-run execution
         if( dryRun ) {
             log.debug "== Dry-run build request: $build"
@@ -526,13 +526,13 @@ class ContainerController {
         if( dryRun ) {
             log.debug "== Dry-run multi-platform build request for $targetImage"
             final dryId = containerId + BuildRequest.SEP + '0'
-            final digest = registryProxyService.getImageDigest(targetImage, identity)
+            final digest = registryProxyService.getImageDigestOrUnavailable(targetImage, identity)
             return new BuildTrack(dryId, targetImage, digest!=null, true)
         }
 
         // check if the multi-platform image already exists
         if( !buildConfig.skipCache ) {
-            final digest = registryProxyService.getImageDigest(targetImage, identity)
+            final digest = registryProxyService.getImageDigestOrUnavailable(targetImage, identity)
             if( digest ) {
                 log.debug "== Found cached multi-platform build for $targetImage"
                 final cache = persistenceService.loadBuildSucceed(targetImage, digest)
@@ -546,7 +546,7 @@ class ContainerController {
 
     protected String getContainerDigest(String containerImage, PlatformId identity) {
         containerImage
-                ? registryProxyService.getImageDigest(containerImage, identity)
+                ? registryProxyService.getImageDigestOrUnavailable(containerImage, identity)
                 : null
     }
 
@@ -727,7 +727,7 @@ class ContainerController {
     }
 
     protected BuildTrack checkMirror(MirrorRequest request, PlatformId identity, boolean dryRun) {
-        final targetDigest = registryProxyService.getImageDigest(request.targetImage, identity)
+        final targetDigest = registryProxyService.getImageDigestOrUnavailable(request.targetImage, identity)
         log.debug "== Mirror target digest: $targetDigest"
         final cached = request.digest==targetDigest
         // check for dry-run execution
