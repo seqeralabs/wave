@@ -19,6 +19,8 @@
 package io.seqera.wave.service.job.impl
 
 
+import java.time.Instant
+
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
@@ -39,12 +41,37 @@ import jakarta.inject.Singleton
 @Requires(missingProperty = 'wave.build.k8s')
 class DockerJobOperation implements JobOperation {
 
+    /**
+     * Exit code reported for a job killed because it exceeded its max duration (same as the `timeout` command)
+     */
+    static final int TIMEOUT_EXIT_CODE = 124
+
+    static boolean isExpired(JobSpec jobSpec, Instant now) {
+        return jobSpec.launchTime && jobSpec.maxDuration
+                && now.isAfter(jobSpec.launchTime.plus(jobSpec.maxDuration))
+    }
+
+    private static void killDockerContainer(String containerName) {
+        final process = new ProcessBuilder(['docker', 'kill', containerName])
+                .redirectErrorStream(true)
+                .start()
+        process.consumeProcessOutput(new StringBuilder(), new StringBuilder())
+        process.waitFor()
+    }
+
     @Override
     JobState status(JobSpec jobSpec) {
         final state = getDockerContainerState(jobSpec.operationName)
         log.trace "Docker container status name=${jobSpec.operationName}; state=${state}"
 
-        if (state.status == 'running') {
+        if (state.status == 'running' && isExpired(jobSpec, Instant.now())) {
+            // Docker has no equivalent of the K8s job 'activeDeadlineSeconds', enforce the job timeout here
+            log.warn "Docker container exceeded max duration name=${jobSpec.operationName}; maxDuration=${jobSpec.maxDuration} - killing it"
+            final logs = getDockerContainerLogs(jobSpec.operationName)
+            killDockerContainer(jobSpec.operationName)
+            return JobState.failed(TIMEOUT_EXIT_CODE, logs + "\nJob exceeded max duration of ${jobSpec.maxDuration}")
+        }
+        else if (state.status == 'running') {
             return JobState.running()
         }
         else if (state.status == 'exited') {
@@ -71,6 +98,8 @@ class DockerJobOperation implements JobOperation {
         final cli = new ArrayList<String>()
         cli.add('docker')
         cli.add('rm')
+        // force removal, otherwise a still running container (e.g. a timed out job) is never removed
+        cli.add('-f')
         cli.add(operationName)
 
         final builder = new ProcessBuilder(cli)
