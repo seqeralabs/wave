@@ -72,8 +72,10 @@ class AccessRules {
                 return "Private container request denied - your user is not a member of $workspace on $platform - check the workspace ID or omit the `visibility` attribute"
             case Decision.REJECTED:
                 return "Private container request denied - $platform rejected the access token, it may be expired or revoked - provide a valid access token"
-            default:
+            case Decision.UNAVAILABLE:
                 return "Unable to verify your access to $workspace because $platform is not reachable - try again later"
+            default:
+                throw new IllegalArgumentException("Not a workspace access refusal: $decision")
         }
     }
 
