@@ -21,6 +21,7 @@ package io.seqera.wave.service.job.impl
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.kubernetes.client.openapi.ApiException
 import io.micronaut.context.annotation.Requires
 import io.seqera.util.trace.TraceElapsedTime
 import io.seqera.wave.service.job.JobOperation
@@ -43,12 +44,19 @@ class K8sJobOperation implements JobOperation {
 
     @Override
     void cleanup(JobSpec job) {
-        k8sService.deleteJob(job.operationName)
+        cleanup(job.operationName)
     }
 
     @Override
     void cleanup(String jobName) {
-        k8sService.deleteJob(jobName)
+        try {
+            k8sService.deleteJob(jobName)
+        }
+        catch (ApiException e) {
+            // already deleted, e.g. terminated on timeout before its scheduled cleanup
+            if( e.code != 404 )
+                throw e
+        }
     }
 
     @Override

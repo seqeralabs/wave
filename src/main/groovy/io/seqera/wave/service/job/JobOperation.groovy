@@ -26,8 +26,15 @@ interface JobOperation {
 
     JobState status(JobSpec jobSpec)
 
+    /**
+     * Delete the job, terminating it when it's still running. Implementations
+     * must be idempotent, deleting a job that no longer exists is not an error.
+     */
     void cleanup(JobSpec jobSpec)
 
+    /**
+     * Same as {@link #cleanup(JobSpec)} given the job name
+     */
     void cleanup(String jobName)
 
 }

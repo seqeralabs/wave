@@ -106,6 +106,8 @@ class JobManagerTest extends Specification {
         then:
         1 * jobService.status(jobSpec) >> JobState.running()
         1 * jobDispatcher.notifyJobTimeout(jobSpec)
+        1 * jobService.terminate(jobSpec)
+        1 * jobService.cleanup(jobSpec, null)
         result
     }
 

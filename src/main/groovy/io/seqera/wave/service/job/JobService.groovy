@@ -51,4 +51,11 @@ interface JobService {
 
     void cleanup(JobSpec jobSpec, Integer exitStatus)
 
+    /**
+     * Terminate a job right away, e.g. when it exceeded its max duration. Unlike {@link #cleanup(JobSpec,Integer)},
+     * which defers the deletion according to the cleanup strategy, this does not depend on the
+     * job runtime enforcing the timeout by itself.
+     */
+    void terminate(JobSpec jobSpec)
+
 }

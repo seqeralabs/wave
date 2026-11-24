@@ -163,6 +163,19 @@ class JobServiceImpl implements JobService {
         cleanupService.cleanupJob(job, exitStatus)
     }
 
+    @Override
+    void terminate(JobSpec job) {
+        // a multi-platform build has no job of its own, its platform builds are separate jobs
+        if( job.type == JobSpec.Type.MultiBuild )
+            return
+        try {
+            operations.cleanup(job)
+        }
+        catch (Throwable t) {
+            log.warn "Unable to terminate job=${job.operationName} - cause: ${t.message}", t
+        }
+    }
+
     protected JobState multiBuildStatus(JobSpec job) {
         try {
             final entry = multiBuildStateStore?.get(job.entryKey) as MultiBuildEntry

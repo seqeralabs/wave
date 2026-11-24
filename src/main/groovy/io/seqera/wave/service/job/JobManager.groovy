@@ -241,6 +241,9 @@ class JobManager implements GracefulShutdownCapable {
         final max = (jobSpec.maxDuration.toMillis() * 2.10) as long
         if( duration.toMillis()>max ) {
             dispatcher.notifyJobTimeout(jobSpec)
+            // stop the job now, not every runtime enforces the timeout by itself (e.g. Docker,
+            // or K8s jobs launched without 'activeDeadlineSeconds')
+            jobService.terminate(jobSpec)
             jobService.cleanup(jobSpec, null)
             return true
         }

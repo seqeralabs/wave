@@ -22,6 +22,7 @@ package io.seqera.wave.service.job.impl
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.models.V1ContainerState
 import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1ContainerStatus
@@ -30,6 +31,7 @@ import io.kubernetes.client.openapi.models.V1PodStatus
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.k8s.K8sService
+import io.seqera.wave.service.k8s.K8sServiceImpl
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -110,6 +112,28 @@ class K8SJobOperationTest extends Specification {
         K8sService.JobStatus.Succeeded  | JobState.Status.SUCCEEDED
         K8sService.JobStatus.Failed     | JobState.Status.FAILED
         null                            | JobState.Status.UNKNOWN
+    }
+
+    def 'cleanup should ignore a job already deleted'() {
+        given: // class mock, an interface mock wraps the checked exception in an UndeclaredThrowableException
+        def k8sService = Mock(K8sServiceImpl)
+        def strategy = new K8sJobOperation(k8sService: k8sService)
+        when:
+        strategy.cleanup('job-1')
+        then:
+        1 * k8sService.deleteJob('job-1') >> { throw new ApiException(404, 'Not Found') }
+        noExceptionThrown()
+    }
+
+    def 'cleanup should rethrow other errors'() {
+        given: // class mock, an interface mock wraps the checked exception in an UndeclaredThrowableException
+        def k8sService = Mock(K8sServiceImpl)
+        def strategy = new K8sJobOperation(k8sService: k8sService)
+        when:
+        strategy.cleanup('job-1')
+        then:
+        1 * k8sService.deleteJob('job-1') >> { throw new ApiException(500, 'Server Error') }
+        thrown(ApiException)
     }
 
 }

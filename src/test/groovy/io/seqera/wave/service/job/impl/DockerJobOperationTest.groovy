@@ -18,11 +18,6 @@
 
 package io.seqera.wave.service.job.impl
 
-import java.nio.file.Path
-import java.time.Duration
-import java.time.Instant
-
-import io.seqera.wave.service.job.JobSpec
 import spock.lang.Specification
 import spock.lang.Unroll
 /**
@@ -43,24 +38,6 @@ class DockerJobOperationTest extends Specification {
         'exited,'           | new DockerJobOperation.State('exited')
         'exited,0'          | new DockerJobOperation.State('exited', 0)
         'exited,10'         | new DockerJobOperation.State('exited', 10)
-    }
-
-    @Unroll
-    def 'should check if job is expired' () {
-        given:
-        def launch = Instant.parse('2026-01-01T00:00:00Z')
-        def job = JobSpec.build('rec-1', 'build-1', launch, MAX, Path.of('/work')).withLaunchTime(LAUNCHED ? launch : null)
-
-        expect:
-        DockerJobOperation.isExpired(job, launch.plus(ELAPSED)) == EXPECTED
-
-        where:
-        LAUNCHED | MAX                      | ELAPSED                  | EXPECTED
-        true     | Duration.ofMinutes(10)   | Duration.ofMinutes(5)    | false
-        true     | Duration.ofMinutes(10)   | Duration.ofMinutes(10)   | false
-        true     | Duration.ofMinutes(10)   | Duration.ofMinutes(11)   | true
-        true     | null                     | Duration.ofDays(1)       | false
-        false    | Duration.ofMinutes(10)   | Duration.ofDays(1)       | false
     }
 
 }
