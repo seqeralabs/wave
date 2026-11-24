@@ -20,9 +20,18 @@ package io.seqera.wave.controller
 
 import spock.lang.Specification
 
+import java.time.Instant
+
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.cookie.Cookie
 import io.seqera.wave.service.access.RecordAccessService
+import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.service.logs.BuildLogService
+import io.seqera.wave.service.mirror.ContainerMirrorService
+import io.seqera.wave.service.mirror.MirrorResult
+import io.seqera.wave.service.persistence.WaveBuildRecord
+import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.view.auth.SignInRedirect
 import io.seqera.wave.service.view.auth.ViewAuthService
 import io.seqera.wave.service.view.auth.ViewSession
@@ -135,6 +144,57 @@ class ViewGuardTest extends Specification {
         0 * auth.startSignIn(_, _)
         keep
         !drop
+    }
+
+    /** The artifact routes the view pages link to, each serving one record type */
+    private ViewController artifacts(RecordAccessService access, String visibility) {
+        new ViewController(
+                accessService: access,
+                authService: signsIn(),
+                buildService: Mock(ContainerBuildService) { getBuildRecord(_) >>
+                        new WaveBuildRecord(buildId: 'bd-1_1', startTime: Instant.now(), owner: OWNER, visibility: visibility) },
+                buildLogService: Mock(BuildLogService),
+                mirrorService: Mock(ContainerMirrorService) { getMirrorResult(_) >>
+                        Mock(MirrorResult) { getOwner() >> OWNER; getVisibility() >> visibility } },
+                scanService: Mock(ContainerScanService) { getScanRecord(_) >>
+                        Mock(WaveScanRecord) { getOwner() >> OWNER; getVisibility() >> visibility } } )
+    }
+
+    def 'should guard every artifact route the view pages link to' () {
+        given:
+        def unauthorized = Mock(RecordAccessService)
+        def forbidden = Mock(RecordAccessService)
+        def open = Mock(RecordAccessService)
+
+        when: 'a private record and no session'
+        def refused = CALL.call(artifacts(unauthorized, 'private'))
+
+        then: 'the viewer is sent to sign in rather than handed the artifact'
+        1 * unauthorized.check(OWNER, 'private', _) >> Decision.UNAUTHORIZED
+        refused.status() == HttpStatus.SEE_OTHER
+
+        when: 'a viewer outside the owning workspace'
+        def denied = CALL.call(artifacts(forbidden, 'private'))
+
+        then:
+        1 * forbidden.check(OWNER, 'private', _) >> Decision.FORBIDDEN
+        denied.status() == HttpStatus.FORBIDDEN
+
+        when: 'the same record public'
+        def served = CALL.call(artifacts(open, 'public'))
+
+        then: 'nothing is asked of Platform and the route runs on to its artifact'
+        0 * open.check(_, _, _)
+        and: 'which these mocks do not hold, so it ends in a 404 rather than a refusal'
+        served.status() == HttpStatus.NOT_FOUND
+
+        where:
+        ROUTE               | CALL
+        'builds/logs'       | { it.viewBuildLogs('bd-1_1', null) }
+        'builds/condalock'  | { it.viewCondaLock('bd-1_1', null) }
+        'mirrors/logs'      | { it.viewMirrorLogs('mr-1', null) }
+        'scans/spdx'        | { it.viewScanSpdx('sc-1', null) }
+        'scans/logs'        | { it.viewScanLogs('sc-1', null) }
     }
 
 }
