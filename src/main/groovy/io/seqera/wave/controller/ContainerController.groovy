@@ -456,7 +456,8 @@ class ContainerController {
                 containerId,
                 containerSpec,
                 condaContent,
-                Path.of(buildConfig.buildWorkspace),
+                // absolute path required: Docker jobs bind-mount it as '-v $workDir:$workDir'
+                Path.of(buildConfig.buildWorkspace).toAbsolutePath(),
                 targetImage,
                 identity,
                 platform,
