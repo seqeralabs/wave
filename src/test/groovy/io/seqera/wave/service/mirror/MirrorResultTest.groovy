@@ -26,6 +26,7 @@ import java.time.Instant
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
+import io.seqera.wave.util.JacksonHelper
 
 /**
  *
@@ -110,6 +111,55 @@ class MirrorResultTest extends Specification {
         m2.duration != null
         m2.exitCode == 0
         m2.logs == 'Some logs'
+    }
+
+    def 'should return a copy exposing only the user id' () {
+        given:
+        def request = MirrorRequest.create(
+                'source.io/foo',
+                'target.io/foo',
+                'sha256:12345',
+                ContainerPlatform.DEFAULT,
+                Path.of('/workspace'),
+                '{auth json}',
+                'scan-123',
+                Instant.now(),
+                'utc+1',
+                new PlatformId(new User(id: 1, userName: 'me', email: 'me@host.com'))
+        )
+        def mirror = MirrorResult.of(request).complete(0, 'Some logs')
+
+        when:
+        def result = mirror.withUserIdOnly()
+        def json = JacksonHelper.toJson(result)
+
+        then:
+        result.userId == 1
+        result.userName == null
+        result.userEmail == null
+        and:
+        result.mirrorId == mirror.mirrorId
+        result.digest == mirror.digest
+        result.sourceImage == mirror.sourceImage
+        result.targetImage == mirror.targetImage
+        result.platform == mirror.platform
+        result.creationTime == mirror.creationTime
+        result.offsetId == mirror.offsetId
+        result.scanId == mirror.scanId
+        result.status == mirror.status
+        result.owner == mirror.owner
+        result.visibility == mirror.visibility
+        result.duration == mirror.duration
+        result.exitCode == mirror.exitCode
+        result.logs == mirror.logs
+        and:
+        json.contains('"userId":1')
+        !json.contains('userName')
+        !json.contains('userEmail')
+        !json.contains('me@host.com')
+        and: 'the original result is unchanged'
+        mirror.userName == 'me'
+        mirror.userEmail == 'me@host.com'
     }
 
 }
