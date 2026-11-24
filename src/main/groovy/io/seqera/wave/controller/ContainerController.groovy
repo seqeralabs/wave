@@ -54,7 +54,6 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.micronaut.http.HttpStatus
-import io.seqera.wave.exception.ForbiddenException
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.service.access.RecordAccessService
 import io.seqera.wave.exception.UnsupportedBuildServiceException
@@ -394,14 +393,26 @@ class ContainerController {
 
     /** A private request must belong to the workspace it names, or a caller could compute another workspace's private build id */
     protected void checkWorkspaceAccess(PlatformId identity, String visibility) {
-        // a personal workspace is the caller's own, and a public record's owner gates nothing
-        if( !Visibility.isPrivate(visibility) || identity.workspaceId == null )
+        // a public record's owner gates nothing
+        if( !Visibility.isPrivate(visibility) )
             return
-        final workspaces = accessService.listWorkspaces(identity)
-        if( workspaces == null )
-            throw new HttpResponseException(HttpStatus.SERVICE_UNAVAILABLE, "Unable to reach Seqera Platform at '${identity.towerEndpoint}' to verify workspace access".toString())
-        if( !workspaces.hasWorkspace(identity.workspaceId) )
-            throw new ForbiddenException("Request denied - workspace $identity.workspaceId is not accessible with the given credentials")
+        final decision = accessService.memberOf(identity)
+        if( decision == RecordAccessService.Decision.ALLOW )
+            return
+        final platform = "Seqera Platform at '${identity.towerEndpoint}'"
+        final workspace = "workspace '${identity.workspaceId}'"
+        String message
+        switch (decision) {
+            case RecordAccessService.Decision.FORBIDDEN:
+                message = "Private container request denied - your user is not a member of $workspace on $platform - check the workspace ID or omit the `visibility` attribute"
+                break
+            case RecordAccessService.Decision.REJECTED:
+                message = "Private container request denied - $platform rejected the access token, it may be expired or revoked - provide a valid access token"
+                break
+            default:
+                message = "Unable to verify your access to $workspace because $platform is not reachable - try again later"
+        }
+        throw new HttpResponseException(decision.status, message)
     }
 
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
@@ -772,7 +783,7 @@ class ContainerController {
 
     void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException {
         if( !Visibility.isValid(req.visibility) )
-            throw new BadRequestException("Invalid value for attribute `visibility`: $req.visibility")
+            throw new BadRequestException("Invalid value for attribute `visibility`: '$req.visibility' - allowed values are 'public' and 'private'")
         String msg
         //check conda file size
         if( req.condaFile && buildConfig && req.condaFile.length() > buildConfig.maxCondaFileSize )
