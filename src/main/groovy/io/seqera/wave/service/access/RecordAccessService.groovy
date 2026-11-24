@@ -16,25 +16,26 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+
 package io.seqera.wave.service.access
+
+import java.util.function.Supplier
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.http.HttpStatus
 import io.seqera.wave.api.Visibility
 import io.seqera.wave.exception.HttpResponseException
-import io.seqera.wave.exception.UnauthorizedException
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.RecordOwner
 import io.seqera.wave.tower.auth.JwtAuth
-import io.seqera.wave.tower.client.GetUserInfoResponse
-import io.seqera.wave.tower.client.ListWorkspacesResponse
 import io.seqera.wave.tower.client.TowerClient
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
 /**
- * Decides who may read a Wave record. The Platform asked is always the one stored on the record.
+ * Decides who may read a Wave record, and who may submit one into a workspace.
+ * The Platform asked is always the one the record or the request names.
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
@@ -43,7 +44,21 @@ import jakarta.inject.Singleton
 @CompileStatic
 class RecordAccessService {
 
-    enum Decision { ALLOW, UNAUTHORIZED, FORBIDDEN, UNAVAILABLE }
+    /** The outcome of an access check, with the HTTP status a refusal is answered with */
+    enum Decision {
+        ALLOW(HttpStatus.OK),
+        /** no token, or a token Platform knows no user for */
+        UNAUTHORIZED(HttpStatus.UNAUTHORIZED),
+        /** Platform refused the token: expired or revoked */
+        REJECTED(HttpStatus.UNAUTHORIZED),
+        FORBIDDEN(HttpStatus.FORBIDDEN),
+        /** Platform gave no answer, so the check fails closed */
+        UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE)
+
+        final HttpStatus status
+
+        Decision(HttpStatus status) { this.status = status }
+    }
 
     @Inject
     private TowerClient towerClient
@@ -56,61 +71,58 @@ class RecordAccessService {
         return owner?.towerEndpoint != null && Visibility.isPrivate(visibility)
     }
 
-    /** Every branch is terminal: a personal-workspace record must never reach the workspace match */
+    /**
+     * The read path: may the bearer of this token read the record? The token is validated
+     * as presented, and a personal-workspace record never reaches the workspace match.
+     */
     Decision check(RecordOwner owner, String visibility, String token) {
         if( !isPrivate(owner, visibility) )
             return Decision.ALLOW
         if( !token )
             return Decision.UNAUTHORIZED
 
-        final auth = JwtAuth.of(owner.towerEndpoint, token)
-        final caller = userInfo(owner.towerEndpoint, auth)
-        if( caller == null )
-            return Decision.UNAVAILABLE
-        if( caller.user?.id == null )
-            return Decision.UNAUTHORIZED
-
-        if( owner.workspaceId == null ) {
-            return caller.user.id == owner.userId ? Decision.ALLOW : Decision.FORBIDDEN
-        }
-
-        final workspaces = listWorkspaces0(owner.towerEndpoint, auth, caller.user.id)
-        if( workspaces == null )
-            return Decision.UNAVAILABLE
-        return workspaces.hasWorkspace(owner.workspaceId) ? Decision.ALLOW : Decision.FORBIDDEN
+        final endpoint = owner.towerEndpoint
+        final auth = JwtAuth.of(endpoint, token)
+        return ask(endpoint, () -> {
+            final userId = towerClient.userInfoForAccess(endpoint, auth).user?.id
+            if( userId == null )
+                return Decision.UNAUTHORIZED
+            if( owner.workspaceId == null )
+                return allowIf(userId == owner.userId)
+            return allowIf(towerClient.listWorkspaces(endpoint, auth, userId).hasWorkspace(owner.workspaceId))
+        })
     }
 
-    /** @return null when the Platform could not be reached, so the caller fails closed */
-    ListWorkspacesResponse listWorkspaces(PlatformId identity) {
-        return listWorkspaces0(identity.towerEndpoint, JwtAuth.of(identity), identity.userId)
+    /**
+     * The submit path's membership check. Wave has already authenticated this caller through the
+     * refreshing path, so the stored token is used rather than the one presented.
+     */
+    Decision memberOf(PlatformId identity) {
+        if( identity?.workspaceId == null )
+            return Decision.ALLOW
+        final endpoint = identity.towerEndpoint
+        return ask(endpoint, () ->
+                allowIf(towerClient.listWorkspaces(endpoint, JwtAuth.of(identity), identity.userId).hasWorkspace(identity.workspaceId)))
     }
 
-    /** @return true when Platform rejected the token, as opposed to being unreachable */
-    static private boolean rejected(Exception e) {
-        return e instanceof HttpResponseException && (e as HttpResponseException).statusCode() == HttpStatus.UNAUTHORIZED
+    private static Decision allowIf(boolean granted) {
+        return granted ? Decision.ALLOW : Decision.FORBIDDEN
     }
 
-    private GetUserInfoResponse userInfo(String endpoint, JwtAuth auth) {
+    /**
+     * Runs a question that needs Platform, and turns a failure to get an answer into a decision:
+     * REJECTED when Platform refused the token, UNAVAILABLE for anything else - an empty reply
+     * included - so the check fails closed.
+     */
+    private static Decision ask(String endpoint, Supplier<Decision> question) {
         try {
-            return towerClient.userInfoForAccess(endpoint, auth)
+            return question.get()
         }
         catch( Exception e ) {
-            if( rejected(e) )
-                throw new UnauthorizedException("Access denied by Seqera Platform at '$endpoint'")
-            log.debug "Access check - user-info unavailable for '$endpoint' - cause: ${e.message}"
-            return null
-        }
-    }
-
-    private ListWorkspacesResponse listWorkspaces0(String endpoint, JwtAuth auth, Long userId) {
-        try {
-            return towerClient.listWorkspaces(endpoint, auth, userId)
-        }
-        catch( Exception e ) {
-            if( rejected(e) )
-                throw new UnauthorizedException("Access denied by Seqera Platform at '$endpoint'")
-            log.debug "Access check - workspace listing unavailable for '$endpoint' - cause: ${e.message}"
-            return null
+            if( HttpResponseException.matches(e, HttpStatus.UNAUTHORIZED) )
+                return Decision.REJECTED
+            log.debug "Access check - no answer from Seqera Platform at '$endpoint' - cause: ${e.message ?: e}"
+            return Decision.UNAVAILABLE
         }
     }
 
