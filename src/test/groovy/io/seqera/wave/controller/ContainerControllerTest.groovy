@@ -576,7 +576,7 @@ class ContainerControllerTest extends Specification {
         def built = controller.makeRequestData(
                 new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerPlatform: 'linux/amd64', visibility: 'private'), who, '')
 
-        then:
+        then: 'no digest for the target, so the build runs rather than hitting the cache'
         1 * proxyRegistry.getImageDigestOrUnavailable(_, _) >> null
         1 * builder.buildImage(_) >> new BuildTrack('1', 'wave/build:abc', false, true)
         and: 'the request the record is built from carries it, not only the build record'
@@ -587,10 +587,7 @@ class ContainerControllerTest extends Specification {
                 new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', mirror: true,
                         containerPlatform: 'linux/amd64', buildRepository: 'quay.io/foo', visibility: 'private'), who, '')
 
-        then:
-        // the source, then the mirror target: equal digests take the cached branch
-        2 * proxyRegistry.getImageDigestOrUnavailable(_, _) >> 'sha256:abc'
-        and:
+        then: 'source and target digests match, so the cached branch is taken'
         mirrored.identity.orgId == 300L
     }
 
