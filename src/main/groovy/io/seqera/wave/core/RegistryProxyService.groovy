@@ -70,7 +70,7 @@ import jakarta.inject.Singleton
 import org.apache.commons.lang3.exception.ExceptionUtils
 import reactor.core.publisher.Flux
 import static io.seqera.wave.WaveDefault.HTTP_REDIRECT_CODES
-import static io.seqera.wave.WaveDefault.HTTP_RETRYABLE_ERRORS
+import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
 /**
  * Proxy service that forwards incoming container request
  * to the target repository, resolving credentials and augmentation
@@ -407,7 +407,7 @@ class RegistryProxyService {
         return false
     }
 
-    static private List<Integer> RETRY_ON_NOT_FOUND = HTTP_RETRYABLE_ERRORS + 404
+    static private List<Integer> RETRY_ON_NOT_FOUND = HTTP_SERVER_ERRORS + 404
 
     // note: return a CompletableFuture to force micronaut to use caffeine AsyncCache
     // that provides a workaround about the use of virtual threads with SyncCache
@@ -421,8 +421,9 @@ class RegistryProxyService {
         final coords = ContainerCoordinates.parse(image)
         final route = RoutePath.v2manifestPath(coords, identity)
         try {
+            // note: 429 is not retried, because each attempt consumes the registry quota that is already exhausted
             final proxyClient = client(route)
-                    .withRetryableHttpErrors(retryOnNotFound ? RETRY_ON_NOT_FOUND : HTTP_RETRYABLE_ERRORS)
+                    .withRetryableHttpErrors(retryOnNotFound ? RETRY_ON_NOT_FOUND : HTTP_SERVER_ERRORS)
             final resp = proxyClient.head(route.path, WaveDefault.ACCEPT_HEADERS)
             final result = resp.headers().firstValue('docker-content-digest').orElse(null)
             if( !result && (resp.statusCode()!=404 || retryOnNotFound) ) {

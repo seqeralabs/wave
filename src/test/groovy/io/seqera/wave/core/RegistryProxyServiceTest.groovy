@@ -376,4 +376,28 @@ class RegistryProxyServiceTest extends Specification {
         STATUS << [401, 403, 404, 500, 503]
     }
 
+
+    def 'should not retry the digest lookup when the registry rate limits it' () {
+        given:
+        def IMAGE = 'docker.io/library/python:3.13.1'
+        def route = RoutePath.v2manifestPath(ContainerCoordinates.parse(IMAGE), PlatformId.NULL)
+        def resp = Mock(HttpResponse) { statusCode() >> 404; headers() >> HttpHeaders.of([:], (a, b) -> true) }
+        def proxyClient = Mock(ProxyClient)
+        def service = Spy(RegistryProxyService) { client(route) >> proxyClient }
+        List<Integer> retryable
+
+        when:
+        service.getImageDigest1(IMAGE, PlatformId.NULL, NOT_FOUND)
+        then:
+        1 * proxyClient.withRetryableHttpErrors(_) >> { List args -> retryable = args[0]; proxyClient }
+        1 * proxyClient.head(_, _) >> resp
+        and:
+        retryable == EXPECTED
+
+        where:
+        NOT_FOUND | EXPECTED
+        false     | [500, 502, 503, 504]
+        true      | [500, 502, 503, 504, 404]
+    }
+
 }
