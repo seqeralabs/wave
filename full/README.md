@@ -44,4 +44,5 @@ The `Dockerfile` extends the Wave image with the `docker` CLI, which the publish
 - **Multi-platform builds** run every platform on the same host: building `linux/arm64` on an `amd64`
   host (or the opposite) requires QEMU emulation (`docker run --privileged --rm tonistiigi/binfmt --install all`)
   and is slow.
-- Jobs exceeding the build/scan timeout are killed by Wave (`docker kill`).
+- Docker has no native job deadline: Wave terminates (`docker rm -f`) jobs still running after about 2.1 times
+  their timeout (`wave.build.timeout`, `wave.scan.timeout`), the same grace it gives K8s jobs to be scheduled.
