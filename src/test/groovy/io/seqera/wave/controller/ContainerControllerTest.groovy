@@ -44,7 +44,6 @@ import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.config.CondaOpts
 import io.seqera.wave.api.Visibility
 import io.seqera.wave.configuration.BuildConfig
-import io.seqera.wave.exception.ForbiddenException
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.service.access.RecordAccessService
 import io.seqera.wave.configuration.SociConfig
@@ -525,7 +524,9 @@ class ContainerControllerTest extends Specification {
         when: 'one they do not'
         controller.makeBuildRequest(req, who(999L), '')
         then:
-        thrown(ForbiddenException)
+        def e = thrown(HttpResponseException)
+        e.statusCode() == HttpStatus.FORBIDDEN
+        e.message == "Private container request denied - your user is not a member of workspace '999' on Seqera Platform at 'https://api.cloud.seqera.io' - check the workspace ID or omit the `visibility` attribute"
 
         when: 'a public request names the same foreign workspace'
         controller.makeBuildRequest(new SubmitContainerTokenRequest(containerFile: encode('FROM foo')), who(999L), '')

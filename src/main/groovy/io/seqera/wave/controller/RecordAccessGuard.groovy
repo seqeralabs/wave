@@ -20,7 +20,6 @@ package io.seqera.wave.controller
 
 import groovy.transform.CompileStatic
 import io.micronaut.http.HttpResponse
-import io.micronaut.http.HttpStatus
 import io.seqera.wave.service.access.RecordAccessService
 import io.seqera.wave.service.view.auth.ViewAuthClient
 import io.seqera.wave.tower.RecordOwner
@@ -64,16 +63,7 @@ class RecordAccessGuard {
         if( bearer && !intendedFor(namedEndpoint, owner.towerEndpoint) )
             return HttpResponse.unauthorized()
         final decision = accessService.check(owner, visibility, bearer)
-        switch (decision) {
-            case RecordAccessService.Decision.ALLOW:
-                return null
-            case RecordAccessService.Decision.FORBIDDEN:
-                return HttpResponse.status(HttpStatus.FORBIDDEN)
-            case RecordAccessService.Decision.UNAVAILABLE:
-                return HttpResponse.status(HttpStatus.SERVICE_UNAVAILABLE)
-            default:    // REJECTED and UNAUTHORIZED
-                return HttpResponse.unauthorized()
-        }
+        return decision == RecordAccessService.Decision.ALLOW ? null : HttpResponse.status(decision.status)
     }
 
     /** @return true unless the caller named a different Platform from the one owning the record */
