@@ -147,8 +147,6 @@ class MirrorResultTest extends Specification {
         result.offsetId == mirror.offsetId
         result.scanId == mirror.scanId
         result.status == mirror.status
-        result.owner == mirror.owner
-        result.visibility == mirror.visibility
         result.duration == mirror.duration
         result.exitCode == mirror.exitCode
         result.logs == mirror.logs

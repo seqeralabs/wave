@@ -99,8 +99,6 @@ class MirrorResult {
                 this.userId,
                 this.scanId,
                 this.status,
-                this.owner,
-                this.visibility,
                 this.duration,
                 this.exitCode,
                 this.logs
