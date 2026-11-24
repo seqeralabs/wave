@@ -1,0 +1,77 @@
+wave:
+  debug: false
+  # Credentials Wave uses to pull base images and to push to the build repository.
+  # The build repository host MUST be listed here, add an entry for any other registry.
+  registries:
+    default: docker.io
+    docker.io:
+      username: "${DOCKER_USER:}"
+      password: "${DOCKER_PAT:}"
+    quay.io:
+      username: "${QUAY_USER:}"
+      password: "${QUAY_PAT:}"
+    ghcr.io:
+      username: "${GHCR_USER:}"
+      password: "${GHCR_PAT:}"
+  build:
+    enabled: true
+    # Repository where Wave pushes the containers it builds, e.g. docker.io/<org>/wave-build
+    repo: "${WAVE_BUILD_REPO}"
+    # Repository used as buildkit layer cache, e.g. docker.io/<org>/wave-cache
+    cache: "${WAVE_BUILD_CACHE}"
+    # Absolute paths under WAVE_DATA, see docker-compose.yml
+    workspace: "${WAVE_DATA}/workspace"
+    logs:
+      path: "${WAVE_DATA}/logs"
+    locks:
+      path: "${WAVE_DATA}/locks"
+  mirror:
+    enabled: true
+  scan:
+    enabled: true
+    reports:
+      path: "${WAVE_DATA}/scan-reports"
+  blobCache:
+    enabled: false
+  tokens:
+    cache:
+      duration: "36h"
+  metrics:
+    enabled: true
+rate-limit:
+  pull:
+    anonymous: 250/1h
+    authenticated: 2000/1m
+  timeout-errors:
+    max-rate: 100/1m
+micronaut:
+  netty:
+    event-loops:
+      default:
+        num-threads: 64
+  http:
+    services:
+      stream-client:
+        read-timeout: '30s'
+        read-idle-timeout: '5m'
+endpoints:
+  env:
+    enabled: false
+  bean:
+    enabled: false
+  caches:
+    enabled: false
+  refresh:
+    enabled: false
+  loggers:
+    enabled: false
+  info:
+    enabled: false
+  metrics:
+    enabled: true
+  health:
+    enabled: true
+    disk-space:
+      enabled: false
+    jdbc:
+      enabled: false

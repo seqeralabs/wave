@@ -1,0 +1,72 @@
+services:
+  db:
+    image: postgres:16.16
+    environment:
+      POSTGRES_DB: wave
+      POSTGRES_USER: wave
+      POSTGRES_PASSWORD: wave
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wave"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  wave:
+    build:
+      context: .
+      args:
+        # Wave server image, e.g. cr.seqera.io/enterprise/wave/server:v1.42.1
+        WAVE_IMAGE: ${WAVE_IMAGE:?set WAVE_IMAGE to the Wave server image}
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config.yml:/work/config.yml:ro
+      # Wave launches build, mirror and scan jobs as sibling containers on the host Docker daemon
+      - /var/run/docker.sock:/var/run/docker.sock
+      # MUST be mounted at the SAME absolute path: the jobs bind-mount their work dir
+      # as '-v $workDir:$workDir', and the host daemon resolves it against the host filesystem
+      - ${WAVE_DATA:?set WAVE_DATA to an absolute host path}:${WAVE_DATA}
+    environment:
+      - MICRONAUT_ENVIRONMENTS=postgres,redis,rate-limit,prometheus
+      - WAVE_DATA=${WAVE_DATA}
+    env_file:
+      - wave.env
+    working_dir: /work
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      # All replicas must share the same Docker daemon (job state is read with 'docker inspect'),
+      # i.e. run them on a single host
+      replicas: 1
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2.0'
+        reservations:
+          memory: 4G
+          cpus: '1.0'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+volumes:
+  db-data:
