@@ -48,6 +48,8 @@ import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.exception.HttpResponseException
+import io.seqera.wave.exception.RegistryForwardException
+import io.seqera.wave.exception.RegistryRateLimitException
 import io.seqera.wave.service.soci.SociIndexService
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
@@ -65,6 +67,7 @@ import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
+import org.apache.commons.lang3.exception.ExceptionUtils
 import reactor.core.publisher.Flux
 import static io.seqera.wave.WaveDefault.HTTP_REDIRECT_CODES
 import static io.seqera.wave.WaveDefault.HTTP_RETRYABLE_ERRORS
@@ -372,15 +375,21 @@ class RegistryProxyService {
      *
      * @param containerImage The container image name
      * @param identity The identity used to resolve the registry credentials
+     * @param failOnRateLimit Report a registry rate limit instead of the image as missing. Only the source image
+     *      lookup uses it, so that a rate limited build or mirror target still falls back to a new build
      * @return The image digest or {@code null} when the image does not exist or access is not authorized
      * @throws HttpResponseException with status 503 when Seqera Platform cannot be reached
+     * @throws RegistryRateLimitException when the registry rate limited the request and {@code failOnRateLimit} is set
      */
-    String getImageDigestOrUnavailable(String containerImage, PlatformId identity) {
+    String getImageDigestOrUnavailable(String containerImage, PlatformId identity, boolean failOnRateLimit=false) {
         try {
             return getImageDigest0(containerImage, identity, false).get()
         }
         catch(Exception e) {
             log.warn "Unable to retrieve digest for image '${containerImage}' -- cause: ${e.message}"
+            final rateLimit = failOnRateLimit ? ExceptionUtils.getThrowableList(e).find { it instanceof RegistryRateLimitException } : null
+            if( rateLimit )
+                throw (RegistryRateLimitException) rateLimit
             if( isPlatformUnavailable(e) )
                 throw new HttpResponseException(HttpStatus.SERVICE_UNAVAILABLE, "Unable to fetch the registry credentials for image '${containerImage}' from Seqera Platform - try again later", e)
             return null
@@ -411,14 +420,29 @@ class RegistryProxyService {
     protected String getImageDigest1(String image, PlatformId identity, boolean retryOnNotFound) {
         final coords = ContainerCoordinates.parse(image)
         final route = RoutePath.v2manifestPath(coords, identity)
-        final proxyClient = client(route)
-                .withRetryableHttpErrors(retryOnNotFound ? RETRY_ON_NOT_FOUND : HTTP_RETRYABLE_ERRORS)
-        final resp = proxyClient.head(route.path, WaveDefault.ACCEPT_HEADERS)
-        final result = resp.headers().firstValue('docker-content-digest').orElse(null)
-        if( !result && (resp.statusCode()!=404 || retryOnNotFound) ) {
-            log.warn "Unable to retrieve digest for image '$image' -- response status=${resp.statusCode()}; headers:\n${RegHelper.dumpHeaders(resp)}"
+        try {
+            final proxyClient = client(route)
+                    .withRetryableHttpErrors(retryOnNotFound ? RETRY_ON_NOT_FOUND : HTTP_RETRYABLE_ERRORS)
+            final resp = proxyClient.head(route.path, WaveDefault.ACCEPT_HEADERS)
+            final result = resp.headers().firstValue('docker-content-digest').orElse(null)
+            if( !result && (resp.statusCode()!=404 || retryOnNotFound) ) {
+                log.warn "Unable to retrieve digest for image '$image' -- response status=${resp.statusCode()}; headers:\n${RegHelper.dumpHeaders(resp)}"
+            }
+            if( !result )
+                checkRegistryRateLimit(coords.registry, image, resp.statusCode(), null)
+            return result
         }
-        return result
+        catch (RegistryForwardException e) {
+            // the registry rejected the auth token or the /v2 lookup, and those are not retried on a 429
+            checkRegistryRateLimit(coords.registry, image, e.statusCode, e)
+            throw e
+        }
+    }
+
+    static protected void checkRegistryRateLimit(String registry, String image, int status, Throwable cause) {
+        if( status!=429 )
+            return
+        throw new RegistryRateLimitException("Container registry '${registry}' is rate limiting the request for image '${image}' - add the registry credentials to the workspace or try again later", cause)
     }
 
     /**
