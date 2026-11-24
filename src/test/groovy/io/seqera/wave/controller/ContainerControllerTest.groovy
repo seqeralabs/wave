@@ -318,7 +318,7 @@ class ContainerControllerTest extends Specification {
         and:
         data.containerFile == DOCKER
         data.identity.userId == 100
-        data.containerImage ==  'wave/build:be9ee6ac1eeff4b5'
+        data.containerImage ==  'wave/build:437133e498d4bb73'
         data.containerConfig == cfg
         data.platform.toString() == 'linux/arm64'
     }
@@ -346,7 +346,7 @@ class ContainerControllerTest extends Specification {
         and:
         data.containerFile == DOCKER
         data.identity.userId == 100
-        data.containerImage ==  'wave/build:be9ee6ac1eeff4b5'
+        data.containerImage ==  'wave/build:437133e498d4bb73'
         data.containerConfig == cfg
         data.platform.toString() == 'linux/arm64'
     }
@@ -485,6 +485,15 @@ class ContainerControllerTest extends Specification {
         'lookalike repo'        | VISIBILITY_AUTH | 'other.io/public.cr.seqera.io/wave' | Visibility.PRIVATE
         // an endpoint with no user is still anonymous: ContainerController defaults the endpoint in
         'endpoint, no user'     | new PlatformId(null, null, null, 'https://api.cloud.seqera.io') | 'docker.io/foo' | Visibility.PUBLIC
+    }
+
+    def 'should derive visibility without a build config' () {
+        given: 'a deployment with the build service disabled, where BuildConfig is not created'
+        def controller = new ContainerController()
+
+        expect:
+        controller.resolveVisibility(VISIBILITY_AUTH, null) == Visibility.PRIVATE
+        controller.resolveVisibility(PlatformId.NULL, null) == Visibility.PUBLIC
     }
 
     def 'should refuse a request naming a workspace the caller is not in' () {

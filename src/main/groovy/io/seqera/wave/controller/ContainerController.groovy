@@ -383,7 +383,7 @@ class ContainerController {
      */
     protected String resolveVisibility(PlatformId identity, String buildRepository) {
         final owned = RecordOwner.of(identity) != null
-        return owned && !buildConfig.isCommunityRepo(buildRepository) ? Visibility.PRIVATE : Visibility.PUBLIC
+        return owned && !buildConfig?.isCommunityRepo(buildRepository) ? Visibility.PRIVATE : Visibility.PUBLIC
     }
 
     /** A private request must belong to the workspace it names, or a caller could compute another workspace's private build id */
