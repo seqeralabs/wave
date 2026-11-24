@@ -439,7 +439,7 @@ wave -i quay.io/biocontainers/samtools:0.1.16--2 \
 
 ## Enable SOCI lazy loading
 
-Attach a [SOCI](../soci.md) index to a container, so that hosts running the SOCI snapshotter start it before the image is fully downloaded:
+Attach a [SOCI](../features/soci.mdx) index to a container, so that hosts running the SOCI snapshotter start it before the image is fully downloaded:
 
 ```bash
 wave -i rocker/r-ver:4.4.1 --platform linux/arm64 --soci
