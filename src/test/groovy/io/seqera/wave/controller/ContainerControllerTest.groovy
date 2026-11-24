@@ -271,7 +271,9 @@ class ContainerControllerTest extends Specification {
         given:
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService), validationService: validationService)
+        // a request made by a user is private: allow the workspace it names
+        def access = Mock(RecordAccessService) { memberOf(_) >> RecordAccessService.Decision.ALLOW }
+        def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService), validationService: validationService, accessService: access)
         def DOCKER = 'FROM foo'
         def user = new PlatformId(new User(id: 100))
         def cfg = new ContainerConfig()
@@ -300,7 +302,9 @@ class ContainerControllerTest extends Specification {
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         def persistenceService = Mock(PersistenceService)
-        def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, persistenceService:persistenceService, inclusionService: Mock(ContainerInclusionService), validationService: validationService)
+        // a request made by a user is private: allow the workspace it names
+        def access = Mock(RecordAccessService) { memberOf(_) >> RecordAccessService.Decision.ALLOW }
+        def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, persistenceService:persistenceService, inclusionService: Mock(ContainerInclusionService), validationService: validationService, accessService: access)
         def DOCKER = 'FROM foo'
         def user = new PlatformId(new User(id: 100))
         def cfg = new ContainerConfig()
@@ -327,7 +331,9 @@ class ContainerControllerTest extends Specification {
         given:
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig:buildConfig, inclusionService: Mock(ContainerInclusionService), validationService: validationService)
+        // a request made by a user is private: allow the workspace it names
+        def access = Mock(RecordAccessService) { memberOf(_) >> RecordAccessService.Decision.ALLOW }
+        def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig:buildConfig, inclusionService: Mock(ContainerInclusionService), validationService: validationService, accessService: access)
         def DOCKER = 'FROM foo'
         def user = new PlatformId(new User(id: 100))
         def cfg = new ContainerConfig()
