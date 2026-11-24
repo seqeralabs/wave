@@ -50,10 +50,10 @@ class WaveBuildRecord {
     String dockerFile
     String condaFile
     String targetImage
-    String userName
-    String userEmail
+    @JsonIgnore @PersistOnly String userName     // stored, not returned by the API
+    @JsonIgnore @PersistOnly String userEmail    // stored, not returned by the API
     Long userId
-    String requestIp
+    @JsonIgnore @PersistOnly String requestIp    // stored, not returned by the API
     Instant startTime
     String offsetId
     Duration duration

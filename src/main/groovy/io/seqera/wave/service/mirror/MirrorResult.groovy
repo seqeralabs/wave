@@ -51,8 +51,8 @@ class MirrorResult {
     final ContainerPlatform platform
     final Instant creationTime
     final String offsetId
-    final String userName
-    final String userEmail
+    @JsonIgnore @PersistOnly final String userName    // stored, not returned by the API
+    @JsonIgnore @PersistOnly final String userEmail   // stored, not returned by the API
     final Long userId
     final String scanId
     final Status status

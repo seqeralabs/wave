@@ -46,7 +46,6 @@ class DescribeWaveContainerResponse {
         final String fingerprint
         final Instant timestamp
         final String zoneId
-        final String ipAddress
 
         RequestInfo() {}
 
@@ -61,7 +60,6 @@ class DescribeWaveContainerResponse {
             this.fingerprint = data.fingerprint
             this.timestamp = data.timestamp
             this.zoneId = data.zoneId
-            this.ipAddress = data.ipAddress
         }
     }
 

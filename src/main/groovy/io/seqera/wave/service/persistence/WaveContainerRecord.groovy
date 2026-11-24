@@ -118,8 +118,10 @@ class WaveContainerRecord {
     final String zoneId
 
     /**
-     * The IP address originating the request
+     * The IP address originating the request. Stored, not returned by the API
      */
+    @JsonIgnore
+    @PersistOnly
     final String ipAddress
 
     /**

@@ -72,5 +72,8 @@ class DescribeWaveContainerResponseTest extends Specification {
         !json.contains('api-user-name@example.com')
         !json.contains('userName')
         !json.contains('email')
+        and:
+        !json.contains('ipAddress')
+        !json.contains('127.0.0.1')
     }
 }
