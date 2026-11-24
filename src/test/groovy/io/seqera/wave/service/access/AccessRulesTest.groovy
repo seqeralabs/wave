@@ -81,4 +81,14 @@ class AccessRulesTest extends Specification {
         AccessRules.refusal(Decision.UNAVAILABLE, identity) == "Unable to verify your access to workspace '999' because Seqera Platform at '$EP' is not reachable - try again later"
     }
 
+    def 'should not explain a decision that is not a workspace access refusal' () {
+        when:
+        AccessRules.refusal(DECISION, new PlatformId(new User(id: 1), 999L, 'tok', EP))
+        then:
+        thrown(IllegalArgumentException)
+
+        where:
+        DECISION << [Decision.ALLOW, Decision.UNAUTHORIZED]
+    }
+
 }
