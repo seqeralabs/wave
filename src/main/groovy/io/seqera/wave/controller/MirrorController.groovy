@@ -54,7 +54,7 @@ class MirrorController {
             throw new UnsupportedMirrorServiceException()
         final result = mirrorService.getMirrorResult(mirrorId)
         return result
-                ? HttpResponse.ok(result)
+                ? HttpResponse.ok(result.withUserIdOnly())
                 : HttpResponse.<MirrorResult>notFound()
     }
 

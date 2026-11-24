@@ -86,6 +86,9 @@ class ScanRequest {
      */
     final PlatformId identity
 
+    /** inherited from the parent; a Visibility value, null is read as public */
+    final String visibility
+
     static ScanRequest of(Map opts) {
         new ScanRequest(
                 opts.scanId as String,
@@ -97,7 +100,8 @@ class ScanRequest {
                 opts.platform as ContainerPlatform,
                 opts.workDir as Path,
                 opts.creationTime as Instant,
-                opts.identity as PlatformId
+                opts.identity as PlatformId,
+                opts.visibility as String
         )
     }
 

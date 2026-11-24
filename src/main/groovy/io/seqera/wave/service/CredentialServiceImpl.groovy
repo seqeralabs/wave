@@ -22,6 +22,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.tower.crypto.EncryptedPacket
+import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.service.aws.AwsEcrService
 import io.seqera.service.pairing.PairingService
 import io.seqera.wave.tower.PlatformId
@@ -122,6 +123,9 @@ class CredentialServiceImpl implements CredentialsService {
             return findComputeCreds0(identity)
         }
         catch (Exception e) {
+            // let the caller fail with 503 instead of reporting the image as missing
+            if( RegistryProxyService.isPlatformUnavailable(e) )
+                throw e
             log.error("Unable to retrieve Platform launch credentials for $identity - cause ${e.message}")
             return null
         }

@@ -21,8 +21,17 @@ package io.seqera.wave.core
 import java.net.http.HttpHeaders
 import java.net.http.HttpResponse
 import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionException
+import java.util.concurrent.ExecutionException
 
+import io.micronaut.http.HttpStatus
 import io.seqera.wave.auth.RegistryInfo
+import io.seqera.wave.WaveDefault
+import io.seqera.wave.exception.BadRequestException
+import io.seqera.wave.exception.HttpResponseException
+import io.seqera.wave.exception.RegistryForwardException
+import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.proxy.ProxyClient
 
 import io.seqera.wave.proxy.DelegateResponse
@@ -167,6 +176,122 @@ class RegistryProxyServiceTest extends Specification {
         307    | '/v2/blobs/sha256:abc'           | 'https://quay.io/v2/blobs/sha256:abc'
         307    | 'https://s3.amazonaws.com/blob'  | 'https://s3.amazonaws.com/blob'
         200    | '/v2/blobs/sha256:abc'           | null
+    }
+
+    def 'should detect when platform is unavailable' () {
+        expect:
+        RegistryProxyService.isPlatformUnavailable(ERROR) == EXPECTED
+
+        where:
+        ERROR                                                                                                       | EXPECTED
+        null                                                                                                        | false
+        new IllegalStateException('boom')                                                                           | false
+        new HttpResponseException(HttpStatus.REQUEST_TIMEOUT, 'Timeout error connecting to platform', (Throwable)null) | true
+        new HttpResponseException(HttpStatus.SERVICE_UNAVAILABLE, 'Unexpected I/O error')                          | true
+        new HttpResponseException(429, 'Too many requests')                                                         | true
+        new HttpResponseException(500, 'Server error')                                                              | true
+        new HttpResponseException(401, 'Unauthorized')                                                              | false
+        new HttpResponseException(404, 'Not found')                                                                 | false
+        new ExecutionException(new HttpResponseException(HttpStatus.REQUEST_TIMEOUT, 'Timeout', (Throwable)null))  | true
+        new CompletionException(new ExecutionException(new HttpResponseException(503, 'Unavailable')))             | true
+        new ExecutionException(new HttpResponseException(403, 'Forbidden'))                                         | false
+    }
+
+    def 'should get the image digest or fail when unavailable' () {
+        given:
+        def service = Spy(RegistryProxyService)
+        def IMAGE = 'docker.io/library/ubuntu:24.04'
+
+        when:
+        def result = service.getImageDigestOrUnavailable(IMAGE, PlatformId.NULL)
+        then:
+        1 * service.getImageDigest0(IMAGE, PlatformId.NULL, false) >> { if( RESPONSE instanceof Exception ) throw RESPONSE; CompletableFuture.completedFuture(RESPONSE) }
+        and:
+        result == EXPECTED
+
+        where:
+        RESPONSE                                                                     | EXPECTED
+        'sha256:12345'                                                               | 'sha256:12345'
+        new ExecutionException(new HttpResponseException(401, 'Unauthorized access')) | null
+    }
+
+    def 'should fail with 503 when platform is unavailable' () {
+        given:
+        def service = Spy(RegistryProxyService)
+        def IMAGE = 'docker.io/library/ubuntu:24.04'
+
+        when:
+        service.getImageDigestOrUnavailable(IMAGE, PlatformId.NULL)
+        then:
+        1 * service.getImageDigest0(IMAGE, PlatformId.NULL, false) >> { throw new ExecutionException(new HttpResponseException(HttpStatus.REQUEST_TIMEOUT, 'Timeout error connecting to platform', (Throwable)null)) }
+        and:
+        def e = thrown(HttpResponseException)
+        e.statusCode() == HttpStatus.SERVICE_UNAVAILABLE
+        e.message.startsWith("Unable to fetch the registry credentials for image '$IMAGE' from Seqera Platform")
+    }
+
+    def 'should return null digest when platform is unavailable' () {
+        given:
+        def service = Spy(RegistryProxyService)
+        def IMAGE = 'docker.io/library/ubuntu:24.04'
+
+        when:
+        def result = service.getImageDigest(IMAGE, PlatformId.NULL)
+        then:
+        1 * service.getImageDigest0(IMAGE, PlatformId.NULL, false) >> { throw new ExecutionException(new HttpResponseException(HttpStatus.REQUEST_TIMEOUT, 'Timeout error connecting to platform', (Throwable)null)) }
+        and:
+        result == null
+    }
+
+    def 'should report a registry rate limit only when requested' () {
+        given:
+        def service = Spy(RegistryProxyService)
+        def IMAGE = 'docker.io/library/python:3.13.1'
+        def err = new ExecutionException(new RegistryForwardException('Unexpected response acquiring token', 429, 'some body', [:]))
+
+        when: 'the rate limit is not requested, e.g. build or mirror target lookup'
+        def result = service.getImageDigestOrUnavailable(IMAGE, PlatformId.NULL)
+        then:
+        1 * service.getImageDigest0(IMAGE, PlatformId.NULL, false) >> { throw err }
+        and:
+        result == null
+
+        when: 'the rate limit is requested, e.g. source image lookup'
+        service.getImageDigestOrUnavailable(IMAGE, PlatformId.NULL, true)
+        then:
+        1 * service.getImageDigest0(IMAGE, PlatformId.NULL, false) >> { throw err }
+        and:
+        def e = thrown(BadRequestException)
+        e.message == "Container registry 'docker.io' is rate limiting the request for image '$IMAGE' - add the registry credentials to the workspace or try again later"
+    }
+
+    def 'should not report other registry errors as a rate limit' () {
+        expect:
+        RegistryProxyService.isRateLimited(new ExecutionException(new RegistryForwardException('Oops', STATUS, 'some body', [:]))) == EXPECTED
+
+        where:
+        STATUS | EXPECTED
+        429    | true
+        401    | false
+        404    | false
+        503    | false
+    }
+
+    def 'should fail the digest lookup when the registry rate limits the manifest request' () {
+        given:
+        def IMAGE = 'docker.io/library/python:3.13.1'
+        def route = RoutePath.v2manifestPath(ContainerCoordinates.parse(IMAGE), PlatformId.NULL)
+        def resp = Mock(HttpResponse) { statusCode() >> 429; headers() >> HttpHeaders.of([:], (a, b) -> true) }
+        def proxyClient = Stub(ProxyClient)
+        proxyClient.withRetryableHttpErrors(_) >> proxyClient
+        proxyClient.head(route.path, WaveDefault.ACCEPT_HEADERS) >> resp
+        def service = Spy(RegistryProxyService) { client(route) >> proxyClient }
+
+        when:
+        service.getImageDigest1(IMAGE, PlatformId.NULL, false)
+        then:
+        def e = thrown(RegistryForwardException)
+        e.statusCode == 429
     }
 
 }
