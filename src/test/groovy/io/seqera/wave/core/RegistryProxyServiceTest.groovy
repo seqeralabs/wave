@@ -27,12 +27,12 @@ import java.util.concurrent.ExecutionException
 
 import io.micronaut.http.HttpStatus
 import io.seqera.wave.auth.RegistryInfo
+import io.seqera.wave.WaveDefault
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.exception.RegistryForwardException
-import io.seqera.wave.exception.RegistryRateLimitException
-import io.seqera.wave.proxy.ProxyClient
-import io.seqera.wave.WaveDefault
 import io.seqera.wave.model.ContainerCoordinates
+import io.seqera.wave.proxy.ProxyClient
 
 import io.seqera.wave.proxy.DelegateResponse
 import io.seqera.wave.proxy.ProxyCache
@@ -243,161 +243,55 @@ class RegistryProxyServiceTest extends Specification {
         result == null
     }
 
-    def 'should fail when the registry rate limits the request' () {
-        when:
-        RegistryProxyService.checkRegistryRateLimit('docker.io', 'python:3.13.1', 429, null)
-        then:
-        def e = thrown(RegistryRateLimitException)
-        e.message == "Container registry 'docker.io' is rate limiting the request for image 'python:3.13.1' - add the registry credentials to the workspace or try again later"
-    }
-
-    def 'should not fail when the registry reports any other status' () {
-        when:
-        RegistryProxyService.checkRegistryRateLimit('docker.io', 'python:3.13.1', STATUS, null)
-        then:
-        noExceptionThrown()
-
-        where:
-        STATUS << [200, 401, 403, 404, 500, 502, 503, 504]
-    }
-
-    def 'should report the rate limit only for the source image lookup' () {
+    def 'should report a registry rate limit only when requested' () {
         given:
         def service = Spy(RegistryProxyService)
         def IMAGE = 'docker.io/library/python:3.13.1'
-        def err = new RegistryRateLimitException('Rate limited')
+        def err = new ExecutionException(new RegistryForwardException('Unexpected response acquiring token', 429, 'some body', [:]))
 
-        when:
-        service.getImageDigestOrUnavailable(IMAGE, PlatformId.NULL, true)
-        then:
-        1 * service.getImageDigest0(IMAGE, PlatformId.NULL, false) >> { throw new ExecutionException(err) }
-        and:
-        def e = thrown(RegistryRateLimitException)
-        e.is(err)
-    }
-
-    def 'should return null digest for a rate limited build target lookup' () {
-        given:
-        def service = Spy(RegistryProxyService)
-        def IMAGE = 'docker.io/library/python:3.13.1'
-
-        when:
+        when: 'the rate limit is not requested, e.g. build or mirror target lookup'
         def result = service.getImageDigestOrUnavailable(IMAGE, PlatformId.NULL)
         then:
-        1 * service.getImageDigest0(IMAGE, PlatformId.NULL, false) >> { throw new ExecutionException(new RegistryRateLimitException('Rate limited')) }
+        1 * service.getImageDigest0(IMAGE, PlatformId.NULL, false) >> { throw err }
         and:
         result == null
-    }
 
-    def 'should return null digest when the registry rate limits the lookup' () {
-        given:
-        def service = Spy(RegistryProxyService)
-        def IMAGE = 'docker.io/library/python:3.13.1'
-
-        when:
-        def result = service.getImageDigest(IMAGE, PlatformId.NULL)
+        when: 'the rate limit is requested, e.g. source image lookup'
+        service.getImageDigestOrUnavailable(IMAGE, PlatformId.NULL, true)
         then:
-        1 * service.getImageDigest0(IMAGE, PlatformId.NULL, false) >> { throw new ExecutionException(new RegistryRateLimitException('Rate limited')) }
+        1 * service.getImageDigest0(IMAGE, PlatformId.NULL, false) >> { throw err }
         and:
-        result == null
+        def e = thrown(BadRequestException)
+        e.message == "Container registry 'docker.io' is rate limiting the request for image '$IMAGE' - add the registry credentials to the workspace or try again later"
     }
 
-    private RegistryProxyService serviceWithHead(String image, int status, String digest=null) {
-        final route = RoutePath.v2manifestPath(ContainerCoordinates.parse(image), PlatformId.NULL)
-        final respHeaders = HttpHeaders.of(digest ? ['docker-content-digest': [digest]] : [:], (a, b) -> true)
-        final resp = Mock(HttpResponse) { statusCode() >> status; headers() >> respHeaders }
-        final proxyClient = Stub(ProxyClient)
-        proxyClient.withRetryableHttpErrors(_) >> proxyClient
-        proxyClient.head(route.path, WaveDefault.ACCEPT_HEADERS) >> resp
-        return Spy(RegistryProxyService) { client(route) >> proxyClient }
-    }
-
-    private RegistryProxyService serviceFailingWith(String image, Throwable error) {
-        final route = RoutePath.v2manifestPath(ContainerCoordinates.parse(image), PlatformId.NULL)
-        return Spy(RegistryProxyService) { client(route) >> { throw error } }
-    }
-
-    def 'should fail the digest lookup when the registry head reports a rate limit' () {
-        when:
-        serviceWithHead(IMAGE, 429).getImageDigest1(IMAGE, PlatformId.NULL, false)
-        then:
-        def e = thrown(RegistryRateLimitException)
-        e.message.startsWith("Container registry '$REGISTRY' is rate limiting the request for image '$IMAGE'")
+    def 'should not report other registry errors as a rate limit' () {
+        expect:
+        RegistryProxyService.isRateLimited(new ExecutionException(new RegistryForwardException('Oops', STATUS, 'some body', [:]))) == EXPECTED
 
         where:
-        IMAGE                             | REGISTRY
-        'docker.io/library/python:3.13.1' | 'docker.io'
-        'quay.io/biocontainers/fastqc:1'  | 'quay.io'
+        STATUS | EXPECTED
+        429    | true
+        401    | false
+        404    | false
+        503    | false
     }
 
-    def 'should return the digest lookup result when the registry head reports any other status' () {
-        given:
-        def IMAGE = 'docker.io/library/python:3.13.1'
-
-        when:
-        def result = serviceWithHead(IMAGE, STATUS, DIGEST).getImageDigest1(IMAGE, PlatformId.NULL, false)
-        then:
-        noExceptionThrown()
-        result == DIGEST
-
-        where:
-        STATUS | DIGEST
-        200    | 'sha256:12345'
-        404    | null
-        401    | null
-        503    | null
-    }
-
-    def 'should fail the digest lookup when the registry rate limits the auth token request' () {
-        given:
-        def IMAGE = 'docker.io/library/python:3.13.1'
-        def err = new RegistryForwardException('Unexpected response acquiring token', 429, 'some body', [:])
-
-        when:
-        serviceFailingWith(IMAGE, err).getImageDigest1(IMAGE, PlatformId.NULL, false)
-        then:
-        def e = thrown(RegistryRateLimitException)
-        e.message.startsWith("Container registry 'docker.io' is rate limiting the request for image '$IMAGE'")
-        e.cause.is(err)
-    }
-
-    def 'should rethrow the registry auth error when it is not a rate limit' () {
-        given:
-        def IMAGE = 'docker.io/library/python:3.13.1'
-        def err = new RegistryForwardException('Unexpected response acquiring token', STATUS, 'some body', [:])
-
-        when:
-        serviceFailingWith(IMAGE, err).getImageDigest1(IMAGE, PlatformId.NULL, false)
-        then:
-        def e = thrown(RegistryForwardException)
-        e.is(err)
-
-        where:
-        STATUS << [401, 403, 404, 500, 503]
-    }
-
-
-    def 'should not retry the digest lookup when the registry rate limits it' () {
+    def 'should fail the digest lookup when the registry rate limits the manifest request' () {
         given:
         def IMAGE = 'docker.io/library/python:3.13.1'
         def route = RoutePath.v2manifestPath(ContainerCoordinates.parse(IMAGE), PlatformId.NULL)
-        def resp = Mock(HttpResponse) { statusCode() >> 404; headers() >> HttpHeaders.of([:], (a, b) -> true) }
-        def proxyClient = Mock(ProxyClient)
+        def resp = Mock(HttpResponse) { statusCode() >> 429; headers() >> HttpHeaders.of([:], (a, b) -> true) }
+        def proxyClient = Stub(ProxyClient)
+        proxyClient.withRetryableHttpErrors(_) >> proxyClient
+        proxyClient.head(route.path, WaveDefault.ACCEPT_HEADERS) >> resp
         def service = Spy(RegistryProxyService) { client(route) >> proxyClient }
-        List<Integer> retryable
 
         when:
-        service.getImageDigest1(IMAGE, PlatformId.NULL, NOT_FOUND)
+        service.getImageDigest1(IMAGE, PlatformId.NULL, false)
         then:
-        1 * proxyClient.withRetryableHttpErrors(_) >> { List args -> retryable = args[0]; proxyClient }
-        1 * proxyClient.head(_, _) >> resp
-        and:
-        retryable == EXPECTED
-
-        where:
-        NOT_FOUND | EXPECTED
-        false     | [500, 502, 503, 504]
-        true      | [500, 502, 503, 504, 404]
+        def e = thrown(RegistryForwardException)
+        e.statusCode == 429
     }
 
 }
