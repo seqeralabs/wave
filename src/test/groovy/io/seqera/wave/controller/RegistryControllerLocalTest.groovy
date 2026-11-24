@@ -126,6 +126,33 @@ class RegistryControllerLocalTest extends Specification implements DockerRegistr
         response.getContentLength() == 10242
     }
 
+    void 'should head blob'() {
+        given:
+        def accept = [
+                'application/vnd.oci.image.index.v1+json',
+                'application/vnd.oci.image.manifest.v1+json',
+                'application/vnd.docker.distribution.manifest.v2+json',
+                'application/vnd.docker.distribution.manifest.list.v2+json'
+        ]
+        and:
+        def get = { String path ->
+            HttpRequest request = HttpRequest.GET(path).headers({ h -> accept.each { h.add('Accept', it) } })
+            new JsonSlurper().parseText(client.toBlocking().exchange(request, String).body()) as Map
+        }
+
+        when:
+        def index = get('/v2/library/hello-world/manifests/sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6')
+        def manifest = get("/v2/library/hello-world/manifests/${index.manifests[0].digest}")
+        def config = manifest.config as Map
+        and:
+        HttpResponse<String> response = client.toBlocking().exchange(HttpRequest.HEAD("/v2/library/hello-world/blobs/${config.digest}"), String)
+
+        then:
+        response.status() == HttpStatus.OK
+        response.header('docker-content-digest') == config.digest
+        response.getContentLength() == config.size as long
+    }
+
     // Double download hello-world requesting all required layers refreshing cache between them
     void 'should resolve a full request'() {
         given:

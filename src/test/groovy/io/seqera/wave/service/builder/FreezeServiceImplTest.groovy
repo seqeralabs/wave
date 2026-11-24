@@ -260,6 +260,75 @@ class FreezeServiceImplTest extends Specification  {
             '''.stripIndent()
     }
 
+    def 'should add multi-element entrypoint as json array' () {
+        when:
+        def req = new SubmitContainerTokenRequest(containerImage: 'pixi:latest', freeze: true)
+        def result = freezeService.createBuildFile(req, Mock(PlatformId))
+        then:
+        1 * authService.containerEntrypoint(_,_,_) >> ['/bin/bash', '/shell-hook.sh']
+        and:
+        result == '''\
+            # wave generated container file
+            FROM pixi:latest
+            ENV WAVE_ENTRY_CHAIN="[\\"/bin/bash\\",\\"/shell-hook.sh\\"]"
+            '''.stripIndent(true)
+
+        when:
+        req = new SubmitContainerTokenRequest(containerImage: 'pixi:latest', freeze: true)
+        result = freezeService.createBuildFile(req, Mock(PlatformId))
+        then:
+        1 * authService.containerEntrypoint(_,_,_) >> ['/bin/sh', '-c', 'echo $HOME done']
+        and:
+        result == '''\
+            # wave generated container file
+            FROM pixi:latest
+            ENV WAVE_ENTRY_CHAIN="[\\"/bin/sh\\",\\"-c\\",\\"echo \\$HOME done\\"]"
+            '''.stripIndent(true)
+    }
+
+    def 'should add multi-element entrypoint as json array for singularity' () {
+        when:
+        def req = new SubmitContainerTokenRequest(containerImage: 'pixi:latest', freeze: true, format: 'sif')
+        def result = freezeService.createBuildFile(req, Mock(PlatformId))
+        then:
+        1 * authService.containerEntrypoint(_,_,_) >> ['/bin/bash', '/shell-hook.sh']
+        and:
+        result == '''\
+            # wave generated container file
+            BootStrap: docker
+            From: pixi:latest
+            %environment
+              export WAVE_ENTRY_CHAIN="[\\"/bin/bash\\",\\"/shell-hook.sh\\"]"
+            '''.stripIndent(true)
+
+        when:
+        req = new SubmitContainerTokenRequest(containerImage: 'pixi:latest', freeze: true, format: 'sif')
+        result = freezeService.createBuildFile(req, Mock(PlatformId))
+        then:
+        1 * authService.containerEntrypoint(_,_,_) >> ['/bin/sh', '-c', 'echo $HOME `date`']
+        and:
+        result == '''\
+            # wave generated container file
+            BootStrap: docker
+            From: pixi:latest
+            %environment
+              export WAVE_ENTRY_CHAIN="[\\"/bin/sh\\",\\"-c\\",\\"echo \\$HOME \\`date\\`\\"]"
+            '''.stripIndent(true)
+    }
+
+    def 'should escape quoted value' () {
+        expect:
+        FreezeServiceImpl.escapeQuoted(VALUE, SHELL) == EXPECTED
+
+        where:
+        VALUE               | SHELL | EXPECTED
+        '/foo/entry.sh'     | false | '/foo/entry.sh'
+        '["a","b c"]'       | false | '[\\"a\\",\\"b c\\"]'
+        'a\\b'              | false | 'a\\\\b'
+        '$HOME `x`'         | false | '\\$HOME `x`'
+        '$HOME `x`'         | true  | '\\$HOME \\`x\\`'
+    }
+
     def 'should create containerfile' () {
         when:
         def result = FreezeServiceImpl.createContainerFile(new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest'))

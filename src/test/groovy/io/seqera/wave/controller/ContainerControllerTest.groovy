@@ -42,7 +42,12 @@ import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.config.CondaOpts
+import io.seqera.wave.api.Visibility
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.exception.ForbiddenException
+import io.seqera.wave.exception.HttpResponseException
+import io.seqera.wave.service.access.RecordAccessService
+import io.seqera.wave.tower.client.ListWorkspacesResponse
 import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.service.soci.SociPushService
 import io.seqera.wave.core.ContainerPlatform
@@ -70,6 +75,9 @@ import io.seqera.wave.service.request.ContainerRequestService
 import io.seqera.wave.service.request.TokenData
 import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.service.validation.ValidationServiceImpl
+import io.seqera.wave.service.scan.ContainerScanService
+import io.seqera.wave.service.scan.ScanId
+import io.seqera.wave.api.ScanMode
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
@@ -110,7 +118,8 @@ class ContainerControllerTest extends Specification {
     @MockBean(RegistryProxyService)
     RegistryProxyService mockProxy() {
         Mock(RegistryProxyService) {
-            getImageDigest(_,_) >> 'sha256:mock-digest'
+            getImageDigestOrUnavailable(_,_) >> 'sha256:mock-digest'
+            getImageDigestOrUnavailable(_,_,_) >> 'sha256:mock-digest'
         }
     }
 
@@ -276,7 +285,7 @@ class ContainerControllerTest extends Specification {
         when:
         def data = controller.makeRequestData(req, user, "")
         then:
-        1 * proxyRegistry.getImageDigest(_) >> null
+        1 * proxyRegistry.getImageDigestOrUnavailable(_,_) >> null
         1 * builder.buildImage(_) >> new BuildTrack('1', 'wave/build:be9ee6ac1eeff4b5', false, true)
         and:
         data.containerFile == DOCKER
@@ -305,7 +314,7 @@ class ContainerControllerTest extends Specification {
         when:
         def data = controller.makeRequestData(req, user, "")
         then:
-        1 * proxyRegistry.getImageDigest(_) >> 'abc'
+        1 * proxyRegistry.getImageDigestOrUnavailable(_,_) >> 'abc'
         1 * persistenceService.loadBuildSucceed(_,'abc')
         0 * builder.buildImage(_) >> null
         and:
@@ -334,7 +343,7 @@ class ContainerControllerTest extends Specification {
         when:
         def data = controller.makeRequestData(req, user, "")
         then:
-        1 * proxyRegistry.getImageDigest(_) >> '123'
+        1 * proxyRegistry.getImageDigestOrUnavailable(_,_) >> '123'
         0 * builder.buildImage(_) >> null
         and:
         data.containerFile == DOCKER
@@ -360,8 +369,8 @@ class ContainerControllerTest extends Specification {
         when:
         def data = controller.makeRequestData(req, user, "")
         then:
-        1 * proxyRegistry.getImageDigest(SOURCE, user) >> 'sha256:12345'
-        1 * proxyRegistry.getImageDigest(TARGET, user) >> null
+        1 * proxyRegistry.getImageDigestOrUnavailable(SOURCE, user, true) >> 'sha256:12345'
+        1 * proxyRegistry.getImageDigestOrUnavailable(TARGET, user) >> null
         and:
         data.identity.userId == 100
         data.containerImage ==  TARGET
@@ -390,8 +399,8 @@ class ContainerControllerTest extends Specification {
         when:
         def data = controller.makeRequestData(req, user, "")
         then:
-        1 * proxyRegistry.getImageDigest('docker.io/source/image:latest', user) >> 'sha256:12345'
-        1 * proxyRegistry.getImageDigest('quay.io/source/image:latest', user) >> null
+        1 * proxyRegistry.getImageDigestOrUnavailable('docker.io/source/image:latest', user, true) >> 'sha256:12345'
+        1 * proxyRegistry.getImageDigestOrUnavailable('quay.io/source/image:latest', user) >> null
         1 * mirrorService.mirrorImage(_) >> new BuildTrack('mr-1', 'quay.io/source/image:latest', false, null)
         and: 'the mirror is in progress'
         1 * sociPush.sociTarget('quay.io/source/image:latest', ContainerPlatform.of('arm64'), user, null) >> RESULT
@@ -401,6 +410,139 @@ class ContainerControllerTest extends Specification {
 
         where:
         RESULT << ['quay.io/source/image:latest-soci', 'quay.io/source/image:latest']
+    }
+
+    def 'should keep public and anonymous ids independent of the caller, and scope private ones to the tenant' () {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        // the scan id follows the target image, which embeds the container id
+        def scanService = Mock(ContainerScanService) {
+            getScanId(_, _, _, _) >> { String img, String d, ScanMode m, String f -> ScanId.of(img).toString() }
+        }
+        // this spec is about ids, not membership: allow every workspace it names
+        def access = Mock(RecordAccessService) {
+            listWorkspaces(_) >> new ListWorkspacesResponse(orgsAndWorkspaces: [10L, 20L].collect {
+                new ListWorkspacesResponse.OrgAndWorkspace(orgId: 1L, workspaceId: it, roles: ['owner'] as Set) })
+        }
+        def controller = new ContainerController(
+                inspectService: dockerAuth,
+                buildConfig: buildConfig,
+                validationService: validationService,
+                scanService: scanService,
+                accessService: access )
+        def id = { String vis, PlatformId who -> controller.makeBuildRequest(
+                new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), visibility: vis), who, '') }
+
+        def anonymous = id(null, PlatformId.NULL)
+        def userA     = id(null, new PlatformId(new User(id: 1), 10L, 'tok', 'https://api.cloud.seqera.io'))
+        def userB     = id(null, new PlatformId(new User(id: 2), 20L, 'tok', 'https://other.io'))
+
+        expect: 'a public build is content-addressed, so the caller cannot change its id'
+        anonymous.buildId == userA.buildId
+        anonymous.buildId == userB.buildId
+
+        and: 'asking for private while anonymous changes nothing - the request stays public'
+        id('private', PlatformId.NULL).buildId == anonymous.buildId
+
+        when: 'the same content is built privately from two workspaces'
+        def ws10 = id('private', new PlatformId(new User(id: 1), 10L, 'tok', 'https://api.cloud.seqera.io'))
+        def ws20 = id('private', new PlatformId(new User(id: 1), 20L, 'tok', 'https://api.cloud.seqera.io'))
+
+        then: 'each workspace gets its own build, and neither collides with the public one'
+        ws10.buildId != ws20.buildId
+        ws10.buildId != anonymous.buildId
+        and: 'the scan follows the build'
+        ws10.scanId != ws20.scanId
+
+        and: 'the same workspace twice gives one build'
+        id('private', new PlatformId(new User(id: 9), 10L, 'other-tok', 'https://api.cloud.seqera.io')).buildId == ws10.buildId
+
+        and: 'the same workspace id on two Platforms is two tenants'
+        id('private', new PlatformId(new User(id: 1), 10L, 'tok', 'https://other.io')).buildId != ws10.buildId
+
+        and: 'a personal-workspace private build is scoped to the user'
+        def userOnly = id('private', new PlatformId(new User(id: 1), null, 'tok', 'https://api.cloud.seqera.io'))
+        userOnly.buildId != id('private', new PlatformId(new User(id: 2), null, 'tok', 'https://api.cloud.seqera.io')).buildId
+
+        and: 'two spellings of one Platform are one tenant'
+        id('private', new PlatformId(new User(id: 1), 10L, 'tok', 'HTTPS://API.cloud.seqera.io:443/')).buildId == ws10.buildId
+    }
+
+    static final String COMMUNITY_REPO = 'public.cr.seqera.io/wave'
+
+    static final PlatformId VISIBILITY_AUTH =
+            new PlatformId(new User(id: 100), 200L, 'tok', 'https://api.cloud.seqera.io')
+
+    private ContainerController visibilityController() {
+        new ContainerController(buildConfig: new BuildConfig(defaultPublicRepository: COMMUNITY_REPO))
+    }
+
+    @Unroll
+    def 'should resolve visibility [#DESC]' () {
+        given:
+        def controller = visibilityController()
+        def req = new SubmitContainerTokenRequest(visibility: ASKED)
+
+        expect:
+        controller.resolveVisibility(req, IDENTITY, REPO) == EXPECTED
+
+        where:
+        DESC                             | ASKED              | IDENTITY        | REPO                      | EXPECTED
+        'absent'                         | null               | VISIBILITY_AUTH            | 'docker.io/foo'           | Visibility.PUBLIC
+        'explicit public'                | 'public'           | VISIBILITY_AUTH            | 'docker.io/foo'           | Visibility.PUBLIC
+        'private + authenticated'        | 'private'          | VISIBILITY_AUTH            | 'docker.io/foo'           | Visibility.PRIVATE
+        'private + anonymous'            | 'private'          | PlatformId.NULL | 'docker.io/foo'           | Visibility.PUBLIC
+        'private + null identity'        | 'private'          | null            | 'docker.io/foo'           | Visibility.PUBLIC
+        'private + community repo'       | 'private'          | VISIBILITY_AUTH            | COMMUNITY_REPO                 | Visibility.PUBLIC
+        'private + community subpath'    | 'private'          | VISIBILITY_AUTH            | "$COMMUNITY_REPO/some/image"   | Visibility.PUBLIC
+        'private + no repo'              | 'private'          | VISIBILITY_AUTH            | null                      | Visibility.PRIVATE
+        // merely containing the community name is not the community repository
+        'private + lookalike repo'       | 'private'          | VISIBILITY_AUTH            | 'other.io/public.cr.seqera.io/wave' | Visibility.PRIVATE
+        // an endpoint with no user is still anonymous: ContainerController defaults the endpoint in
+        'private + endpoint, no user'    | 'private'          | new PlatformId(null, null, null, 'https://api.cloud.seqera.io') | 'docker.io/foo' | Visibility.PUBLIC
+    }
+
+    def 'should refuse a private request naming a workspace the caller is not in' () {
+        given:
+        def access = Mock(RecordAccessService) {
+            listWorkspaces(_) >> new ListWorkspacesResponse(orgsAndWorkspaces: [
+                    new ListWorkspacesResponse.OrgAndWorkspace(orgId: 1L, workspaceId: 10L, roles: ['maintain'] as Set) ])
+        }
+        def controller = new ContainerController(
+                inspectService: Mock(ContainerInspectServiceImpl), buildConfig: buildConfig,
+                validationService: validationService, accessService: access )
+        def req = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), visibility: 'private')
+        def who = { Long wsp -> new PlatformId(new User(id: 1), wsp, 'tok', 'https://api.cloud.seqera.io') }
+
+        when: 'a workspace the caller holds'
+        controller.makeBuildRequest(req, who(10L), '')
+        then:
+        noExceptionThrown()
+
+        when: 'one they do not'
+        controller.makeBuildRequest(req, who(999L), '')
+        then:
+        thrown(ForbiddenException)
+
+        when: 'a public request names the same foreign workspace'
+        controller.makeBuildRequest(new SubmitContainerTokenRequest(containerFile: encode('FROM foo')), who(999L), '')
+        then: 'nothing is refused'
+        noExceptionThrown()
+    }
+
+    def 'should fail closed when the workspace listing is unavailable' () {
+        given:
+        def access = Mock(RecordAccessService) { listWorkspaces(_) >> null }
+        def controller = new ContainerController(
+                inspectService: Mock(ContainerInspectServiceImpl), buildConfig: buildConfig,
+                validationService: validationService, accessService: access )
+
+        when:
+        controller.makeBuildRequest(
+                new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), visibility: 'private'),
+                new PlatformId(new User(id: 1), 10L, 'tok', 'https://api.cloud.seqera.io'), '')
+        then:
+        thrown(HttpResponseException)
     }
 
     def 'should create build request' () {
@@ -724,7 +866,7 @@ class ContainerControllerTest extends Specification {
         and:
         response.status.code == 200
         and:
-        buildConfig.condasplitImage == 'public.cr.seqera.io/wave/condasplit:v3'
+        buildConfig.condasplitImage == 'public.cr.seqera.io/wave/condasplit:v4'
         build.buildTemplate == BuildTemplate.CONDA_MICROMAMBA_V2_FAST
         build.containerFile.contains("RUN --mount=type=bind,from=${buildConfig.condasplitImage},source=/,target=/opt/wave-tools \\\n")
         build.containerFile.contains('COPY --link --from=build /layers/NN/ /\n')
@@ -776,7 +918,7 @@ class ContainerControllerTest extends Specification {
         and:
         response.status.code == 200
         and:
-        buildConfig.condasplitImage == 'public.cr.seqera.io/wave/condasplit:v3'
+        buildConfig.condasplitImage == 'public.cr.seqera.io/wave/condasplit:v4'
         build.buildTemplate == BuildTemplate.CONDA_PIXI_V1_FAST
         build.containerFile.contains("RUN --mount=type=bind,from=${buildConfig.condasplitImage},source=/,target=/opt/wave-tools \\\n")
         build.containerFile.contains('COPY --link --from=build /layers/NN/ /\n')
@@ -848,6 +990,104 @@ class ContainerControllerTest extends Specification {
         then:
         def e = thrown(BadRequestException)
         e.message == "Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting"
+    }
+
+    def 'should prepare `conda/pixi:v1-lock` build request from inline packages environment'() {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def builder = Mock(ContainerBuildService)
+        def tokenService = Mock(ContainerRequestService)
+        def controller = new ContainerController(
+                freezeService: new FreezeServiceImpl(inspectService: dockerAuth),
+                buildService: builder,
+                inspectService: dockerAuth,
+                registryProxyService: Mock(RegistryProxyService),
+                buildConfig: buildConfig,
+                inclusionService: Mock(ContainerInclusionService),
+                addressResolver: Mock(HttpClientAddressResolver),
+                containerService: tokenService,
+                persistenceService: Mock(PersistenceService),
+                validationService: validationService,
+                serverUrl: 'http://wave.com')
+        def lockContent = '''\
+                version: 6
+                environments:
+                  default:
+                    channels:
+                    - url: https://conda.anaconda.org/conda-forge/
+                '''.stripIndent()
+        def req = new SubmitContainerTokenRequest(
+                packages: new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: encode(lockContent)),
+                buildTemplate: BuildTemplate.CONDA_PIXI_V1_LOCK )
+        def user = new User(email: 'pixi-inline@bar.com', userName: 'pixi-inline')
+        def id = PlatformId.of(user, req)
+
+        when:
+        def response = controller.handleRequest(null, req, id, true)
+
+        then:
+        1 * builder.buildImage(_ as BuildRequest) >> { BuildRequest build ->
+            assert build.buildTemplate == BuildTemplate.CONDA_PIXI_V1_LOCK
+            assert build.condaFile == lockContent
+            assert build.containerFile.contains('COPY conda.yml /opt/wave/pixi.lock')
+            assert build.containerFile.contains('pixi install --frozen')
+            new BuildTrack('build-inline-pixi', build.targetImage, false, true)
+        }
+        1 * tokenService.computeToken(_) >> new TokenData('wavetoken-inline', Instant.now().plus(1, ChronoUnit.HOURS))
+        and:
+        response.status.code == 200
+        verifyAll(response.body.get() as SubmitContainerTokenResponse) {
+            buildId == 'build-inline-pixi'
+            containerToken == 'wavetoken-inline'
+            cached == false
+            succeeded == true
+        }
+    }
+
+    def 'should prepare `conda/pixi:v1-lock` build request from packages URL'() {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def builder = Mock(ContainerBuildService)
+        def tokenService = Mock(ContainerRequestService)
+        def controller = new ContainerController(
+                freezeService: new FreezeServiceImpl(inspectService: dockerAuth),
+                buildService: builder,
+                inspectService: dockerAuth,
+                registryProxyService: Mock(RegistryProxyService),
+                buildConfig: buildConfig,
+                inclusionService: Mock(ContainerInclusionService),
+                addressResolver: Mock(HttpClientAddressResolver),
+                containerService: tokenService,
+                persistenceService: Mock(PersistenceService),
+                validationService: validationService,
+                serverUrl: 'http://wave.com')
+        def lockUrl = 'https://example.com/pixi.lock'
+        def req = new SubmitContainerTokenRequest(
+                packages: new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: [lockUrl]),
+                buildTemplate: BuildTemplate.CONDA_PIXI_V1_LOCK )
+        def user = new User(email: 'pixi-url@bar.com', userName: 'pixi-url')
+        def id = PlatformId.of(user, req)
+
+        when:
+        def response = controller.handleRequest(null, req, id, true)
+
+        then:
+        1 * builder.buildImage(_ as BuildRequest) >> { BuildRequest build ->
+            assert build.buildTemplate == BuildTemplate.CONDA_PIXI_V1_LOCK
+            assert build.condaFile == null
+            assert build.containerFile.contains("ADD ${lockUrl} /opt/wave/pixi.lock")
+            assert build.containerFile.contains('pixi install --frozen')
+            new BuildTrack('build-url-pixi', build.targetImage, false, true)
+        }
+        1 * tokenService.computeToken(_) >> new TokenData('wavetoken-url', Instant.now().plus(1, ChronoUnit.HOURS))
+        and:
+        response.status.code == 200
+        verifyAll(response.body.get() as SubmitContainerTokenResponse) {
+            buildId == 'build-url-pixi'
+            containerToken == 'wavetoken-url'
+            cached == false
+            succeeded == true
+        }
     }
 
     def 'should throw BadRequestException when more than one artifact (container image, container file or packages) is provided in the request' () {

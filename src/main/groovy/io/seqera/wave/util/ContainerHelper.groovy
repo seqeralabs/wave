@@ -38,6 +38,7 @@ import static io.seqera.wave.api.BuildTemplate.CONDA_MICROMAMBA_V2
 import static io.seqera.wave.api.BuildTemplate.CONDA_MICROMAMBA_V2_FAST
 import static io.seqera.wave.api.BuildTemplate.CONDA_PIXI_V1
 import static io.seqera.wave.api.BuildTemplate.CONDA_PIXI_V1_FAST
+import static io.seqera.wave.api.BuildTemplate.CONDA_PIXI_V1_LOCK
 import static io.seqera.wave.api.BuildTemplate.CRAN_INSTALLR_V1
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static DockerHelper.condaEnvironmentToCondaYaml
@@ -83,6 +84,9 @@ class ContainerHelper {
                 throw new BadRequestException("Build template '${CONDA_PIXI_V1_FAST}' does not support Singularity format")
             return PixiHelper.containerFileV1Fast(spec, req.containerImage, condasplitImage)
         }
+        if( req.buildTemplate == CONDA_PIXI_V1_LOCK ) {
+            return PixiHelper.containerFileV1Lock(spec, req.containerImage, singularity)
+        }
         if( spec.type == PackagesSpec.Type.CRAN && (!req.buildTemplate || req.buildTemplate == CRAN_INSTALLR_V1) ) {
             return CranHelper.containerFile(spec, singularity)
         }
@@ -96,6 +100,13 @@ class ContainerHelper {
 
         if( req.packages.type != PackagesSpec.Type.CONDA )
             return null
+
+        if( req.buildTemplate == CONDA_PIXI_V1_LOCK ) {
+            // the pixi lock file is used verbatim, i.e. without appending the base packages
+            return req.packages.environment
+                    ? decodeBase64OrFail(req.packages.environment, 'packages.environment')
+                    : null
+        }
 
         if( req.packages.environment ) {
             // parse the attribute as a conda file path *and* append the base packages if any
@@ -160,6 +171,40 @@ class ContainerHelper {
         if( result != endpoint )
             log.debug "Patched Platform endpoint: '$endpoint' with '$result'"
         return result
+    }
+
+    /**
+     * Reduce a Platform endpoint to one canonical spelling, so that two spellings of the same
+     * Platform don't become two record owners.
+     *
+     * Applied to the tenant key only. The stored owner and the pairing lookup both keep the
+     * spelling Platform registered, because that is the address Wave dials and the key the
+     * pairing store resolves - see RecordOwner.towerEndpoint. The tenant key is computed for the
+     * build id rather than stored, so canonicalising it here persists nothing.
+     *
+     */
+    static String normalisePlatformEndpoint(String endpoint) {
+        if( !endpoint )
+            return null
+
+        final result = endpoint.trim()
+        try {
+            final uri = new URI(result)
+            if( !uri.scheme || !uri.host )
+                return result
+            final scheme = uri.scheme.toLowerCase()
+            final port = uri.port == defaultPort0(scheme) ? -1 : uri.port
+            final path = uri.path.replaceAll('/+$', '')
+            return new URI(scheme, null, uri.host.toLowerCase(), port, path, null, null).toString()
+        }
+        catch( URISyntaxException e ) {
+            log.debug "Unable to normalise Platform endpoint: '$endpoint' - cause: ${e.message}"
+            return result
+        }
+    }
+
+    static private int defaultPort0(String scheme) {
+        return scheme == 'https' ? 443 : scheme == 'http' ? 80 : -1
     }
 
     static List<String> normaliseDeps0(List deps) {
@@ -302,7 +347,11 @@ class ContainerHelper {
         value ? normalise0(value.toLowerCase(), maxLength, /[^a-z0-9_.\-\/]/) : null
     }
 
-    static String makeContainerId(String containerFile, String condaFile, ContainerPlatform platform, String repository, BuildContext buildContext, ContainerConfig containerConfig) {
+    /**
+     * @param tenant Null for a public or anonymous build. Omitting it on a private build hands
+     *      that build the public id, and with it the public layer cache.
+     */
+    static String makeContainerId(String containerFile, String condaFile, ContainerPlatform platform, String repository, BuildContext buildContext, ContainerConfig containerConfig, String tenant=null) {
         final attrs = new LinkedHashMap<String,String>(10)
         attrs.containerFile = containerFile
         attrs.condaFile = condaFile
@@ -310,11 +359,14 @@ class ContainerHelper {
         attrs.repository = repository
         if( buildContext ) attrs.buildContext = buildContext.tarDigest
         if( containerConfig ) attrs.containerConfig = String.valueOf(containerConfig.hashCode())
+        // absent, not null: sipHash contributes the key even for a null value, so always
+        // putting it would change every existing public and anonymous id
+        if( tenant ) attrs.tenant = tenant
         return RegHelper.sipHash(attrs)
     }
 
-    static String makeMultiPlatformContainerId(String containerFile, String condaFile, String repository, BuildContext buildContext, ContainerConfig containerConfig) {
-        return makeContainerId(containerFile, condaFile, ContainerPlatform.MULTI_PLATFORM, repository, buildContext, containerConfig)
+    static String makeMultiPlatformContainerId(String containerFile, String condaFile, String repository, BuildContext buildContext, ContainerConfig containerConfig, String tenant=null) {
+        return makeContainerId(containerFile, condaFile, ContainerPlatform.MULTI_PLATFORM, repository, buildContext, containerConfig, tenant)
     }
 
     static void checkContainerSpec(String file) {

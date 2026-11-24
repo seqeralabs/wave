@@ -45,7 +45,7 @@ import io.seqera.wave.tower.PlatformId
 @CompileStatic
 class SociPushRequest {
 
-    static final String ID_PREFIX = 'socipush-'
+    static final String ID_PREFIX = 'sp-'
 
     String requestId
     String targetImage

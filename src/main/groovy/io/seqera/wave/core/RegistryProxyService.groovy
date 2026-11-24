@@ -33,6 +33,7 @@ import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.core.io.buffer.ByteBuffer
+import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.reactor.http.client.ReactorStreamingHttpClient
 import io.micronaut.scheduling.TaskExecutors
@@ -46,6 +47,9 @@ import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.configuration.SociConfig
+import io.seqera.wave.exception.BadRequestException
+import io.seqera.wave.exception.HttpResponseException
+import io.seqera.wave.exception.RegistryForwardException
 import io.seqera.wave.service.soci.SociIndexService
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
@@ -149,7 +153,7 @@ class RegistryProxyService {
                 : result
     }
 
-    private ProxyClient client(RoutePath route) {
+    protected ProxyClient client(RoutePath route) {
         final httpClient = HttpClientFactory.neverRedirectsHttpClient()
         final registry = registryLookup.lookup(route.registry)
         final creds = getCredentials(route)
@@ -361,6 +365,53 @@ class RegistryProxyService {
         }
     }
 
+    /**
+     * Retrieve the digest of an image for a container request.
+     *
+     * Unlike {@link #getImageDigest(java.lang.String, io.seqera.wave.tower.PlatformId, boolean)} it does not report
+     * the image as missing when the registry credentials cannot be fetched because Seqera Platform is unreachable
+     * (e.g. a pairing connection drop): it fails with a 503 instead, so that the client retries the request.
+     *
+     * @param containerImage The container image name
+     * @param identity The identity used to resolve the registry credentials
+     * @param failOnRateLimit When {@code true} a registry rate limit is reported as an error instead of a missing image
+     * @return The image digest or {@code null} when the image does not exist or access is not authorized
+     * @throws HttpResponseException with status 503 when Seqera Platform cannot be reached
+     */
+    String getImageDigestOrUnavailable(String containerImage, PlatformId identity, boolean failOnRateLimit=false) {
+        try {
+            return getImageDigest0(containerImage, identity, false).get()
+        }
+        catch(Exception e) {
+            log.warn "Unable to retrieve digest for image '${containerImage}' -- cause: ${e.message}"
+            if( failOnRateLimit && isRateLimited(e) )
+                throw new BadRequestException("Container registry '${ContainerCoordinates.parse(containerImage).registry}' is rate limiting the request for image '${containerImage}' - add the registry credentials to the workspace or try again later")
+            if( isPlatformUnavailable(e) )
+                throw new HttpResponseException(HttpStatus.SERVICE_UNAVAILABLE, "Unable to fetch the registry credentials for image '${containerImage}' from Seqera Platform - try again later", e)
+            return null
+        }
+    }
+
+    // a Platform timeout, rate limit or server error -- only the Platform client raises HttpResponseException
+    static boolean isPlatformUnavailable(Throwable t) {
+        for( Throwable it=t; it!=null; it=it.cause ) {
+            if( it instanceof HttpResponseException ) {
+                final code = it.statusCode().code
+                return code==408 || code==429 || code>=500
+            }
+        }
+        return false
+    }
+
+    // the registry replied 429 to the manifest, auth token or /v2 request
+    static boolean isRateLimited(Throwable t) {
+        for( Throwable it=t; it!=null; it=it.cause ) {
+            if( it instanceof RegistryForwardException )
+                return it.statusCode==429
+        }
+        return false
+    }
+
     static private List<Integer> RETRY_ON_NOT_FOUND = HTTP_RETRYABLE_ERRORS + 404
 
     // note: return a CompletableFuture to force micronaut to use caffeine AsyncCache
@@ -378,6 +429,8 @@ class RegistryProxyService {
                 .withRetryableHttpErrors(retryOnNotFound ? RETRY_ON_NOT_FOUND : HTTP_RETRYABLE_ERRORS)
         final resp = proxyClient.head(route.path, WaveDefault.ACCEPT_HEADERS)
         final result = resp.headers().firstValue('docker-content-digest').orElse(null)
+        if( !result && resp.statusCode()==429 )
+            throw new RegistryForwardException("Registry rate limit retrieving digest for image '$image' [429]", 429, null, [:])
         if( !result && (resp.statusCode()!=404 || retryOnNotFound) ) {
             log.warn "Unable to retrieve digest for image '$image' -- response status=${resp.statusCode()}; headers:\n${RegHelper.dumpHeaders(resp)}"
         }
@@ -416,6 +469,29 @@ class RegistryProxyService {
         if( resp.statusCode()!=200 )
             throw new IllegalStateException("Unable to fetch blob '${image}' - response status=${resp.statusCode()}")
         return resp.body()
+    }
+
+    /**
+     * Forward a {@code HEAD} request to the target registry
+     *
+     * @param route The request route
+     * @param headers The request headers
+     * @return The registry response status and headers, for a redirect the location is resolved against the target registry host
+     */
+    DelegateResponse handleHead(RoutePath route, Map<String,List<String>> headers) {
+        final proxyClient = client(route)
+        final resp = proxyClient.head(route.path, headers)
+        final redirect = resp.headers().firstValue('Location').orElse(null)
+        final status = resp.statusCode()
+        // the redirect location can be a relative path i.e. without hostname
+        // therefore resolve it against the target registry hostname
+        final location = redirect && status in HTTP_REDIRECT_CODES
+                ? proxyClient.registry.host.resolve(redirect).toString()
+                : null
+        return new DelegateResponse(
+                statusCode: status,
+                headers: resp.headers().map(),
+                location: location )
     }
 
     Flux<ByteBuffer<?>> streamBlob(RoutePath route, Map<String,List<String>> headers) {

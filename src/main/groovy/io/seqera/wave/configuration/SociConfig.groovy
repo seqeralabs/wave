@@ -67,7 +67,7 @@ class SociConfig {
     @Value('${wave.soci.ztoc.duration:30d}')
     Duration ztocCacheDuration
 
-    @Value('${wave.soci.indexer-image:`public.cr.seqera.io/wave/soci-indexer:v0.1.0`}')
+    @Value('${wave.soci.indexer-image:`public.cr.seqera.io/wave/soci-indexer:v0.1.1`}')
     String indexerImage
 
     @Value('${wave.soci.timeout:10m}')

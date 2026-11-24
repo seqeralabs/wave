@@ -33,6 +33,9 @@ Examples:
   # Build a container getting a persistent image name
   wave -i alpine --freeze --build-repo docker.io/user/repo --tower-token <YOUR TOKEN>
 
+  # Build a container with a SOCI index for lazy loading, getting a persistent image name
+  wave --conda-package bamtools=2.5.2 --soci --freeze --build-repo docker.io/user/repo --tower-token <YOUR TOKEN> --await
+
   # Build a Singularity container and push it to an OCI registry
   wave -f Singularityfile --singularity --freeze --build-repo docker.io/user/repo
 

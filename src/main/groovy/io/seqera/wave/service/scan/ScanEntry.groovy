@@ -28,6 +28,7 @@ import groovy.transform.ToString
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.job.JobEntry
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.tower.RecordOwner
 import io.seqera.data.store.state.StateEntry
 /**
  * Model for scan result
@@ -114,6 +115,14 @@ class ScanEntry implements StateEntry<String>, JobEntry {
      */
     String logs
 
+    /**
+     * The Platform tenant owning the record this scan derives from, null when anonymous
+     */
+    RecordOwner owner
+
+    /** inherited from the parent; a Visibility value, null is read as public */
+    String visibility
+
     @Override
     String getKey() {
         return scanId
@@ -144,7 +153,9 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 PENDING,
                 List.of(),
                 null,
-                null)
+                null,
+                RecordOwner.of(request.identity),
+                request.visibility)
     }
 
     ScanEntry success(List<ScanVulnerability> vulnerabilities){
@@ -162,7 +173,9 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 SUCCEEDED,
                 vulnerabilities,
                 0,
-                null)
+                null,
+                this.owner,
+                this.visibility)
     }
 
     ScanEntry failure(Integer exitCode, String logs){
@@ -180,7 +193,9 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 FAILED,
                 List.of(),
                 exitCode,
-                logs)
+                logs,
+                this.owner,
+                this.visibility)
     }
 
     static ScanEntry failure(ScanRequest request){
@@ -198,7 +213,9 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 FAILED,
                 List.of(),
                 null,
-                null)
+                null,
+                RecordOwner.of(request.identity),
+                request.visibility)
     }
 
 
@@ -228,7 +245,9 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 opts.status as String,
                 opts.vulnerabilities as List<ScanVulnerability>,
                 opts.exitCode as Integer,
-                opts.logs as String
+                opts.logs as String,
+                opts.owner as RecordOwner,
+                opts.visibility as String
         )
     }
 
@@ -247,7 +266,9 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 record.status,
                 record.vulnerabilities,
                 record.exitCode,
-                record.logs
+                record.logs,
+                record.owner,
+                record.visibility
         )
     }
 

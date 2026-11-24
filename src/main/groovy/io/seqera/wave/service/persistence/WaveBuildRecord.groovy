@@ -24,6 +24,7 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
+import com.fasterxml.jackson.annotation.JsonIgnore
 import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.core.ChildRefs
@@ -32,6 +33,7 @@ import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.tower.RecordOwner
 /**
  * A collection of request and response properties to be stored
  *
@@ -41,7 +43,7 @@ import io.seqera.wave.service.builder.BuildResult
 @ToString(includePackage = false, includeNames = true)
 @CompileStatic
 @EqualsAndHashCode
-class WaveBuildRecord {
+class WaveBuildRecord implements Cloneable {
 
     @PostgresIgnore
     String buildId
@@ -64,6 +66,8 @@ class WaveBuildRecord {
     String buildTemplate
     ChildRefs buildChildIds
     ChildRefs scanChildIds
+    @JsonIgnore @PersistOnly RecordOwner owner   // stored, not returned by the API
+    String visibility                            // a Visibility value; null is read as public
 
     Boolean succeeded() {
         return duration != null ? (exitStatus==0) : null
@@ -104,10 +108,24 @@ class WaveBuildRecord {
                 compression: request?.compression,
                 buildTemplate: request?.buildTemplate,
                 buildChildIds: request?.buildChildIds,
-                scanChildIds: request?.scanChildIds
+                scanChildIds: request?.scanChildIds,
+                owner: RecordOwner.of(request.identity),
+                visibility: request.visibility
         )
     }
     
+    /**
+     * @return A copy of this record exposing only the user id, so that the user name,
+     *         email and request IP are not leaked when the record is returned in an API response.
+     */
+    WaveBuildRecord withUserIdOnly() {
+        final result = (WaveBuildRecord) super.clone()
+        result.userName = null
+        result.userEmail = null
+        result.requestIp = null
+        return result
+    }
+
     BuildStatusResponse toStatusResponse() {
         final status = duration!=null
                 ? BuildStatusResponse.Status.COMPLETED

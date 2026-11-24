@@ -43,7 +43,7 @@ class SociIndexStateStoreTest extends Specification {
     def 'should await the completion of the indexing jobs' () {
         given:
         def store = store()
-        def request = new SociIndexRequest(requestId: 'soci-1', layerDigest: LAYER, spanSize: 4194304)
+        def request = new SociIndexRequest(requestId: 'si-1', layerDigest: LAYER, spanSize: 4194304)
         def entry = SociIndexEntry.of(request)
         store.put(entry.key, entry)
 
@@ -62,7 +62,7 @@ class SociIndexStateStoreTest extends Specification {
     def 'should time out when a job does not complete' () {
         given:
         def store = store()
-        def entry = SociIndexEntry.of(new SociIndexRequest(requestId: 'soci-1', layerDigest: LAYER, spanSize: 4194304))
+        def entry = SociIndexEntry.of(new SociIndexRequest(requestId: 'si-1', layerDigest: LAYER, spanSize: 4194304))
         store.put(entry.key, entry)
 
         expect:

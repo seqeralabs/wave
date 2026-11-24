@@ -147,7 +147,7 @@ To use Pixi for Conda-based container builds:
     ```
 
 :::note
-The `wave.build.conda.*` options don't apply to Pixi builds. Conda lock files are not supported through the `conda/pixi:v1` template.
+The `wave.build.conda.*` options don't apply to Pixi builds. Conda lock files are not supported through the `conda/pixi:v1` template. To build from a Pixi lock file, set the `conda` directive to the lock file absolute path or URL and use the `conda/pixi:v1-lock` template. See [Pixi lock file builds](../features/container-builds.mdx#pixi-lock-file-builds).
 :::
 
 </details>

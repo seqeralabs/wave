@@ -45,7 +45,7 @@ import io.seqera.random.LongRndKey
 @CompileStatic
 class SociIndexRequest {
 
-    static final String ID_PREFIX = 'soci-'
+    static final String ID_PREFIX = 'si-'
 
     String requestId
     String source

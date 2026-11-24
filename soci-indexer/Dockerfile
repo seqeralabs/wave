@@ -1,7 +1,7 @@
 # soci-indexer: builds SOCI zTOCs for Wave. The soci ztoc library uses cgo and links zlib statically,
 # so the binary is cross-compiled with the target's C toolchain on the build platform: as condasplit,
 # no step runs under emulation
-FROM --platform=$BUILDPLATFORM golang:1.26-bookworm AS build
+FROM --platform=$BUILDPLATFORM golang:1.27-bookworm AS build
 ARG TARGETARCH
 ARG BUILDARCH
 RUN case "$TARGETARCH" in amd64) triplet=x86_64-linux-gnu ;; arm64) triplet=aarch64-linux-gnu ;; *) exit 1 ;; esac \
@@ -13,6 +13,8 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY *.go ./
+# the ztoc library links zlib with `-l:libz.a`, a cgo flag Go 1.27.4 no longer allows by default
+ENV CGO_LDFLAGS_ALLOW='-l:libz\.a'
 RUN CC=$(cat /cc) CGO_ENABLED=1 GOOS=linux GOARCH=$TARGETARCH \
     go build -trimpath -ldflags '-s -w -extldflags "-static"' -o /soci-indexer .
 

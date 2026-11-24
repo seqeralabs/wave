@@ -33,6 +33,15 @@ import io.seqera.wave.tower.User
  */
 class JwtAuthTest extends Specification {
 
+    def 'should not expose the tokens in toString' () {
+        given:
+        def auth = new JwtAuth('key-12345', 'http://foo.com', 'bearer-12345-secret', 'refresh-12345-secret')
+
+        expect:
+        !auth.toString().contains('bearer-12345-secret')
+        !auth.toString().contains('refresh-12345-secret')
+    }
+
     def 'should copy jwt auth' () {
         given:
         def now = Instant.now();

@@ -27,15 +27,15 @@ repositories {
 }
 
 dependencies {
-    implementation 'io.seqera:wave-api:1.43.0'
-    implementation 'io.seqera:wave-utils:1.43.0'
+    implementation 'io.seqera:wave-api:1.44.2'
+    implementation 'io.seqera:wave-utils:1.44.2'
     implementation 'info.picocli:picocli:4.7.7'
     implementation 'com.squareup.moshi:moshi:1.15.2'
     implementation 'com.squareup.moshi:moshi-adapters:1.15.2'
     implementation 'dev.failsafe:failsafe:3.3.2'
-    implementation 'org.apache.commons:commons-lang3:3.21.0'
+    implementation 'org.apache.commons:commons-lang3:3.22.0'
     implementation 'org.yaml:snakeyaml:2.7'
-    implementation 'org.semver4j:semver4j:5.8.0'
+    implementation 'org.semver4j:semver4j:6.0.0'
     annotationProcessor 'info.picocli:picocli-codegen:4.7.7'
     // bump commons-io version to address security vulnerabilities
     runtimeOnly 'commons-io:commons-io:2.22.0'
@@ -44,8 +44,8 @@ dependencies {
     testImplementation "org.apache.groovy:groovy-nio:4.0.33"
     testImplementation "org.apache.groovy:groovy-test:4.0.33"
     testImplementation "org.apache.groovy:groovy-json:4.0.33"
-    testImplementation "net.bytebuddy:byte-buddy:1.18.16"
-    testImplementation ("org.spockframework:spock-core:2.4-groovy-4.0") { exclude group: 'org.apache.groovy' }
+    testImplementation "net.bytebuddy:byte-buddy:1.18.17"
+    testImplementation ("org.spockframework:spock-core:2.5-groovy-4.0") { exclude group: 'org.apache.groovy' }
 }
 
 test {
@@ -106,10 +106,11 @@ graalvmNative {
                 buildArgs(['--static', '--libc=musl', '-march=compatibility', '-R:ReservedAddressSpaceSize=512m'])
             }
 
-            javaLauncher = javaToolchains.launcherFor {
+            // keep `.set(...)`: the Groovy `javaLauncher = ...` form breaks on native-build-tools 1.x
+            javaLauncher.set(javaToolchains.launcherFor {
                 languageVersion = JavaLanguageVersion.of(25)
                 vendor = JvmVendorSpec.matching("Oracle Corporation")
-            }
+            })
             buildArgs.add('--enable-url-protocols=https')
             buildArgs.add('-R:MaxHeapSize=100M')
             buildArgs.add('-R:MinHeapSize=10M')

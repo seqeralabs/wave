@@ -30,6 +30,7 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.service.pairing.PairingRecord
 import io.seqera.service.pairing.PairingService
+import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuth
@@ -334,6 +335,33 @@ class CredentialsServiceTest extends Specification {
         if( credentials )
             return new GetCredentialsKeysResponse(keys: TEST_CIPHER.encrypt(key,credentials.getBytes()).encode())
         return null
+    }
+
+    def 'should fail when platform is unavailable while fetching the compute credentials' () {
+        given:
+        def svc = Spy(CredentialServiceImpl)
+        def identity = new PlatformId(new User(id:1), 100, 'token', 'tower.io', '101')
+
+        when:
+        svc.findComputeCreds(identity)
+        then:
+        1 * svc.findComputeCreds0(identity) >> { throw new HttpResponseException(408, 'Timeout error connecting to platform') }
+        and:
+        def e = thrown(HttpResponseException)
+        e.statusCode().code == 408
+    }
+
+    def 'should return null when the compute credentials cannot be fetched' () {
+        given:
+        def svc = Spy(CredentialServiceImpl)
+        def identity = new PlatformId(new User(id:1), 100, 'token', 'tower.io', '101')
+
+        when:
+        def result = svc.findComputeCreds(identity)
+        then:
+        1 * svc.findComputeCreds0(identity) >> { throw new HttpResponseException(403, 'Forbidden') }
+        and:
+        result == null
     }
 
 }

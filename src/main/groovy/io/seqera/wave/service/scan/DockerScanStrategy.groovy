@@ -25,6 +25,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.ScanEnabled
+import io.seqera.wave.service.job.JobHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -66,9 +67,7 @@ class DockerScanStrategy extends ScanStrategy {
                 .redirectErrorStream(true)
                 .start()
 
-        if( process.waitFor()!=0 ) {
-            throw new IllegalStateException("Unable to launch scan container - exitCode=${process.exitValue()}; output=${process.text}")
-        }
+        JobHelper.awaitDockerLaunch(process, jobName, "scan container")
     }
 
     protected List<String> dockerWrapper(String jobName, Path scanDir, Path credsFile, List<String> env) {
