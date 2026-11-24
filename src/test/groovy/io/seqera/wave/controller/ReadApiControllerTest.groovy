@@ -159,7 +159,7 @@ class ReadApiControllerTest extends Specification {
     }
 
     def 'should hand every route the owner and visibility of the record it serves' () {
-        given: 'one private record behind each of the ten routes'
+        given: 'one private record behind each of the eleven routes'
         def access = Mock(RecordAccessService)
         def mirror = Mock(MirrorResult) { getOwner() >> OWNER; getVisibility() >> 'private' }
         def scan = Mock(WaveScanRecord) { getOwner() >> OWNER; getVisibility() >> 'private' }
