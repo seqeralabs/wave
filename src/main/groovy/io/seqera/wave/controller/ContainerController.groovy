@@ -53,8 +53,8 @@ import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
-import io.micronaut.http.HttpStatus
 import io.seqera.wave.exception.HttpResponseException
+import io.seqera.wave.service.access.AccessRules
 import io.seqera.wave.service.access.RecordAccessService
 import io.seqera.wave.exception.UnsupportedBuildServiceException
 import io.seqera.wave.exception.UnsupportedMirrorServiceException
@@ -382,13 +382,10 @@ class ContainerController {
      * silently, never an error: an anonymous {@code private} is ignored so no released client breaks.
      */
     protected String resolveVisibility(SubmitContainerTokenRequest req, PlatformId identity, String buildRepository) {
-        if( !Visibility.isPrivate(req.visibility) )
-            return Visibility.PUBLIC
-        if( RecordOwner.of(identity) == null )
-            return Visibility.PUBLIC
-        if( buildConfig.isCommunityRepo(buildRepository) )
-            return Visibility.PUBLIC
-        return Visibility.PRIVATE
+        final honoured = Visibility.isPrivate(req.visibility)
+                && RecordOwner.of(identity) != null
+                && !buildConfig.isCommunityRepo(buildRepository)
+        return honoured ? Visibility.PRIVATE : Visibility.PUBLIC
     }
 
     /** A private request must belong to the workspace it names, or a caller could compute another workspace's private build id */
@@ -397,22 +394,8 @@ class ContainerController {
         if( !Visibility.isPrivate(visibility) )
             return
         final decision = accessService.memberOf(identity)
-        if( decision == RecordAccessService.Decision.ALLOW )
-            return
-        final platform = "Seqera Platform at '${identity.towerEndpoint}'"
-        final workspace = "workspace '${identity.workspaceId}'"
-        String message
-        switch (decision) {
-            case RecordAccessService.Decision.FORBIDDEN:
-                message = "Private container request denied - your user is not a member of $workspace on $platform - check the workspace ID or omit the `visibility` attribute"
-                break
-            case RecordAccessService.Decision.REJECTED:
-                message = "Private container request denied - $platform rejected the access token, it may be expired or revoked - provide a valid access token"
-                break
-            default:
-                message = "Unable to verify your access to $workspace because $platform is not reachable - try again later"
-        }
-        throw new HttpResponseException(decision.status, message)
+        if( decision != RecordAccessService.Decision.ALLOW )
+            throw new HttpResponseException(decision.status, AccessRules.refusal(decision, identity))
     }
 
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
