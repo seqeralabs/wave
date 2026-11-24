@@ -121,9 +121,6 @@ class BuildConfig {
     @Value('${wave.build.reserved-words:[]}')
     Set<String> reservedWords
 
-    @Value('${wave.build.record.duration:5d}')
-    Duration recordDuration
-
     @Value('${wave.build.oci-mediatypes:true}')
     Boolean ociMediatypes
 
@@ -193,7 +190,6 @@ class BuildConfig {
                 "status-delay=${statusDelay}; " +
                 "status-duration=${statusDuration}; " +
                 "failure-duration=${getFailureDuration()}; " +
-                "record-duration=${recordDuration}; " +
                 "oci-mediatypes=${ociMediatypes}; " +
                 "compression=${compression}; " +
                 "force-compression=${forceCompression}; " +
