@@ -305,9 +305,10 @@ class WaveContainerRecord {
     }
 
     /**
-     * Copy constructor replacing the {@link User} identity, keeping all other fields unchanged.
+     * Copy constructor replacing the {@link User} identity and the request IP address,
+     * keeping all other fields unchanged.
      */
-    WaveContainerRecord(WaveContainerRecord that, User user) {
+    WaveContainerRecord(WaveContainerRecord that, User user, String ipAddress) {
         this.id = that.id
         this.user = user
         this.workspaceId = that.workspaceId
@@ -322,7 +323,7 @@ class WaveContainerRecord {
         this.fingerprint = that.fingerprint
         this.timestamp = that.timestamp
         this.zoneId = that.zoneId
-        this.ipAddress = that.ipAddress
+        this.ipAddress = ipAddress
         this.condaFile = that.condaFile
         this.containerFile = that.containerFile
         this.sourceImage = that.sourceImage
@@ -340,11 +341,12 @@ class WaveContainerRecord {
     }
 
     /**
-     * @return A copy of this record exposing only the user id, so that the user name
-     *         and email are not leaked when the record is returned in an API response.
+     * @return A copy of this record exposing only the user id, so that the user name,
+     *         email and request IP address are not leaked when the record is returned
+     *         in an API response.
      */
     WaveContainerRecord withUserIdOnly() {
-        return user!=null ? new WaveContainerRecord(this, User.ofId(user.id)) : this
+        return new WaveContainerRecord(this, user!=null ? User.ofId(user.id) : null, null)
     }
 
     /**

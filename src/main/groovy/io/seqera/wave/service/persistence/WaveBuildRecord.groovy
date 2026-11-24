@@ -43,7 +43,7 @@ import io.seqera.wave.tower.RecordOwner
 @ToString(includePackage = false, includeNames = true)
 @CompileStatic
 @EqualsAndHashCode
-class WaveBuildRecord {
+class WaveBuildRecord implements Cloneable {
 
     @PostgresIgnore
     String buildId
@@ -114,6 +114,18 @@ class WaveBuildRecord {
         )
     }
     
+    /**
+     * @return A copy of this record exposing only the user id, so that the user name,
+     *         email and request IP are not leaked when the record is returned in an API response.
+     */
+    WaveBuildRecord withUserIdOnly() {
+        final result = (WaveBuildRecord) super.clone()
+        result.userName = null
+        result.userEmail = null
+        result.requestIp = null
+        return result
+    }
+
     BuildStatusResponse toStatusResponse() {
         final status = duration!=null
                 ? BuildStatusResponse.Status.COMPLETED
