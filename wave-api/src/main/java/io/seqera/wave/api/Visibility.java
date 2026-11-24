@@ -19,7 +19,8 @@
 package io.seqera.wave.api;
 
 /**
- * The visibility a Wave record can be created with.
+ * The visibility of a Wave record. It is never requested: Wave derives it from the identity of
+ * the request that created the record.
  *
  * Modelled as a string rather than an enum because {@code public} and {@code private} are Java
  * reserved words, so they cannot be enum constants, and every other wire value in this API is
@@ -35,14 +36,7 @@ public final class Visibility {
 
     private Visibility() {}
 
-    /**
-     * @return {@code true} when the value is one Wave understands, {@code null} included: an
-     *      absent visibility means public.
-     */
-    public static boolean isValid(String value) {
-        return value == null || PUBLIC.equals(value) || PRIVATE.equals(value);
-    }
-
+    /** @return {@code true} for a private record; a record with no visibility is public */
     public static boolean isPrivate(String value) {
         return PRIVATE.equals(value);
     }

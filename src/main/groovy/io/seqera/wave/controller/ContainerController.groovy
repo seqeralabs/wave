@@ -377,15 +377,13 @@ class ContainerController {
     }
 
     /**
-     * The visibility a record is actually created with. {@code private} is honoured only when the
-     * request has an owner and does not target the community repository. Anything else is public
-     * silently, never an error: an anonymous {@code private} is ignored so no released client breaks.
+     * The visibility a record is created with. It is never requested, only derived: a record is
+     * private when the request is made on behalf of a Platform user, and public when the request
+     * is anonymous or targets the community repository, whose image names are meant to be shared.
      */
-    protected String resolveVisibility(SubmitContainerTokenRequest req, PlatformId identity, String buildRepository) {
-        final honoured = Visibility.isPrivate(req.visibility)
-                && RecordOwner.of(identity) != null
-                && !buildConfig.isCommunityRepo(buildRepository)
-        return honoured ? Visibility.PRIVATE : Visibility.PUBLIC
+    protected String resolveVisibility(PlatformId identity, String buildRepository) {
+        final owned = RecordOwner.of(identity) != null
+        return owned && !buildConfig.isCommunityRepo(buildRepository) ? Visibility.PRIVATE : Visibility.PUBLIC
     }
 
     /** A private request must belong to the workspace it names, or a caller could compute another workspace's private build id */
@@ -435,7 +433,7 @@ class ContainerController {
 
         // create a unique digest to identify the build req
         // resolved before the id: a private build hashes its tenant, so the two cannot disagree
-        final visibility = resolveVisibility(req, identity, buildRepository)
+        final visibility = resolveVisibility(identity, buildRepository)
         checkWorkspaceAccess(identity, visibility)
         final tenant = RecordOwner.tenantOf(identity, visibility)
         final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext, containerConfig, tenant)
@@ -650,7 +648,7 @@ class ContainerController {
             // when there's a scan, return null because the scan status is not known
             succeeded = scanId==null ? true : null
             // no build or mirror on this path, so there is no target repository to check
-            visibility = resolveVisibility(req, identity, null)
+            visibility = resolveVisibility(identity, null)
         }
         else
             throw new IllegalStateException("Specify either 'containerImage' or 'containerFile' attribute")
@@ -716,7 +714,7 @@ class ContainerController {
                 Instant.now(),
                 offset,
                 identity,
-                resolveVisibility(request, identity, request.buildRepository)
+                resolveVisibility(identity, request.buildRepository)
         )
     }
 
@@ -765,8 +763,6 @@ class ContainerController {
     }
 
     void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException {
-        if( !Visibility.isValid(req.visibility) )
-            throw new BadRequestException("Invalid value for attribute `visibility`: '$req.visibility' - allowed values are 'public' and 'private'")
         String msg
         //check conda file size
         if( req.condaFile && buildConfig && req.condaFile.length() > buildConfig.maxCondaFileSize )

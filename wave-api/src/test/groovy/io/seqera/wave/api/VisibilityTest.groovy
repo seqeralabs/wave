@@ -25,18 +25,6 @@ import spock.lang.Specification
  */
 class VisibilityTest extends Specification {
 
-    def 'should accept only the documented values' () {
-        expect:
-        // absent is valid and means public
-        Visibility.isValid(null)
-        Visibility.isValid('public')
-        Visibility.isValid('private')
-        and:
-        !Visibility.isValid('Private')
-        !Visibility.isValid('secret')
-        !Visibility.isValid('')
-    }
-
     def 'should read only the exact private value as private' () {
         expect:
         Visibility.isPrivate('private')
