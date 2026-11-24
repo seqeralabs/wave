@@ -165,9 +165,6 @@ class BuildRequest {
      */
     final ChildRefs scanChildIds
 
-    /** a Visibility value; null is read as public */
-    final String visibility
-
     BuildRequest(
             String containerId,
             String containerFile,
@@ -187,8 +184,7 @@ class BuildRequest {
             Duration maxDuration,
             BuildCompression compression,
             String buildTemplate,
-            boolean noEmail = false,
-            String visibility = null
+            boolean noEmail = false
     )
     {
         this.containerId = containerId
@@ -211,7 +207,6 @@ class BuildRequest {
         this.compression = compression
         this.buildTemplate = buildTemplate
         this.noEmail = noEmail
-        this.visibility = visibility
         // NOTE: this is meant to be updated - automatically - when the request is submitted
         this.buildId = computeBuildId(containerId)
     }
@@ -240,7 +235,6 @@ class BuildRequest {
         this.compression = opts.compression as BuildCompression
         this.buildId = opts.buildId ?: computeBuildId(containerId)
         this.buildTemplate = opts.buildTemplate
-        this.visibility = opts.visibility as String
         this.noEmail = opts.noEmail as boolean
         this.buildChildIds = opts.buildChildIds as ChildRefs
         this.scanChildIds = opts.scanChildIds as ChildRefs
@@ -274,8 +268,7 @@ class BuildRequest {
                 buildTemplate: this.buildTemplate,
                 noEmail: this.noEmail,
                 buildChildIds: this.buildChildIds,
-                scanChildIds: scanChildIds,
-                visibility: this.visibility
+                scanChildIds: scanChildIds
         )
     }
 

@@ -56,10 +56,6 @@ class TowerClient {
     @Value('${wave.pairing.cache.long.duration:24h}')
     private Duration cacheLongDuration
 
-    /** How long before a revoked token or a removed membership takes effect */
-    @Value('${wave.access-check.cache.duration:60s}')
-    private Duration accessCheckDuration
-
     protected <T> CompletableFuture<T> getAsync(URI uri, String endpoint, @Nullable JwtAuth authorization, Class<T> type) {
         assert uri, "Missing uri argument"
         assert endpoint, "Missing endpoint argument"
@@ -79,30 +75,6 @@ class TowerClient {
         // NOTE: it assumes the user info metadata does nor change over time
         // and therefore the *long* expiration cached is used
         get0(uri, towerEndpoint, authorization, GetUserInfoResponse, k, cacheLongDuration) as GetUserInfoResponse
-    }
-
-    /** The token is validated as presented, and cached briefly so a revoked one stops working */
-    GetUserInfoResponse userInfoForAccess(String towerEndpoint, JwtAuth authorization) {
-        return getAsPresented(userInfoEndpoint(towerEndpoint), towerEndpoint, authorization, GetUserInfoResponse) as GetUserInfoResponse
-    }
-
-    /** Keyed apart from the submit path's entries, which have a far longer ttl */
-    private Object getAsPresented(URI uri, String endpoint, JwtAuth auth, Class type) {
-        final k = RegHelper.sipHash('access', uri, auth.key)
-        return cache.getOrCompute(k, (it)-> connector.sendAsyncAsPresented(endpoint, uri, auth, type).get(), accessCheckDuration)
-    }
-
-    /**
-     * The organisations and workspaces the caller belongs to. Platform allows a caller to list
-     * only their own, so this is safe to call with the caller's token.
-     */
-    ListWorkspacesResponse listWorkspaces(String towerEndpoint, JwtAuth authorization, Long userId) {
-        return getAsPresented(listWorkspacesEndpoint(towerEndpoint, userId), towerEndpoint, authorization, ListWorkspacesResponse) as ListWorkspacesResponse
-    }
-
-    protected static URI listWorkspacesEndpoint(String towerEndpoint, Long userId) {
-        assert userId, "Missing userId argument"
-        return URI.create("${checkEndpoint(towerEndpoint)}/user/${userId}/workspaces")
     }
 
     ListCredentialsResponse listCredentials(String towerEndpoint, JwtAuth authorization, Long workspaceId, String workflowId) {

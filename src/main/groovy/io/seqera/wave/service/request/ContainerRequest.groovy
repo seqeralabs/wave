@@ -61,7 +61,6 @@ class ContainerRequest {
     Boolean succeeded
     Instant creationTime
     boolean soci
-    String visibility   // a Visibility value; null is read as public
 
     boolean durable() {
         return freeze || getMirror()
@@ -196,8 +195,7 @@ class ContainerRequest {
             boolean dryRun,
             Boolean succeeded,
             Instant creationTime,
-            boolean soci,
-            String visibility
+            boolean soci
     )
     {
         return new ContainerRequest(
@@ -219,8 +217,7 @@ class ContainerRequest {
                 dryRun,
                 succeeded,
                 creationTime,
-                soci,
-                visibility
+                soci
         )
     }
 
@@ -248,8 +245,7 @@ class ContainerRequest {
                 data.dryRun as boolean,
                 data.succeeded as Boolean,
                 data.creationTime as Instant,
-                data.soci as boolean,
-                data.visibility as String
+                data.soci as boolean
         )
     }
 }

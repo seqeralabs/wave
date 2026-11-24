@@ -44,8 +44,6 @@ import jakarta.annotation.Nullable
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
-import io.seqera.wave.tower.RecordOwner
-
 import static io.seqera.wave.util.ContainerHelper.makeContainerId
 import static io.seqera.wave.util.ContainerHelper.makeTargetImage
 import static io.seqera.wave.util.RegHelper.layerDir
@@ -306,17 +304,13 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
         final repo = ContainerCoordinates.parse(template.targetImage).repository
         final containerConfig = filterLayersForPlatform(template.containerConfig, platform)
         final containerFile = removeDroppedLayers(template.containerFile, template.containerConfig, containerConfig)
-        // the per-architecture id has to carry the tenant too, or two workspaces would
-        // share the child builds of a private multi-platform image
-        final tenant = RecordOwner.tenantOf(template.identity, template.visibility)
         final platformId = makeContainerId(
                 containerFile,
                 template.condaFile,
                 platform,
                 repo,
                 template.buildContext,
-                containerConfig,
-                tenant
+                containerConfig
         )
         final platformImage = makeTargetImage(template.format, repo, platformId, template.condaFile, null)
 
@@ -339,8 +333,7 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
                 template.maxDuration,
                 template.compression,
                 template.buildTemplate,
-                true,   // noEmail - suppress individual sub-build notifications
-                template.visibility
+                true    // noEmail - suppress individual sub-build notifications
         )
     }
 }

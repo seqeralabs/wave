@@ -254,8 +254,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
                 platform,
                 workDir,
                 Instant.now(),
-                request.identity,
-                request.visibility)
+                request.identity)
     }
 
     protected ScanRequest fromMirror(MirrorRequest request) {
@@ -270,8 +269,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
                 request.platform,
                 workDir,
                 Instant.now(),
-                request.identity,
-                request.visibility)
+                request.identity)
     }
 
     protected ScanRequest fromContainer(ContainerRequest request) {
@@ -287,8 +285,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
                 request.platform,
                 workDir,
                 Instant.now(),
-                request.identity,
-                request.visibility)
+                request.identity)
     }
 
     // **************************************************************

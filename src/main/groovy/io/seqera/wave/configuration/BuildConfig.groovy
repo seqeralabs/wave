@@ -85,14 +85,6 @@ class BuildConfig {
     String defaultPublicRepository
 
     /**
-     * @return {@code true} when the repository is the community one, whose image names are
-     *      deterministic and meant to be shared
-     */
-    boolean isCommunityRepo(String repo) {
-        return repo && defaultPublicRepository && repo.startsWith(defaultPublicRepository)
-    }
-
-    /**
      * File system path there the dockerfile is save
      */
     @Value('${wave.build.workspace}')

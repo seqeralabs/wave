@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector
 import com.fasterxml.jackson.databind.node.ObjectNode
 import groovy.transform.CompileStatic
 import io.seqera.util.pool.SimplePool
-import io.seqera.wave.service.persistence.PersistOnly
 import io.seqera.wave.service.persistence.PostgresIgnore
 import io.seqera.wave.util.JacksonHelper
 /**
@@ -41,35 +40,16 @@ class Mapper {
 
     static private ObjectMapper defaultMapper() {
         return JacksonHelper.defaultJsonMapper()
-                .setAnnotationIntrospector(new PersistenceIntrospector(false))
     }
 
     static private ObjectMapper ignoreMapper() {
         JacksonHelper.defaultJsonMapper()
-                .setAnnotationIntrospector(new PersistenceIntrospector(true))
-    }
-
-    /**
-     * Applies the database view of a record: {@code @PostgresIgnore} fields are left out when
-     * writing, and a {@code @PersistOnly} field is kept even though {@code @JsonIgnore} hides
-     * it from API responses.
-     */
-    static private class PersistenceIntrospector extends JacksonAnnotationIntrospector {
-
-        private final boolean honourPostgresIgnore
-
-        PersistenceIntrospector(boolean honourPostgresIgnore) {
-            this.honourPostgresIgnore = honourPostgresIgnore
-        }
-
-        @Override
-        boolean hasIgnoreMarker(AnnotatedMember a) {
-            if( honourPostgresIgnore && a.hasAnnotation(PostgresIgnore) )
-                return true
-            if( a.hasAnnotation(PersistOnly) )
-                return false
-            return super.hasIgnoreMarker(a)
-        }
+                .setAnnotationIntrospector(new JacksonAnnotationIntrospector() {
+                    @Override
+                    boolean hasIgnoreMarker(AnnotatedMember a) {
+                        return a.hasAnnotation(PostgresIgnore) || super.hasIgnoreMarker(a)
+                    }
+                })
     }
 
     static String toJson(Object object) {

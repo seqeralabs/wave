@@ -129,12 +129,7 @@ abstract class TowerConnector {
      * @return a future of T
      */
     public <T> CompletableFuture<T> sendAsync(String endpoint, URI uri, JwtAuth auth, Class<T> type) {
-        return sendAsync0(endpoint, uri, auth, type, 1, true)
-    }
-
-    /** Send with the token exactly as presented: no newer token from the store, no refresh on 401 */
-    public <T> CompletableFuture<T> sendAsyncAsPresented(String endpoint, URI uri, JwtAuth auth, Class<T> type) {
-        return sendAsync0(endpoint, uri, auth, type, 1, false)
+        return sendAsync0(endpoint, uri, auth, type, 1)
     }
 
     protected ExponentialAttempt newAttempt(int attempt) {
@@ -147,12 +142,12 @@ abstract class TowerConnector {
     }
 
     @CompileDynamic
-    protected <T> CompletableFuture<T> sendAsync0(String endpoint, URI uri, JwtAuth auth, Class<T> type, int attempt0, boolean useTokenStore) {
+    protected <T> CompletableFuture<T> sendAsync0(String endpoint, URI uri, JwtAuth auth, Class<T> type, int attempt0) {
         final msgId = rndHex()
         final attempt = newAttempt(attempt0)
         // note: use a local variable for the executor, otherwise it will fail to reference the `ioExecutor` in the closure
         final exec0 = this.ioExecutor
-        return sendAsync1(endpoint, uri, auth, msgId, useTokenStore, useTokenStore)
+        return sendAsync1(endpoint, uri, auth, msgId, true)
                 .thenCompose { resp ->
                     switch (resp.status) {
                         case 200:
@@ -177,7 +172,7 @@ abstract class TowerConnector {
                         final delay = attempt.delay()
                         final exec = CompletableFuture.delayedExecutor(delay.toMillis(), TimeUnit.MILLISECONDS, exec0)
                         log.debug "Unable to connect '$endpoint' - cause: ${err.message ?: err}; attempt: ${attempt.current()}; await: ${delay}; msgId: ${msgId}"
-                        return CompletableFuture.supplyAsync(()->sendAsync0(endpoint, uri, auth, type, attempt.current()+1, useTokenStore), exec)
+                        return CompletableFuture.supplyAsync(()->sendAsync0(endpoint, uri, auth, type, attempt.current()+1), exec)
                                 .thenCompose(Function.identity());
                     }
                     // report IO error
@@ -218,9 +213,9 @@ abstract class TowerConnector {
      * @return
      *      A future of the unparsed response
      */
-    private CompletableFuture<ProxyHttpResponse> sendAsync1(String endpoint, final URI uri, final JwtAuth auth, String msgId, final boolean canRefresh, final boolean useTokenStore) {
-        // the access path validates the token as presented, so it takes no newer one from the store
-        final JwtAuth tokens = useTokenStore ? (jwtAuthStore.refresh(auth) ?: auth) : auth
+    private CompletableFuture<ProxyHttpResponse> sendAsync1(String endpoint, final URI uri, final JwtAuth auth, String msgId, final boolean canRefresh) {
+        // check the most updated JWT token
+        final JwtAuth tokens = jwtAuthStore.refresh(auth) ?: auth
         log.trace "Tower request: GET '$uri' - can refresh=$canRefresh; msgId=$msgId; tokens=$tokens"
         // submit the request
         final request = new ProxyHttpRequest(
@@ -247,7 +242,7 @@ abstract class TowerConnector {
                     if (resp.status == 401 && tokens.refresh && canRefresh) {
                         final refreshId = rndHex()
                         return refreshJwtToken(endpoint, tokens)
-                                .thenCompose((JwtAuth it) -> sendAsync1(endpoint, uri, tokens, refreshId, false, useTokenStore))
+                                .thenCompose((JwtAuth it) -> sendAsync1(endpoint, uri, tokens, refreshId, false))
                     } else {
                         return CompletableFuture.completedFuture(resp)
                     }

@@ -21,7 +21,6 @@ package io.seqera.wave.service.persistence
 import java.time.Instant
 import java.time.OffsetDateTime
 
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
@@ -31,7 +30,6 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.service.request.ContainerRequest
-import io.seqera.wave.tower.RecordOwner
 import io.seqera.wave.tower.User
 import io.seqera.wave.util.FusionVersionStringDeserializer
 import static io.seqera.wave.util.DataTimeUtils.parseOffsetDateTime
@@ -184,23 +182,10 @@ class WaveContainerRecord {
      */
     final ChildRefs scanChildIds
 
-    /**
-     * The Platform tenant owning this record, null for an anonymous request. Stored but
-     * not returned by the API: the read endpoints need no auth yet
-     */
-    @JsonIgnore
-    @PersistOnly
-    final RecordOwner owner
-
-    /** a Visibility value; null is read as public */
-    final String visibility
-
     WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequest data, String waveImage, String addr, Instant expiration) {
         this.id = data.requestId
         this.user = data.identity.user
         this.workspaceId = request.towerWorkspaceId
-        this.owner = RecordOwner.of(data.identity)
-        this.visibility = data.visibility
         this.containerImage = request.containerImage
         this.containerConfig = ContainerConfig.copy(request.containerConfig, true)
         this.platform = request.containerPlatform
@@ -230,8 +215,6 @@ class WaveContainerRecord {
         this.id = that.id
         this.user = that.user
         this.workspaceId = that.workspaceId
-        this.owner = that.owner
-        this.visibility = that.visibility
         this.containerImage = that.containerImage
         this.containerConfig = that.containerConfig
         this.platform = that.platform
@@ -265,8 +248,6 @@ class WaveContainerRecord {
         this.id = that.id
         this.user = that.user
         this.workspaceId = that.workspaceId
-        this.owner = that.owner
-        this.visibility = that.visibility
         this.containerImage = that.containerImage
         this.containerConfig = that.containerConfig
         this.platform = that.platform
@@ -312,8 +293,6 @@ class WaveContainerRecord {
         this.id = that.id
         this.user = user
         this.workspaceId = that.workspaceId
-        this.owner = that.owner
-        this.visibility = that.visibility
         this.containerImage = that.containerImage
         this.containerConfig = that.containerConfig
         this.platform = that.platform
