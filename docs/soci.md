@@ -41,7 +41,9 @@ A request with `soci: true` is rejected (HTTP 400) when:
 - the container format is Singularity;
 - an ephemeral container is requested by digest, since its manifest cannot be altered.
 
-A freeze or mirror container requested by digest is not rejected, but gets no `-soci` tag.
+A freeze container requested by digest gets a `-soci` tag, since Wave builds it to a tagged image.
+A mirror container requested by digest is not rejected, but gets no `-soci` tag, since the mirror
+keeps the digest reference.
 
 ## Client compatibility
 
