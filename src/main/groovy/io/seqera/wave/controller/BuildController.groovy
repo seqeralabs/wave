@@ -59,7 +59,7 @@ class BuildController {
     HttpResponse<WaveBuildRecord> getBuildRecord(String buildId) {
         final record = buildService.getBuildRecord(buildId)
         return record
-                ? HttpResponse.ok(record)
+                ? HttpResponse.ok(record.withUserIdOnly())
                 : HttpResponse.<WaveBuildRecord>notFound()
     }
 

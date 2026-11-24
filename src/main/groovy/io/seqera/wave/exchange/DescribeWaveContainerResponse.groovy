@@ -61,7 +61,8 @@ class DescribeWaveContainerResponse {
             this.fingerprint = data.fingerprint
             this.timestamp = data.timestamp
             this.zoneId = data.zoneId
-            this.ipAddress = data.ipAddress
+            // the request IP address is not exposed
+            this.ipAddress = null
         }
     }
 

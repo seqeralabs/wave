@@ -183,4 +183,39 @@ class WaveBuildRecordTest extends Specification {
         1       | Duration.ofSeconds(1) | false            | BuildStatusResponse.Status.COMPLETED   | true
         0       | Duration.ofSeconds(1) | true             | BuildStatusResponse.Status.COMPLETED   | true
     }
+
+    def 'should strip the user name, email and request ip' () {
+        given:
+        def record = new WaveBuildRecord(
+                buildId: 'bd-123_1',
+                targetImage: 'docker.io/my/repo:123',
+                userName: 'me',
+                userEmail: 'me@host.com',
+                userId: 1,
+                requestIp: '1.2.3.4',
+                exitStatus: 0 )
+
+        when:
+        def result = record.withUserIdOnly()
+        then:
+        result.userName == null
+        result.userEmail == null
+        result.requestIp == null
+        and:
+        result.userId == 1
+        result.buildId == 'bd-123_1'
+        result.targetImage == 'docker.io/my/repo:123'
+        result.exitStatus == 0
+        and: 'the stored record is not modified'
+        record.userName == 'me'
+        record.userEmail == 'me@host.com'
+        record.requestIp == '1.2.3.4'
+    }
+
+    def 'should return the same record when there is nothing to strip' () {
+        given:
+        def record = new WaveBuildRecord(buildId: 'bd-123_1', userId: 1)
+        expect:
+        record.withUserIdOnly().is(record)
+    }
 }

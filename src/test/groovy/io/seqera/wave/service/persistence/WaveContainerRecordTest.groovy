@@ -126,4 +126,35 @@ class WaveContainerRecordTest extends Specification {
         container.expiration == exp
         container.fusionVersion == null
     }
+
+    def 'should strip the user name, email and request ip' () {
+        given:
+        def req = new SubmitContainerTokenRequest(
+                towerEndpoint: 'https://tower.nf',
+                towerWorkspaceId: 100,
+                containerPlatform: ContainerPlatform.of('amd64'),
+                fingerprint: 'xyz' )
+        def data = ContainerRequest.of(requestId: '1234', identity: new PlatformId(USER,100), containerImage: 'hello-world')
+        def record = new WaveContainerRecord(req, data, 'https://wave.io/some/container:latest', '1.2.3.4', Instant.now())
+
+        when:
+        def result = record.withUserIdOnly()
+        then:
+        result.user == EXPECTED
+        result.ipAddress == null
+        and:
+        result.id == record.id
+        result.workspaceId == record.workspaceId
+        result.towerEndpoint == record.towerEndpoint
+        result.sourceImage == record.sourceImage
+        result.waveImage == record.waveImage
+        and: 'the stored record is not modified'
+        record.user == USER
+        record.ipAddress == '1.2.3.4'
+
+        where:
+        USER                                                    | EXPECTED
+        new User(id:1, userName:'me', email:'me@host.com')      | new User(id:1)
+        null                                                    | null
+    }
 }

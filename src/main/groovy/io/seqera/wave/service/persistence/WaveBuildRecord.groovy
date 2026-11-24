@@ -21,6 +21,7 @@ package io.seqera.wave.service.persistence
 import java.time.Duration
 import java.time.Instant
 
+import groovy.transform.AutoClone
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
@@ -41,6 +42,7 @@ import io.seqera.wave.tower.RecordOwner
  *
  */
 @ToString(includePackage = false, includeNames = true)
+@AutoClone
 @CompileStatic
 @EqualsAndHashCode
 class WaveBuildRecord {
@@ -114,6 +116,20 @@ class WaveBuildRecord {
         )
     }
     
+    /**
+     * @return A copy of this record exposing only the user id, so that the user name, the email
+     *         and the request IP address are not leaked when the record is returned in an API response.
+     */
+    WaveBuildRecord withUserIdOnly() {
+        if( userName==null && userEmail==null && requestIp==null )
+            return this
+        final result = this.clone()
+        result.userName = null
+        result.userEmail = null
+        result.requestIp = null
+        return result
+    }
+
     BuildStatusResponse toStatusResponse() {
         final status = duration!=null
                 ? BuildStatusResponse.Status.COMPLETED

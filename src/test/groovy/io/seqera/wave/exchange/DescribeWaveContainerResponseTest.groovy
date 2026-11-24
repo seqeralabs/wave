@@ -64,6 +64,7 @@ class DescribeWaveContainerResponseTest extends Specification {
         response.request.user.id == 1
         response.request.workspaceId == 100
         response.request.towerEndpoint == 'https://tower.nf'
+        response.request.ipAddress == null
         and:
         json.contains('"user":{"id":1}')
         json.contains('"workspaceId":100')
@@ -72,5 +73,6 @@ class DescribeWaveContainerResponseTest extends Specification {
         !json.contains('api-user-name@example.com')
         !json.contains('userName')
         !json.contains('email')
+        !json.contains('127.0.0.1')
     }
 }

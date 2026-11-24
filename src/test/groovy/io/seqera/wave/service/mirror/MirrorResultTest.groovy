@@ -112,4 +112,46 @@ class MirrorResultTest extends Specification {
         m2.logs == 'Some logs'
     }
 
+    def 'should strip the user name and email' () {
+        given:
+        def request = MirrorRequest.create(
+                'source.io/foo',
+                'target.io/foo',
+                'sha256:12345',
+                Mock(ContainerPlatform),
+                Path.of('/workspace'),
+                '{auth json}',
+                'scan-123',
+                Instant.now(),
+                'utc+1',
+                new PlatformId(new User(id: 1, userName: 'me', email: 'me@host.com'))
+        )
+        def m1 = MirrorResult.of(request).complete(0, 'Some logs')
+
+        when:
+        def m2 = m1.withUserIdOnly()
+        then:
+        m2.userName == null
+        m2.userEmail == null
+        and:
+        m2.userId == 1
+        m2.mirrorId == m1.mirrorId
+        m2.digest == m1.digest
+        m2.sourceImage == m1.sourceImage
+        m2.targetImage == m1.targetImage
+        m2.platform == m1.platform
+        m2.creationTime == m1.creationTime
+        m2.offsetId == m1.offsetId
+        m2.scanId == m1.scanId
+        m2.status == m1.status
+        m2.owner == m1.owner
+        m2.visibility == m1.visibility
+        m2.duration == m1.duration
+        m2.exitCode == m1.exitCode
+        m2.logs == m1.logs
+        and: 'the stored result is not modified'
+        m1.userName == 'me'
+        m1.userEmail == 'me@host.com'
+    }
+
 }
