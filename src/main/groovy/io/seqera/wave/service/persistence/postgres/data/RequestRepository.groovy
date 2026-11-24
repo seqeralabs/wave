@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.persistence.postgres.data
 
+
 import io.micronaut.data.annotation.Query
 import io.micronaut.data.jdbc.annotation.JdbcRepository
 import io.micronaut.data.model.query.builder.sql.Dialect
@@ -28,7 +29,7 @@ import io.micronaut.data.repository.CrudRepository
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @JdbcRepository(dialect = Dialect.POSTGRES)
-interface RequestRepository extends CrudRepository<RequestRow, String> {
+interface RequestRepository extends CrudRepository<RequestRow, String>, RetentionRepository<RequestRow> {
 
     @Query('''
         UPDATE wave_request

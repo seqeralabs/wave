@@ -30,7 +30,7 @@ import io.micronaut.data.repository.CrudRepository
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @JdbcRepository(dialect = Dialect.POSTGRES)
-interface BuildRepository extends CrudRepository<BuildRow, String> {
+interface BuildRepository extends CrudRepository<BuildRow, String>, RetentionRepository<BuildRow> {
 
     /**
      * Find a build entry for the given target image name and digest

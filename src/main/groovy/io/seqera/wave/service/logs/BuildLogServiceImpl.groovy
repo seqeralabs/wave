@@ -186,6 +186,13 @@ class BuildLogServiceImpl implements BuildLogService {
         return null
     }
 
+    @Override
+    void deleteArtifacts(String buildId) {
+        if( !buildId ) return
+        logsStoreOps.delete(logKey(buildId))
+        locksStoreOps.delete(condaLockKey(buildId))
+    }
+
     protected static String extractCondaLockFile(String logs) {
             int start = logs.lastIndexOf(CONDA_LOCK_START)
             int end = logs.lastIndexOf(CONDA_LOCK_END)

@@ -166,4 +166,23 @@ interface PersistenceService {
      */
     List<WaveScanRecord> allScans(String scanId)
 
+    /**
+     * Find the ids of the oldest records of the given type created before the given instant.
+     *
+     * @param type The kind of record to select
+     * @param before Records created strictly before this instant are selected
+     * @param limit Max number of ids to return, to bound a single retention pass
+     * @return The matching record ids, oldest first, or an empty list
+     */
+    List<String> findIdsOlderThan(RecordType type, Instant before, int limit)
+
+    /**
+     * Delete the records of the given type matching the given ids.
+     *
+     * @param type The kind of record to remove
+     * @param ids The ids of the records to be removed
+     * @return The number of records removed
+     */
+    long deleteByIds(RecordType type, Collection<String> ids)
+
 }

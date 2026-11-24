@@ -72,6 +72,10 @@ import static io.seqera.wave.service.job.JobHelper.saveDockerAuth
 @CompileStatic
 class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanEntry> {
 
+    // the report formats published to the object store - upload and retention read the same list,
+    // so a format added here is not left behind when the scan record is removed
+    static private final List<ScanType> UPLOADED_REPORTS = List.of(ScanType.Spdx, ScanType.CycloneDx)
+
     @Inject
     private ScanConfig config
 
@@ -320,8 +324,8 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
                 final scanFile = job.workDir.resolve(ScanType.Default.output)
                 final vulnerabilities = TrivyResultProcessor.parseFile(scanFile, config.vulnerabilityLimit)
                 result = entry.success(vulnerabilities)
-                uploadScanReports(entry.scanId, job.workDir.resolve(ScanType.Spdx.output))
-                uploadScanReports(entry.scanId, job.workDir.resolve(ScanType.CycloneDx.output))
+                for( ScanType type : UPLOADED_REPORTS )
+                    uploadScanReports(entry.scanId, job.workDir.resolve(type.output))
                 log.info("Container scan succeeded - id=${entry.scanId}; exit=${state.exitCode}; stdout=${state.stdout}")
             }
             catch (NoSuchFileException e) {
@@ -387,6 +391,13 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
     @Override
     List<WaveScanRecord> getAllScans(String scanId){
         persistenceService.allScans(scanId)
+    }
+
+    @Override
+    void deleteReports(String scanId) {
+        if( !scanId ) return
+        for( ScanType type : UPLOADED_REPORTS )
+            scanStoreOpts.delete(scanKey(scanId, type.output))
     }
 
     @Override

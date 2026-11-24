@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.persistence.postgres.data
 
+
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.data.annotation.Query
 import io.micronaut.data.jdbc.annotation.JdbcRepository
@@ -31,7 +32,7 @@ import io.seqera.wave.service.mirror.MirrorResult
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @JdbcRepository(dialect = Dialect.POSTGRES)
-interface MirrorRepository extends CrudRepository<MirrorRow, String> {
+interface MirrorRepository extends CrudRepository<MirrorRow, String>, RetentionRepository<MirrorRow> {
 
     @Nullable
     @Query('''

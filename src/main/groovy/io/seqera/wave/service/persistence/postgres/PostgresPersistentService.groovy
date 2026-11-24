@@ -26,12 +26,14 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
+import io.micronaut.data.model.Pageable
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.persistence.RecordType
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
@@ -42,6 +44,7 @@ import io.seqera.wave.service.persistence.postgres.data.MirrorRow
 import io.seqera.wave.service.persistence.postgres.data.RequestRepository
 import io.seqera.wave.service.persistence.postgres.data.RequestRow
 import io.seqera.wave.service.persistence.postgres.data.ScanRepository
+import io.seqera.wave.service.persistence.postgres.data.RetentionRepository
 import io.seqera.wave.service.persistence.postgres.data.ScanRow
 import jakarta.inject.Inject
 import jakarta.inject.Named
@@ -247,4 +250,24 @@ class PostgresPersistentService implements PersistenceService {
                 "Unable to save mirror result data=${data}"))
     }
 
+
+    private RetentionRepository<?> retentionRepo(RecordType type) {
+        switch (type) {
+            case RecordType.BUILD: return buildRepository
+            case RecordType.REQUEST: return requestRepository
+            case RecordType.MIRROR: return mirrorRepository
+            case RecordType.SCAN: return scanRepository
+            default: throw new IllegalArgumentException("Unknown record type: ${type}")
+        }
+    }
+
+    @Override
+    List<String> findIdsOlderThan(RecordType type, Instant before, int limit) {
+        retentionRepo(type).findIdByCreatedAtLessThanOrderByCreatedAt(before, Pageable.from(0, limit))
+    }
+
+    @Override
+    long deleteByIds(RecordType type, Collection<String> ids) {
+        ids ? retentionRepo(type).deleteByIdIn(ids) : 0
+    }
 }
