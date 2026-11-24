@@ -557,6 +557,43 @@ class ContainerControllerTest extends Specification {
         build(null, 10L).identity.orgId == null
     }
 
+    def 'should carry the organisation onto the container record of a build and a mirror' () {
+        given:
+        def access = Mock(RecordAccessService) {
+            memberOf(_) >> RecordAccessService.Decision.ALLOW
+            orgIdOf(_) >> 300L
+        }
+        def builder = Mock(ContainerBuildService)
+        def controller = new ContainerController(
+                buildService: builder, mirrorService: Mock(ContainerMirrorService),
+                inspectService: Mock(ContainerInspectServiceImpl), registryProxyService: proxyRegistry,
+                buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService),
+                validationService: validationService, accessService: access,
+                persistenceService: Mock(PersistenceService) )
+        def who = new PlatformId(new User(id: 1), 10L, 'tok', 'https://api.cloud.seqera.io')
+
+        when: 'a private build request'
+        def built = controller.makeRequestData(
+                new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerPlatform: 'linux/amd64', visibility: 'private'), who, '')
+
+        then:
+        1 * proxyRegistry.getImageDigestOrUnavailable(_, _) >> null
+        1 * builder.buildImage(_) >> new BuildTrack('1', 'wave/build:abc', false, true)
+        and: 'the request the record is built from carries it, not only the build record'
+        built.identity.orgId == 300L
+
+        when: 'a private mirror request'
+        def mirrored = controller.makeRequestData(
+                new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', mirror: true,
+                        containerPlatform: 'linux/amd64', buildRepository: 'quay.io/foo', visibility: 'private'), who, '')
+
+        then:
+        // the source, then the mirror target: equal digests take the cached branch
+        2 * proxyRegistry.getImageDigestOrUnavailable(_, _) >> 'sha256:abc'
+        and:
+        mirrored.identity.orgId == 300L
+    }
+
     def 'should fail closed when the workspace listing is unavailable' () {
         given:
         def access = Mock(RecordAccessService) { memberOf(_) >> RecordAccessService.Decision.UNAVAILABLE }

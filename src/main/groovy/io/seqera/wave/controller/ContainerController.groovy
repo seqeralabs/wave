@@ -616,6 +616,8 @@ class ContainerController {
             scanChildIds = build.scanChildIds
             succeeded = track.succeeded
             visibility = build.visibility
+            // makeBuildRequest attached the org to its own copy of the identity
+            identity = build.identity
             type = ContainerRequest.Type.Build
         }
         else if( req.containerFile ) {
@@ -630,12 +632,16 @@ class ContainerController {
             scanId = build.scanId
             succeeded = track.succeeded
             visibility = build.visibility
+            // makeBuildRequest attached the org to its own copy of the identity
+            identity = build.identity
             type = ContainerRequest.Type.Build
         }
         else if( req.mirror ) {
             if( !mirrorService ) throw new UnsupportedMirrorServiceException()
             final mirror = makeMirrorRequest(req, identity, digest)
             visibility = mirror.visibility
+            // makeMirrorRequest attached the org to its own copy of the identity
+            identity = mirror.identity
             final track = checkMirror(mirror, identity, req.dryRun)
             targetImage = track.targetImage
             targetContent = null
