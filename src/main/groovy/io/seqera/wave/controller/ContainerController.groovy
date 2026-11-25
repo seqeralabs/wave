@@ -645,7 +645,7 @@ class ContainerController {
             condaContent = null
             buildId = null
             buildNew = null
-            scanId = scanService?.getScanId(req.containerImage, digest, req.scanMode, req.format)
+            scanId = scanService?.getScanId(targetImage, digest, req.scanMode, req.format)
             type = ContainerRequest.Type.Container
             // when there's a scan, return null because the scan status is not known
             succeeded = scanId==null ? true : null
