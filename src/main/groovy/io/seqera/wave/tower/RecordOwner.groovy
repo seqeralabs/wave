@@ -22,9 +22,8 @@ import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import io.seqera.serde.moshi.MoshiSerializable
+import io.seqera.service.pairing.PairingEndpoint
 import io.seqera.wave.api.Visibility
-
-import static io.seqera.wave.util.ContainerHelper.normalisePlatformEndpoint
 
 /**
  * Model the Platform tenant a Wave record belongs to.
@@ -64,11 +63,12 @@ class RecordOwner implements MoshiSerializable {
      * The tenant this record belongs to: the workspace when there is one, otherwise the user.
      *
      * The endpoint is canonicalised here rather than on the stored field, so that two spellings
-     * of one Platform give one tenant, as ADR 20261029-workspace-ownership 2.3 requires, without
-     * the stored address losing the spelling the pairing lookup resolves.
+     * of one Platform give one tenant, as ADR 20261029-workspace-ownership 2.3 requires. It uses
+     * the same form as the pairing key, so a Platform can't be paired under a spelling that the
+     * tenant would fold into another Platform's.
      */
     String tenant() {
-        final endpoint = normalisePlatformEndpoint(towerEndpoint)
+        final endpoint = PairingEndpoint.normalise(towerEndpoint)
         // not `workspaceId ?:` - 0L is falsy in Groovy
         return workspaceId != null ? "$endpoint:$workspaceId" : "$endpoint:user:$userId"
     }
