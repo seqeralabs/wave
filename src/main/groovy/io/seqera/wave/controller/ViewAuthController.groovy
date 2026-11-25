@@ -20,6 +20,7 @@ package io.seqera.wave.controller
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.MutableHttpResponse
@@ -43,6 +44,7 @@ import jakarta.inject.Inject
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @Slf4j
+@Requires(property = 'wave.capabilities.web-views', value = 'true', defaultValue = 'true')
 @Controller("/view/auth")
 @ExecuteOn(TaskExecutors.BLOCKING)
 @CompileStatic
