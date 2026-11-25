@@ -34,7 +34,7 @@ import io.seqera.wave.util.JacksonHelper
  */
 class DescribeWaveContainerResponseTest extends Specification {
 
-    def 'should describe user identity without name or email'() {
+    def 'should describe user identity without name, email or ip address'() {
         given:
         final request = new SubmitContainerTokenRequest(
                 towerEndpoint: 'https://tower.nf',
@@ -72,5 +72,8 @@ class DescribeWaveContainerResponseTest extends Specification {
         !json.contains('api-user-name@example.com')
         !json.contains('userName')
         !json.contains('email')
+        and:
+        !json.contains('ipAddress')
+        !json.contains('127.0.0.1')
     }
 }

@@ -46,12 +46,11 @@ class DescribeWaveContainerResponse {
         final String fingerprint
         final Instant timestamp
         final String zoneId
-        final String ipAddress
 
         RequestInfo() {}
 
         RequestInfo(WaveContainerRecord data) {
-            // only expose the user id, stripping the user name and email
+            // only expose the user id, stripping the user name, email and request IP address
             this.user = data.user ? User.ofId(data.user.id) : null
             this.workspaceId = data.workspaceId
             this.containerImage = data.containerImage
@@ -61,7 +60,6 @@ class DescribeWaveContainerResponse {
             this.fingerprint = data.fingerprint
             this.timestamp = data.timestamp
             this.zoneId = data.zoneId
-            this.ipAddress = data.ipAddress
         }
     }
 

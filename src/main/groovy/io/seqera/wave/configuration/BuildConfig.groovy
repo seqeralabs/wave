@@ -85,6 +85,14 @@ class BuildConfig {
     String defaultPublicRepository
 
     /**
+     * @return {@code true} when the repository is the community one, whose image names are
+     *      deterministic and meant to be shared
+     */
+    boolean isCommunityRepo(String repo) {
+        return repo && defaultPublicRepository && repo.startsWith(defaultPublicRepository)
+    }
+
+    /**
      * File system path there the dockerfile is save
      */
     @Value('${wave.build.workspace}')
@@ -112,9 +120,6 @@ class BuildConfig {
 
     @Value('${wave.build.reserved-words:[]}')
     Set<String> reservedWords
-
-    @Value('${wave.build.record.duration:5d}')
-    Duration recordDuration
 
     @Value('${wave.build.oci-mediatypes:true}')
     Boolean ociMediatypes
@@ -185,7 +190,6 @@ class BuildConfig {
                 "status-delay=${statusDelay}; " +
                 "status-duration=${statusDuration}; " +
                 "failure-duration=${getFailureDuration()}; " +
-                "record-duration=${recordDuration}; " +
                 "oci-mediatypes=${ociMediatypes}; " +
                 "compression=${compression}; " +
                 "force-compression=${forceCompression}; " +

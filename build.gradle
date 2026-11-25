@@ -67,12 +67,12 @@ dependencies {
     implementation 'io.seqera:lib-activator:1.0.0'
     implementation project(':wave-api')
     implementation project(':wave-utils')
-    implementation 'io.seqera:lib-pairing:1.2.0'
+    implementation 'io.seqera:lib-pairing:1.2.1'
     implementation 'io.seqera:lib-data-store-state-redis:1.2.1'
     implementation 'io.seqera:lib-data-store-future-redis:1.0.0'
     implementation 'io.seqera:lib-crypto:1.1.0'
     implementation 'io.seqera:jedis-lock:1.0.0'
-    implementation 'io.seqera:lib-data-queue-redis:1.1.2'
+    implementation 'io.seqera:lib-data-queue-redis:1.1.3'
     implementation 'io.seqera:lib-data-workqueue:2.0.0'
     implementation 'io.seqera:lib-data-workqueue-redis:2.0.0'
     implementation 'io.seqera:lib-data-range-redis:1.1.0'

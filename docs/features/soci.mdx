@@ -1,0 +1,49 @@
+---
+title: SOCI lazy loading
+description: Attach a SOCI index to a container so hosts running the SOCI snapshotter start it before the whole image is downloaded.
+date: 2026-11-06
+tags: [soci, lazy loading, containerd, startup]
+---
+
+Large container images take time to pull. A task can't start until every layer is downloaded and unpacked. [Seekable OCI (SOCI)](https://github.com/awslabs/soci-snapshotter) removes that wait. A host running the SOCI snapshotter starts the container straight away and fetches file data on demand.
+
+Wave attaches a SOCI index (index manifest v2) to the containers you request. You don't need to build or push the index yourself.
+
+## Use cases
+
+Use cases for SOCI lazy loading include:
+
+- **Faster task startup**: Start containers from large images before the full pull completes.
+- **Large toolchains**: Run images that bundle many tools when each task reads only a few files.
+- **Existing images**: Add lazy loading to any image without rebuilding it.
+
+## How it works
+
+Wave builds a table of contents (zTOC) for each layer of the image:
+
+1. A client requests a container with SOCI enabled.
+2. Wave starts a `soci-indexer` job in the background for each eligible layer. A layer is eligible if it is gzip-compressed and at least 10 MiB.
+3. The job builds the zTOC and stores it in the zTOC repository.
+4. Wave attaches the SOCI index to the image.
+
+Indexing usually takes a few seconds. Wave builds each zTOC once per layer digest. Every image that shares the layer reuses it. Wave doesn't index layers it adds to the image, such as Fusion.
+
+How Wave delivers the SOCI index depends on the container type.
+
+### Ephemeral containers
+
+Ephemeral containers are pulled through Wave. Wave adds the SOCI index manifest to the image index it serves.
+
+Indexing starts when you request the container. The request returns without waiting for it. When the host pulls the image, Wave holds the manifest until all eligible layers are indexed:
+
+- If indexing finished before the pull, the pull doesn't wait.
+- If indexing is still running, the pull waits for the remaining time.
+- If indexing fails or times out, Wave serves the image without a SOCI index.
+
+Wave caches the manifest it serves for each container token. Later pulls with the same token get the same manifest.
+
+### Freeze and mirror containers
+
+[Freeze](./container-freezes.mdx) and [mirror](./mirroring.mdx) containers are pulled from their target registry. Wave pushes a SOCI-enabled copy of the image index to a sibling tag named `<tag>-soci`. The original tag doesn't change.
+
+Wave pushes the `-soci` tag after the container exists and its layers are indexed. Until then, a request returns the original tag. The first request for a container returns the original tag.
