@@ -20,6 +20,7 @@ package io.seqera.wave.configuration
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
 import jakarta.inject.Singleton
 
 /**
@@ -33,5 +34,15 @@ class SsrfConfig {
 
     @Value('${wave.security.ssrf-protection.enabled:false}')
     Boolean ssrfProtectionEnabled
+
+    /**
+     * Registries that anonymous (unauthenticated) requests are allowed to reference.
+     * Entries are hostnames, optionally with a {@code *.} wildcard prefix e.g. {@code *.amazonaws.com}.
+     * When unset no allowlist restriction is applied; authenticated requests are never restricted.
+     * Only effective when {@code wave.security.ssrf-protection.enabled} is {@code true}.
+     */
+    @Nullable
+    @Value('${wave.security.ssrf-protection.registry-allowlist}')
+    List<String> registryAllowlist
 
 }

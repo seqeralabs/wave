@@ -56,6 +56,7 @@ import io.seqera.wave.proxy.ProxyCache
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.security.SsrfProtectionService
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.storage.DigestStore
@@ -90,6 +91,9 @@ class RegistryProxyService {
 
     @Inject
     private RegistryCredentialsProvider credentialsProvider
+
+    @Inject
+    private SsrfProtectionService ssrfProtection
 
     /**
      * When {@code true} (default) Wave brokers the resolved registry credentials on the proxy pull
@@ -161,6 +165,7 @@ class RegistryProxyService {
                 .withRegistry(registry)
                 .withCredentials(creds)
                 .withLoginService(loginService)
+                .withSsrfProtection(ssrfProtection.enabled)
     }
 
     protected RegistryCredentials getCredentials(RoutePath route) {

@@ -37,6 +37,13 @@ wave:
   security:
     ssrf-protection:
       enabled: false
+      # when set, anonymous requests may only reference these registries; authenticated
+      # requests are not restricted. Only effective when `enabled` is true.
+      # registry-allowlist:
+      #   - "docker.io"
+      #   - "quay.io"
+      #   - "ghcr.io"
+      #   - "*.amazonaws.com"
   soci:
     enabled: true
     # must be on the build registry, zTOCs are tagged in the build repo

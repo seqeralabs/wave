@@ -30,6 +30,8 @@ import io.micronaut.http.HttpMethod
 import io.micronaut.http.MutableHttpRequest
 import io.micronaut.http.server.exceptions.InternalServerException
 import io.micronaut.reactor.http.client.ReactorStreamingHttpClient
+import io.seqera.util.net.SsrfValidationException
+import io.seqera.util.net.SsrfValidator
 import io.seqera.wave.exception.RegistryForwardException
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
@@ -62,6 +64,7 @@ class ProxyClient {
     private HttpClientConfig httpConfig
     private List<Integer> retryableHttpErrors = HTTP_RETRYABLE_ERRORS
     private boolean pushMode
+    private boolean ssrfProtection
 
     ProxyClient(HttpClient httpClient, HttpClientConfig httpConfig) {
         if( httpClient.followRedirects()!= HttpClient.Redirect.NEVER )
@@ -107,6 +110,11 @@ class ProxyClient {
 
     ProxyClient withPushMode(boolean value) {
         this.pushMode = value
+        return this
+    }
+
+    ProxyClient withSsrfProtection(boolean value) {
+        this.ssrfProtection = value
         return this
     }
 
@@ -209,6 +217,10 @@ class ProxyClient {
                 // the redirect location can be a relative path i.e. without hostname
                 // therefore resolve it against the target registry hostname
                 target = registry.host.resolve(redirect)
+                // a registry validated at lookup time can still redirect into a private
+                // network — re-validate every redirect target before following it
+                if( ssrfProtection )
+                    checkRedirectTarget(target, origin, result.request())
                 if( target in visited ) {
                     final msg = "Redirect location already visited: $redirect ― origin request '$origin'"
                     throw new ClientResponseException(msg, result.request())
@@ -223,6 +235,16 @@ class ProxyClient {
             return result
         }
 
+    }
+
+    private void checkRedirectTarget(URI target, URI origin, HttpRequest request) {
+        try {
+            SsrfValidator.validateHost(target.getHost())
+        }
+        catch (SsrfValidationException e) {
+            final msg = "Redirect location not allowed: $target ― origin request '$origin' - reason: ${e.message}"
+            throw new ClientResponseException(msg, request)
+        }
     }
 
     private <T> HttpResponse<T> get1(URI uri, Map<String,List<String>> headers, BodyHandler<T> handler, boolean authorize) {
