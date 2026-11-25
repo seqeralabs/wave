@@ -93,6 +93,24 @@ class ViewAuthServiceTest extends Specification {
         url.contains(URLEncoder.encode(expected, 'UTF-8'))
     }
 
+    def 'should not fetch discovery from an endpoint Wave has no client for' () {
+        given:
+        def disco = Mock(OidcDiscoveryClient)
+        def service = new ViewAuthService(
+                pendingStore: Mock(PendingSignInStore),
+                sessionStore: Mock(ViewSessionStore),
+                discoveryClient: disco,
+                serverUrl: 'https://wave.test',
+                clients: entries([:]) )
+
+        when: 'an endpoint the record carried, which nobody proved they control'
+        def signIn = service.startSignIn('http://10.0.0.5:8080/admin', '/view/builds/bd-1')
+
+        then: 'it is never dialled'
+        0 * disco.discover(_)
+        signIn == null
+    }
+
     def 'should return no url when the Platform cannot sign viewers in' () {
         expect: 'no client registered for that endpoint'
         svc(usable(), [:]).startSignIn(EP, '/view/builds/bd-1') == null

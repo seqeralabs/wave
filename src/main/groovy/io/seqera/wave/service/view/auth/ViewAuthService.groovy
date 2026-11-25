@@ -108,8 +108,8 @@ class ViewAuthService {
      *      sign viewers in.
      */
     SignInRedirect startSignIn(String towerEndpoint, String returnTo) {
-        // the client id first: it is a config lookup, and it keeps the discovery fetch - and its
-        // cache - to the endpoints Wave can actually sign in to
+        // the client id first: the endpoint is the record's own, and anything that paired can
+        // name any address, so only a configured Platform is ever fetched
         final id = clientId(towerEndpoint)
         if( !id )
             return null
