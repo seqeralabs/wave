@@ -43,8 +43,8 @@ import io.seqera.wave.service.persistence.postgres.data.MirrorRepository
 import io.seqera.wave.service.persistence.postgres.data.MirrorRow
 import io.seqera.wave.service.persistence.postgres.data.RequestRepository
 import io.seqera.wave.service.persistence.postgres.data.RequestRow
-import io.seqera.wave.service.persistence.postgres.data.ScanRepository
 import io.seqera.wave.service.persistence.postgres.data.RetentionRepository
+import io.seqera.wave.service.persistence.postgres.data.ScanRepository
 import io.seqera.wave.service.persistence.postgres.data.ScanRow
 import jakarta.inject.Inject
 import jakarta.inject.Named
@@ -249,7 +249,6 @@ class PostgresPersistentService implements PersistenceService {
                 mirrorRepository.save(entity),
                 "Unable to save mirror result data=${data}"))
     }
-
 
     private RetentionRepository<?> retentionRepo(RecordType type) {
         switch (type) {

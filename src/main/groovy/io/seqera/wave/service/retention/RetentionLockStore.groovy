@@ -22,10 +22,10 @@ import java.time.Duration
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.seqera.data.store.state.AbstractStateStore
 import io.seqera.data.store.state.impl.StateProvider
 import io.seqera.serde.moshi.MoshiEncodeStrategy
-import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.RetentionConfig
 import io.seqera.wave.configuration.RetentionEnabled
 import jakarta.inject.Inject
