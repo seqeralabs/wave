@@ -89,20 +89,21 @@ class RecordOwnerTest extends Specification {
         !owner.properties.values().any { it == 'secret-token' }
     }
 
-    def 'should keep two spellings of one host apart in the tenant' () {
+    def 'should give two spellings of one Platform one tenant' () {
         given: 'the same workspace reached through endpoints that differ only in spelling'
-        def paired = new RecordOwner(towerEndpoint: 'https://api.cloud.seqera.io', userId: 1L, workspaceId: 10L)
-        def impostor = new RecordOwner(towerEndpoint: 'https://API.cloud.seqera.io', userId: 1L, workspaceId: 10L)
+        def plain = new RecordOwner(towerEndpoint: 'https://api.cloud.seqera.io', userId: 1L, workspaceId: 10L)
+        def upper = new RecordOwner(towerEndpoint: 'https://API.cloud.seqera.io', userId: 1L, workspaceId: 10L)
         def ported = new RecordOwner(towerEndpoint: 'https://api.cloud.seqera.io:443', userId: 1L, workspaceId: 10L)
         def slashed = new RecordOwner(towerEndpoint: 'https://api.cloud.seqera.io/', userId: 1L, workspaceId: 10L)
 
-        expect: 'anyone can pair a spelling, so folding them together would share the private ids'
-        paired.tenant() != impostor.tenant()
-        paired.tenant() != ported.tenant()
-        paired.tenant() != slashed.tenant()
+        expect: 'the tenant uses the canonical endpoint'
+        plain.tenant() == 'https://api.cloud.seqera.io:10'
+        upper.tenant() == plain.tenant()
+        ported.tenant() == plain.tenant()
+        slashed.tenant() == plain.tenant()
 
-        and: 'the endpoint goes in exactly as paired'
-        paired.tenant() == 'https://api.cloud.seqera.io:10'
+        and: 'the stored endpoint keeps the spelling the request carried'
+        slashed.towerEndpoint == 'https://api.cloud.seqera.io/'
     }
 
     def 'should separate a personal workspace from a numbered one' () {

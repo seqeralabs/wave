@@ -417,6 +417,33 @@ class ContainerHelperTest extends Specification {
         'https://api.stage-tower.net'   | 'https://api.cloud.stage-seqera.io'
     }
 
+    def 'should normalise platform endpoints' () {
+        expect:
+        ContainerHelper.normalisePlatformEndpoint(ENDPOINT) == EXPECTED
+
+        where:
+        ENDPOINT                                | EXPECTED
+        null                                    | null
+        ''                                      | null
+        'https://api.cloud.seqera.io'           | 'https://api.cloud.seqera.io'
+        // trailing slash dropped
+        'https://api.cloud.seqera.io/'          | 'https://api.cloud.seqera.io'
+        'https://foo.com/api/'                  | 'https://foo.com/api'
+        // scheme and host lowercased, path left alone
+        'HTTPS://API.CLOUD.SEQERA.IO'           | 'https://api.cloud.seqera.io'
+        'https://FOO.com/Api'                   | 'https://foo.com/Api'
+        // default port dropped, explicit one kept
+        'https://foo.com:443'                   | 'https://foo.com'
+        'http://foo.com:80/api'                 | 'http://foo.com/api'
+        'https://foo.com:8443'                  | 'https://foo.com:8443'
+        // not a parseable absolute URL: trimmed and left as-is
+        'foo.com'                               | 'foo.com'
+        '  https://foo.com  '                   | 'https://foo.com'
+        // rebuilding the URI drops user info, query and fragment
+        'https://user:pass@foo.com/api'         | 'https://foo.com/api'
+        'https://foo.com/api?x=1'               | 'https://foo.com/api'
+        'https://foo.com/api#frag'              | 'https://foo.com/api'
+    }
 
     def 'should find conda name with named recipe' () {
         given:

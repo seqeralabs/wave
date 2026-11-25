@@ -173,6 +173,41 @@ class ContainerHelper {
         return result
     }
 
+    /**
+     * Reduce a Platform endpoint to one canonical spelling, so that two spellings of the same
+     * Platform don't become two record owners.
+     *
+     * Applied to the tenant key only. The stored owner and the pairing lookup both keep the
+     * spelling Platform registered, because that is the address Wave dials and the key the
+     * pairing store resolves - see RecordOwner.towerEndpoint. The tenant key is computed for the
+     * build id rather than stored, so canonicalising it here persists nothing.
+     *
+     * Rebuilding the URI also drops any user info, query string and fragment.
+     */
+    static String normalisePlatformEndpoint(String endpoint) {
+        if( !endpoint )
+            return null
+
+        final result = endpoint.trim()
+        try {
+            final uri = new URI(result)
+            if( !uri.scheme || !uri.host )
+                return result
+            final scheme = uri.scheme.toLowerCase()
+            final port = uri.port == defaultPort0(scheme) ? -1 : uri.port
+            final path = uri.path.replaceAll('/+$', '')
+            return new URI(scheme, null, uri.host.toLowerCase(), port, path, null, null).toString()
+        }
+        catch( URISyntaxException e ) {
+            log.debug "Unable to normalise Platform endpoint: '$endpoint' - cause: ${e.message}"
+            return result
+        }
+    }
+
+    static private int defaultPort0(String scheme) {
+        return scheme == 'https' ? 443 : scheme == 'http' ? 80 : -1
+    }
+
     static List<String> normaliseDeps0(List deps) {
         final result = new ArrayList(20)
         for( def it : deps ) {
