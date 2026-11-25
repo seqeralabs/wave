@@ -20,8 +20,11 @@ package io.seqera.wave.service.retention
 
 import spock.lang.Specification
 
+import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.time.ZoneId
+import java.time.ZoneOffset
 
 import io.seqera.wave.configuration.RetentionConfig
 import io.seqera.wave.service.logs.BuildLogService
@@ -50,7 +53,16 @@ class RetentionServiceImplTest extends Specification {
         result.@persistenceService = beans.persistenceService
         result.@buildLogService = beans.buildLogService
         result.@scanService = beans.scanService
+        result.@clock = beans.clock ?: Clock.systemUTC()
         return result
+    }
+
+    static class MutableClock extends Clock {
+        private Instant time = Instant.parse('2026-01-01T00:00:00Z')
+        @Override ZoneId getZone() { ZoneOffset.UTC }
+        @Override Clock withZone(ZoneId zone) { this }
+        @Override Instant instant() { time }
+        void advance(Duration amount) { time = time.plus(amount) }
     }
 
     def 'should purge each record type on its own period'() {
@@ -201,8 +213,8 @@ class RetentionServiceImplTest extends Specification {
         1 * persistence.findIdsOlderThan(RecordType.BUILD, _, 50) >> []
     }
 
-    def 'should purge records when no artifact service is available'() {
-        given: 'a deployment with object storage disabled'
+    def 'should keep the records of a type whose artifact service is disabled'() {
+        given: 'a deployment with the build and scan services turned off'
         def persistence = Mock(PersistenceService)
         def svc = service(
                 config: config(),
@@ -213,12 +225,43 @@ class RetentionServiceImplTest extends Specification {
         when:
         def count = svc.purge()
 
-        then:
-        1 * persistence.findIdsOlderThan(RecordType.BUILD, _, _) >> ['bd-1']
-        1 * persistence.deleteByIds(RecordType.BUILD, ['bd-1']) >> 1
+        then: 'their rows stay, because nothing could delete the objects they point at'
+        0 * persistence.findIdsOlderThan(RecordType.BUILD, _, _)
+        0 * persistence.deleteByIds(RecordType.BUILD, _)
+        0 * persistence.findIdsOlderThan(RecordType.SCAN, _, _)
+        0 * persistence.deleteByIds(RecordType.SCAN, _)
+        and: 'the types that have no artifacts are purged as usual'
+        1 * persistence.findIdsOlderThan(RecordType.REQUEST, _, _) >> ['rq-1']
+        1 * persistence.deleteByIds(RecordType.REQUEST, ['rq-1']) >> 1
+        1 * persistence.findIdsOlderThan(RecordType.MIRROR, _, _) >> []
         and:
         noExceptionThrown()
         count == 1
+    }
+
+    def 'should give every type its own share of the pass budget'() {
+        given: 'a BUILD backlog that cannot drain within the pass'
+        def clock = new MutableClock()
+        def persistence = Mock(PersistenceService)
+        def svc = service(
+                config: config(batchSize: 2),
+                persistenceService: persistence,
+                buildLogService: Mock(BuildLogService),
+                scanService: Mock(ContainerScanService),
+                clock: clock )
+
+        when:
+        def count = svc.purge()
+
+        then: 'BUILD gets a quarter of the half-interval budget - 7m30s at one minute a batch'
+        8 * persistence.findIdsOlderThan(RecordType.BUILD, _, 2) >> { clock.advance(Duration.ofMinutes(1)); ['bd-1', 'bd-2'] }
+        8 * persistence.deleteByIds(RecordType.BUILD, _) >> 2
+        and: 'the other three still run instead of starving behind it'
+        1 * persistence.findIdsOlderThan(RecordType.REQUEST, _, 2) >> []
+        1 * persistence.findIdsOlderThan(RecordType.MIRROR, _, 2) >> []
+        1 * persistence.findIdsOlderThan(RecordType.SCAN, _, 2) >> []
+        and:
+        count == 16
     }
 
 }

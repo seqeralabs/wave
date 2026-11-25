@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.retention
 
+import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.util.function.Consumer
@@ -32,6 +33,7 @@ import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.RecordType
 import io.seqera.wave.service.scan.ContainerScanService
+import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -62,17 +64,42 @@ class RetentionServiceImpl implements RetentionService {
     @Inject
     private ContainerScanService scanService
 
+    // replaced by the tests so the pass budget does not depend on wall time
+    private Clock clock = Clock.systemUTC()
+
+    @PostConstruct
+    private void init() {
+        if( !buildLogService )
+            log.warn "Data retention is not removing BUILD records - the build service is disabled, so their logs and Conda locks cannot be deleted"
+        if( !scanService )
+            log.warn "Data retention is not removing SCAN records - the scan service is disabled, so their reports cannot be deleted"
+    }
+
     @Override
     long purge() {
         // bound the pass well inside the lease held by the cron, so it cannot still be running
         // when the lease expires and a second replica starts its own pass
-        final deadline = Instant.now().plus(config.interval.dividedBy(2))
+        final deadline = Instant.now(clock).plus(config.interval.dividedBy(2))
         long count = 0
-        count += purge0(RecordType.BUILD, config.build, deadline, id -> buildLogService?.deleteArtifacts(id))
-        count += purge0(RecordType.REQUEST, config.request, deadline, null)
-        count += purge0(RecordType.MIRROR, config.mirror, deadline, null)
-        count += purge0(RecordType.SCAN, config.scan, deadline, id -> scanService?.deleteReports(id))
+        // a type whose artifact service is absent is left alone: dropping the row would strand its
+        // objects in the bucket with nothing left to name them
+        if( buildLogService )
+            count += purge0(RecordType.BUILD, config.build, slice(deadline, 4), id -> buildLogService.deleteArtifacts(id))
+        count += purge0(RecordType.REQUEST, config.request, slice(deadline, 3), null)
+        count += purge0(RecordType.MIRROR, config.mirror, slice(deadline, 2), null)
+        if( scanService )
+            count += purge0(RecordType.SCAN, config.scan, slice(deadline, 1), id -> scanService.deleteReports(id))
         return count
+    }
+
+    /**
+     * Give each type its own share of what is left of the pass, so a type that cannot drain within
+     * the budget does not starve the ones behind it. Time a type leaves unused rolls over.
+     */
+    protected Instant slice(Instant deadline, int remaining) {
+        final now = Instant.now(clock)
+        final left = Duration.between(now, deadline)
+        return left.isNegative() ? now : now.plus(left.dividedBy(remaining))
     }
 
     /**
@@ -81,11 +108,15 @@ class RetentionServiceImpl implements RetentionService {
      * batch per run caps removals at a rate a busy type can outrun.
      */
     protected long purge0(RecordType type, Duration period, Instant deadline, @Nullable Consumer<String> artifacts) {
-        final before = Instant.now().minus(period)
+        if( !Instant.now(clock).isBefore(deadline) ) {
+            log.warn "Retention skipped ${type} records - the pass ran out of time before reaching them"
+            return 0
+        }
+        final before = Instant.now(clock).minus(period)
         long total = 0
         long orphaned = 0
         boolean complete = false
-        while( Instant.now() < deadline ) {
+        while( Instant.now(clock) < deadline ) {
             final ids = persistenceService.findIdsOlderThan(type, before, config.batchSize)
             if( !ids ) {
                 complete = true
