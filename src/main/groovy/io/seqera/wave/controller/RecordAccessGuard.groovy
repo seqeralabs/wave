@@ -21,6 +21,7 @@ package io.seqera.wave.controller
 import groovy.transform.CompileStatic
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
+import io.seqera.wave.service.access.AccessRules
 import io.seqera.wave.service.access.RecordAccessService
 import io.seqera.wave.service.view.auth.ViewAuthClient
 import io.seqera.wave.tower.RecordOwner
@@ -58,7 +59,7 @@ class RecordAccessGuard {
      *      SameSite=Lax, so the view pages serve their artifact links from /view instead.
      */
     HttpResponse<?> refuse(RecordOwner owner, String visibility, String authorization, String namedEndpoint=null) {
-        if( !RecordAccessService.isPrivate(owner, visibility) )
+        if( !AccessRules.isPrivate(owner, visibility) )
             return null
         final bearer = bearer(authorization)
         if( bearer && !intendedFor(namedEndpoint, owner.towerEndpoint) )

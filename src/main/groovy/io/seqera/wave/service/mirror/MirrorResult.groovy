@@ -88,6 +88,32 @@ class MirrorResult {
         )
     }
 
+    /**
+     * @return A copy of this result exposing only the user id, so that the user name
+     *         and email are not leaked when the result is returned in an API response.
+     */
+    MirrorResult withUserIdOnly() {
+        new MirrorResult(
+                this.mirrorId,
+                this.digest,
+                this.sourceImage,
+                this.targetImage,
+                this.platform,
+                this.creationTime,
+                this.offsetId,
+                null,
+                null,
+                this.userId,
+                this.scanId,
+                this.status,
+                this.duration,
+                this.exitCode,
+                this.logs,
+                this.owner,
+                this.visibility
+        )
+    }
+
     static MirrorResult of(MirrorRequest request) {
         new MirrorResult(
                 request.mirrorId,

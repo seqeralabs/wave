@@ -53,10 +53,8 @@ import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
-import io.micronaut.http.HttpStatus
-import io.seqera.wave.exception.ForbiddenException
-import io.seqera.wave.exception.UnauthorizedException
 import io.seqera.wave.exception.HttpResponseException
+import io.seqera.wave.service.access.AccessRules
 import io.seqera.wave.service.access.RecordAccessService
 import io.seqera.wave.exception.UnsupportedBuildServiceException
 import io.seqera.wave.exception.UnsupportedMirrorServiceException
@@ -384,13 +382,10 @@ class ContainerController {
      * silently, never an error: an anonymous {@code private} is ignored so no released client breaks.
      */
     protected String resolveVisibility(SubmitContainerTokenRequest req, PlatformId identity, String buildRepository) {
-        if( !Visibility.isPrivate(req.visibility) )
-            return Visibility.PUBLIC
-        if( RecordOwner.of(identity) == null )
-            return Visibility.PUBLIC
-        if( buildConfig.isCommunityRepo(buildRepository) )
-            return Visibility.PUBLIC
-        return Visibility.PRIVATE
+        final honoured = Visibility.isPrivate(req.visibility)
+                && RecordOwner.of(identity) != null
+                && !buildConfig.isCommunityRepo(buildRepository)
+        return honoured ? Visibility.PRIVATE : Visibility.PUBLIC
     }
 
     /**
@@ -400,16 +395,13 @@ class ContainerController {
      * @return the identity with the workspace's organisation attached, for the record's owner
      */
     protected PlatformId checkWorkspaceAccess(PlatformId identity, String visibility) {
+        // a public record's owner gates nothing
         if( !Visibility.isPrivate(visibility) )
             return identity
         final decision = accessService.memberOf(identity)
-        if( decision == RecordAccessService.Decision.ALLOW )
-            return identity.withOrgId(accessService.orgIdOf(identity))
-        if( decision == RecordAccessService.Decision.FORBIDDEN )
-            throw new ForbiddenException("Request denied - workspace $identity.workspaceId is not accessible with the given credentials")
-        if( decision == RecordAccessService.Decision.REJECTED )
-            throw new UnauthorizedException("Access denied by Seqera Platform at '${identity.towerEndpoint}'".toString())
-        throw new HttpResponseException(HttpStatus.SERVICE_UNAVAILABLE, "Unable to reach Seqera Platform at '${identity.towerEndpoint}' to verify workspace access".toString())
+        if( decision != RecordAccessService.Decision.ALLOW )
+            throw new HttpResponseException(decision.status, AccessRules.refusal(decision, identity))
+        return identity.withOrgId(accessService.orgIdOf(identity))
     }
 
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
@@ -670,7 +662,8 @@ class ContainerController {
             // resolved before the id: a private scan hashes its tenant, so the two cannot disagree
             visibility = resolveVisibility(req, identity, null)
             identity = checkWorkspaceAccess(identity, visibility)
-            scanId = scanService?.getScanId(req.containerImage, digest, req.scanMode, req.format,
+            // the normalised name, so the write and the failure cleanup agree on the key (#1298)
+            scanId = scanService?.getScanId(targetImage, digest, req.scanMode, req.format,
                     RecordOwner.tenantOf(identity, visibility))
             type = ContainerRequest.Type.Container
             // when there's a scan, return null because the scan status is not known
@@ -794,7 +787,7 @@ class ContainerController {
 
     void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException {
         if( !Visibility.isValid(req.visibility) )
-            throw new BadRequestException("Invalid value for attribute `visibility`: $req.visibility")
+            throw new BadRequestException("Invalid value for attribute `visibility`: '$req.visibility' - allowed values are 'public' and 'private'")
         String msg
         //check conda file size
         if( req.condaFile && buildConfig && req.condaFile.length() > buildConfig.maxCondaFileSize )

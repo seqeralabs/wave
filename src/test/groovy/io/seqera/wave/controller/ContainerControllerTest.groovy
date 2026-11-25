@@ -39,12 +39,12 @@ import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.ContainerStatusResponse
 import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.PackagesSpec
+import io.seqera.wave.api.ScanMode
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.config.CondaOpts
 import io.seqera.wave.api.Visibility
 import io.seqera.wave.configuration.BuildConfig
-import io.seqera.wave.exception.ForbiddenException
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.service.access.RecordAccessService
 import io.seqera.wave.configuration.SociConfig
@@ -72,6 +72,7 @@ import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.service.request.ContainerRequestService
 import io.seqera.wave.service.request.TokenData
+import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.service.scan.ContainerScanService
@@ -237,6 +238,18 @@ class ContainerControllerTest extends Specification {
         then:
         data.containerImage == 'docker.io/library/ubuntu:latest'
         data.type == ContainerRequest.Type.Container
+    }
+
+    def 'should request the scan id for the normalised image' () {
+        given: 'the failure cleanup deletes the entry under the normalised name, so the write must use it too'
+        def scanService = Mock(ContainerScanService)
+        def controller = new ContainerController(inclusionService: Mock(ContainerInclusionService), registryProxyService: proxyRegistry, scanService: scanService)
+
+        when:
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:22.04', containerPlatform: 'linux/amd64', scanMode: ScanMode.required)
+        controller.makeRequestData(req, PlatformId.NULL, "")
+        then:
+        1 * scanService.getScanId('docker.io/library/ubuntu:22.04', _, ScanMode.required, _, _) >> 'sc-12345_1'
     }
 
     def 'should create request data with freeze mode' () {
@@ -524,7 +537,9 @@ class ContainerControllerTest extends Specification {
         when: 'one they do not'
         controller.makeBuildRequest(req, who(999L), '')
         then:
-        thrown(ForbiddenException)
+        def e = thrown(HttpResponseException)
+        e.statusCode() == HttpStatus.FORBIDDEN
+        e.message == "Private container request denied - your user is not a member of workspace '999' on Seqera Platform at 'https://api.cloud.seqera.io' - check the workspace ID or omit the `visibility` attribute"
 
         when: 'a public request names the same foreign workspace'
         controller.makeBuildRequest(new SubmitContainerTokenRequest(containerFile: encode('FROM foo')), who(999L), '')

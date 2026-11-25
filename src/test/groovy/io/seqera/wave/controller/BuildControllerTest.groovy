@@ -107,6 +107,39 @@ class BuildControllerTest extends Specification {
 
     }
 
+    def 'should not return the user name, email and request ip of a build record' () {
+        given:
+        final record = new WaveBuildRecord(
+                buildId: 'bd-pii0000000000_1',
+                targetImage: 'foo.com/repo:pii',
+                userName: 'foo-user',
+                userEmail: 'foo@bar.com',
+                userId: 100,
+                requestIp: '10.20.30.40',
+                startTime: Instant.now() )
+        and:
+        persistenceService.saveBuildAsync(record).join()
+
+        when:
+        def res = client.toBlocking().exchange(HttpRequest.GET("/v1alpha1/builds/${record.buildId}"), String)
+
+        then:
+        res.status() == HttpStatus.OK
+        res.body().contains('"buildId":"bd-pii0000000000_1"')
+        res.body().contains('"userId":100')
+        and:
+        !res.body().contains('userName')
+        !res.body().contains('foo-user')
+        !res.body().contains('userEmail')
+        !res.body().contains('foo@bar.com')
+        !res.body().contains('requestIp')
+        !res.body().contains('10.20.30.40')
+        and: 'the stored record keeps them'
+        persistenceService.loadBuild(record.buildId).userName == 'foo-user'
+        persistenceService.loadBuild(record.buildId).userEmail == 'foo@bar.com'
+        persistenceService.loadBuild(record.buildId).requestIp == '10.20.30.40'
+    }
+
     def 'should get container build log' () {
         given:
         def buildId = 'testbuildid1234'

@@ -46,6 +46,7 @@ import io.micronaut.http.MediaType
 import io.micronaut.http.HttpHeaders
 import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.http.HttpStatus
+import io.seqera.wave.service.access.AccessRules
 import io.seqera.wave.service.access.RecordAccessService
 import io.seqera.wave.service.view.auth.RefusedViewCounter
 import io.seqera.wave.service.view.auth.ViewAuthService
@@ -183,7 +184,7 @@ class ViewController {
     /** Lists never start a sign-in: they use a session only if the viewer already has one */
     protected boolean isReadable(RecordOwner owner, String visibility, String sessionId) {
         // a public row admits everyone, so a list of them reads the session store not at all
-        if( !RecordAccessService.isPrivate(owner, visibility) )
+        if( !AccessRules.isPrivate(owner, visibility) )
             return true
         return decide(owner, visibility, sessionId, authService.session(sessionId)) == RecordAccessService.Decision.ALLOW
     }
@@ -198,7 +199,7 @@ class ViewController {
     }
 
     protected HttpResponse<?> guard(RecordOwner owner, String visibility, String sessionId, String returnTo) {
-        if( !RecordAccessService.isPrivate(owner, visibility) )
+        if( !AccessRules.isPrivate(owner, visibility) )
             return null
         final session = authService.session(sessionId)
         final decision = decide(owner, visibility, sessionId, session)

@@ -30,6 +30,7 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
+import io.seqera.wave.util.JacksonHelper
 
 /**
  *
@@ -126,4 +127,62 @@ class WaveContainerRecordTest extends Specification {
         container.expiration == exp
         container.fusionVersion == null
     }
+
+    def 'should return a copy exposing only the user id' () {
+        given:
+        def req = new SubmitContainerTokenRequest(
+                towerEndpoint: 'https://tower.nf',
+                towerWorkspaceId: 100,
+                containerPlatform: ContainerPlatform.of('amd64'),
+                fingerprint: 'xyz',
+                timestamp: Instant.now().toString() )
+        def user = new User(id: 1, userName: 'foo-user', email: 'foo@bar.com')
+        def data = ContainerRequest.of(requestId: '1234', identity: new PlatformId(user,100), containerImage: 'hello-world')
+        def record = new WaveContainerRecord(req, data, 'https://wave.io/some/container:latest', '10.20.30.40', Instant.now().plusSeconds(3600))
+
+        when:
+        def result = record.withUserIdOnly()
+        def json = JacksonHelper.toJson(result)
+
+        then:
+        result.user.id == 1
+        result.user.userName == null
+        result.user.email == null
+        result.ipAddress == null
+        and:
+        result.id == record.id
+        result.workspaceId == record.workspaceId
+        result.towerEndpoint == record.towerEndpoint
+        result.fingerprint == record.fingerprint
+        result.timestamp == record.timestamp
+        result.zoneId == record.zoneId
+        result.sourceImage == record.sourceImage
+        result.waveImage == record.waveImage
+        result.expiration == record.expiration
+        and:
+        json.contains('"user":{"id":1}')
+        !json.contains('foo-user')
+        !json.contains('foo@bar.com')
+        !json.contains('ipAddress')
+        !json.contains('10.20.30.40')
+        and: 'the original record is unchanged'
+        record.user == user
+        record.ipAddress == '10.20.30.40'
+    }
+
+    def 'should strip the ip address of a record with no user' () {
+        given:
+        def req = new SubmitContainerTokenRequest(containerPlatform: ContainerPlatform.of('amd64'), timestamp: Instant.now().toString())
+        def data = ContainerRequest.of(requestId: '1234', identity: PlatformId.NULL, containerImage: 'hello-world')
+        def record = new WaveContainerRecord(req, data, 'https://wave.io/some/container:latest', '10.20.30.40', Instant.now())
+
+        when:
+        def result = record.withUserIdOnly()
+
+        then:
+        result.user == null
+        result.ipAddress == null
+        result.waveImage == record.waveImage
+    }
+
 }
