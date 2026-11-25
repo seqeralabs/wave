@@ -20,6 +20,10 @@ package io.seqera.wave.service.access
 
 import spock.lang.Specification
 
+import java.util.concurrent.ExecutionException
+
+import io.seqera.wave.exception.HttpResponseException
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.RecordOwner
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.client.GetUserInfoResponse
@@ -102,6 +106,28 @@ class RecordAccessServiceTest extends Specification {
     def 'should refuse when Platform answers without a user' () {
         expect:
         svc(new GetUserInfoResponse(user: null)).check(owner(1L, 10L), 'private', 'tok') == Decision.UNAUTHORIZED
+    }
+
+    def 'should report a token Platform rejected apart from an unreachable Platform' () {
+        given:
+        def client = Mock(TowerClient) {
+            userInfoForAccess(_, _) >> { throw new ExecutionException(new HttpResponseException(401, 'Unauthorized')) }
+        }
+        expect:
+        new RecordAccessService(towerClient: client).check(owner(1L, 10L), 'private', 'stale') == Decision.REJECTED
+    }
+
+    def 'should decide the membership of the workspace a request names' () {
+        given:
+        def who = { Long wsp -> new PlatformId(new User(id: 7), wsp, 'tok', EP) }
+
+        expect: 'a personal workspace is the caller own'
+        svc(null).memberOf(who(null)) == Decision.ALLOW
+        and:
+        svc(null, listing([[100L, 10L, ['maintain']]])).memberOf(who(10L)) == Decision.ALLOW
+        svc(null, listing([[100L, 99L, ['owner']]])).memberOf(who(10L)) == Decision.FORBIDDEN
+        and: 'workspace listing unreachable'
+        svc(null).memberOf(who(10L)) == Decision.UNAVAILABLE
     }
 
 }

@@ -127,7 +127,6 @@ class ErrorHandler {
         if( t instanceof ForbiddenException )
             return HttpResponseFactory.INSTANCE.status(HttpStatus.FORBIDDEN)
 
-
         if( t instanceof NotFoundException ) {
             final resp = responseFactory.apply(msg, 'NOT_FOUND')
             return HttpResponse.notFound(resp)

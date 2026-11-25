@@ -33,6 +33,7 @@ import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 
 /**
@@ -72,6 +73,40 @@ class MirrorControllerTest extends Specification {
         then:
         res.status.code == 200
         res.body() == mirrorResult
+    }
+
+    def "should not return the user name and email of a mirror record"() {
+        given:
+        def mirrorRequest = MirrorRequest.create(
+                "docker.io/library/nginx:1.25-alpine",
+                "wave.seqera.io/mirror/nginx:1.25-alpine",
+                "sha256:abcd1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd",
+                ContainerPlatform.DEFAULT,
+                Path.of("/tmp/workdir"),
+                "{auth:json}",
+                "scan-123",
+                Instant.now(),
+                "offset-12345",
+                new PlatformId(new User(id: 100, userName: 'foo-user', email: 'foo@bar.com'))
+        )
+        def mirrorResult = MirrorResult.of(mirrorRequest)
+        persistenceService.saveMirrorResultAsync(mirrorResult).join()
+
+        when:
+        def req = HttpRequest.GET("/v1alpha1/mirrors/${mirrorRequest.mirrorId}")
+        def res = client.toBlocking().exchange(req, String)
+
+        then:
+        res.status.code == 200
+        res.body().contains('"userId":100')
+        and:
+        !res.body().contains('userName')
+        !res.body().contains('foo-user')
+        !res.body().contains('userEmail')
+        !res.body().contains('foo@bar.com')
+        and: 'the stored record keeps them'
+        persistenceService.loadMirrorResult(mirrorRequest.mirrorId).userName == 'foo-user'
+        persistenceService.loadMirrorResult(mirrorRequest.mirrorId).userEmail == 'foo@bar.com'
     }
 
     def "should return 404 when mirror record is not found"() {
