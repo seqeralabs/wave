@@ -192,7 +192,7 @@ class WaveContainerRecord {
     @PersistOnly
     final RecordOwner owner
 
-    /** a Visibility value */
+    /** a Visibility value; null is read as public */
     final String visibility
 
     WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequest data, String waveImage, String addr, Instant expiration) {

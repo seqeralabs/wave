@@ -61,7 +61,7 @@ class ContainerRequest {
     Boolean succeeded
     Instant creationTime
     boolean soci
-    String visibility   // a Visibility value
+    String visibility   // a Visibility value; null is read as public
 
     boolean durable() {
         return freeze || getMirror()

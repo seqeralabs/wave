@@ -94,7 +94,7 @@ class MirrorRequest {
      */
     final PlatformId identity
 
-    /** a Visibility value */
+    /** a Visibility value; null is read as public */
     final String visibility
 
     static MirrorRequest create(String sourceImage, String targetImage, String digest, ContainerPlatform platform, Path workspace, String authJson, String scanId, Instant ts, String offsetId, PlatformId identity, String visibility = null) {

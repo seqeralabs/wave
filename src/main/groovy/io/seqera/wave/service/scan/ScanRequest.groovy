@@ -86,7 +86,7 @@ class ScanRequest {
      */
     final PlatformId identity
 
-    /** inherited from the parent; a Visibility value */
+    /** inherited from the parent; a Visibility value, null is read as public */
     final String visibility
 
     static ScanRequest of(Map opts) {
