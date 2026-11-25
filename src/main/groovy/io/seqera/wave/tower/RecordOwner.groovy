@@ -22,8 +22,8 @@ import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import io.seqera.serde.moshi.MoshiSerializable
+import io.seqera.service.pairing.PairingEndpoint
 import io.seqera.wave.api.Visibility
-
 
 /**
  * Model the Platform tenant a Wave record belongs to.
@@ -44,7 +44,7 @@ class RecordOwner implements MoshiSerializable {
      * This is the address the access check dials, and the pairing lookup resolves it by the
      * spelling Platform itself registered - the submit path already refused anything else. A
      * normalised value could miss both, and the owner is persisted, so that would need a
-     * backfill. The tenant key uses this value as stored.
+     * backfill. The tenant key normalises this when it is computed; the stored value stays raw.
      */
     String towerEndpoint
 
@@ -62,14 +62,15 @@ class RecordOwner implements MoshiSerializable {
     /**
      * The tenant this record belongs to: the workspace when there is one, otherwise the user.
      *
-     * The endpoint is used exactly as paired, never canonicalised. Pairing, user-info and the
-     * workspace listing all resolve the raw spelling, so folding two spellings into one tenant
-     * would let a Platform paired under another spelling of the same host share this tenant's
-     * ids while still answering its own membership checks.
+     * The endpoint is canonicalised here rather than on the stored field, so that two spellings
+     * of one Platform give one tenant, as ADR 20261029-workspace-ownership 2.3 requires. It uses
+     * the same form as the pairing key, so a Platform can't be paired under a spelling that the
+     * tenant would fold into another Platform's.
      */
     String tenant() {
+        final endpoint = PairingEndpoint.normalise(towerEndpoint)
         // not `workspaceId ?:` - 0L is falsy in Groovy
-        return workspaceId != null ? "$towerEndpoint:$workspaceId" : "$towerEndpoint:user:$userId"
+        return workspaceId != null ? "$endpoint:$workspaceId" : "$endpoint:user:$userId"
     }
 
     /**
