@@ -93,6 +93,7 @@ caller = userInfo(record.owner.towerEndpoint, token)
     invalid                                          → 401
 record.owner.workspaceId == null
     caller.id == record.owner.userId                 → allow
+    otherwise                                        → 403
 record.owner.workspaceId in workspaces(caller)       → allow
 otherwise                                            → 403
 
