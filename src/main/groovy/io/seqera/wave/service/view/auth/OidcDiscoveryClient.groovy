@@ -124,13 +124,17 @@ class OidcDiscoveryClient {
                     .build()
             final resp = tokenHttp.send(req, HttpResponse.BodyHandlers.ofString())
             if( resp.statusCode() != 200 ) {
-                log.debug "OIDC token exchange with '$towerEndpoint' returned ${resp.statusCode()}"
+                // the OAuth error body names the misconfiguration and carries no token
+                log.warn "OIDC token exchange with '$towerEndpoint' returned ${resp.statusCode()} - ${resp.body()?.take(500)}"
                 return null
             }
-            return (JacksonHelper.fromJson(resp.body(), Map) as Map)?.get('access_token')
+            final token = (JacksonHelper.fromJson(resp.body(), Map) as Map)?.get('access_token') as String
+            if( !token )
+                log.warn "OIDC token exchange with '$towerEndpoint' returned no access_token"
+            return token
         }
         catch( Exception e ) {
-            log.debug "OIDC token exchange with '$towerEndpoint' failed - cause: ${e.message}"
+            log.warn "OIDC token exchange with '$towerEndpoint' failed - cause: ${e.message}"
             return null
         }
     }
