@@ -402,6 +402,8 @@ Deletion is permanent. Records and objects removed by retention cannot be recove
 
 `wave.retention.scan` *(optional)*
 : How long a scan record and its SPDX and CycloneDX reports are kept (default: `5d`).
+  Wave keeps resolving the scan id of a cached build for `wave.scan.id.duration` (default: `7d`).
+  While this period is the shorter of the two, a cached build requested after its scan record is deleted, but before its scan id expires, is scanned again under the same id.
 
 `wave.retention.interval` *(optional)*
 : Interval between retention runs (default: `1h`).
