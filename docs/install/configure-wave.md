@@ -58,6 +58,8 @@ For the full list of limits, see [Rate limits](reference.md#rate-limits) in the 
 
 Builds and augmented images accumulate. Set cleanup and retention so storage stays bounded. See `wave.cleanup.*` in the [Configuration reference](reference.md). Also set a retention or lifecycle policy on your build and cache registries.
 
+To bound the records Wave stores, turn on `wave.retention.enabled` and set the per-type periods. Wave then deletes build, container request, mirror and scan records past their age, along with their build logs, Conda lock files and scan reports. Deletion is permanent, so review the defaults in [Data retention](reference.md#data-retention) before enabling it.
+
 ### Right-size resources
 
 Reserve about 2 GB memory and 0.2 CPU per Wave instance, with limits of 4 GB and 1 CPU, matching the sizing in the install paths. Run multiple replicas behind the load balancer for availability.
