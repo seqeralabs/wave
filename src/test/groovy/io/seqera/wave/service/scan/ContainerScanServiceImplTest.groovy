@@ -28,6 +28,7 @@ import java.time.Instant
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ScanMode
+import io.micronaut.objectstorage.request.UploadRequest
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.core.ContainerPlatform
@@ -39,6 +40,7 @@ import io.seqera.wave.service.cleanup.CleanupService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
+import io.seqera.wave.service.localfs.LocalStorageOperations
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.persistence.PersistenceService
@@ -54,6 +56,32 @@ import jakarta.inject.Inject
  */
 @MicronautTest
 class ContainerScanServiceImplTest extends Specification {
+
+    def 'should delete the uploaded reports of a scan' () {
+        given:
+        def storage = new LocalStorageOperations(Files.createTempDirectory('test'))
+        def service = new ContainerScanServiceImpl(scanStoreOpts: storage, config: new ScanConfig())
+        and:
+        storage.upload(UploadRequest.fromBytes('spdx'.bytes, service.scanKey('sc-1', ScanType.Spdx.output)))
+        storage.upload(UploadRequest.fromBytes('cyclonedx'.bytes, service.scanKey('sc-1', ScanType.CycloneDx.output)))
+
+        expect:
+        storage.exists(service.scanKey('sc-1', ScanType.Spdx.output))
+        storage.exists(service.scanKey('sc-1', ScanType.CycloneDx.output))
+
+        when:
+        service.deleteReports('sc-1')
+
+        then: 'both reports go, under the same keys the upload path writes'
+        !storage.exists(service.scanKey('sc-1', ScanType.Spdx.output))
+        !storage.exists(service.scanKey('sc-1', ScanType.CycloneDx.output))
+
+        when: 'a scan that never uploaded a report'
+        service.deleteReports('sc-2')
+
+        then:
+        noExceptionThrown()
+    }
 
     @Inject
     ContainerScanServiceImpl scanService
