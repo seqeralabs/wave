@@ -31,7 +31,7 @@ This is not enough to decide who owns a record:
 
 Every request type already carries the caller's `PlatformId` (`BuildRequest.identity`, `MirrorRequest.identity`, `ScanRequest.identity`) at creation time. Most of it is dropped before the record is saved.
 
-Making records private by default isn't an option: every Nextflow and Wave CLI release in use today would lose access to the pages of their own builds, and many users pin Nextflow versions or can't upgrade quickly.
+Making records private by default on the current submit endpoints isn't an option: every Nextflow and Wave CLI release in use today would lose access to the pages of their own builds, and many users pin Nextflow versions or can't upgrade quickly. A new submit API version (4.3) is a contract clients adopt deliberately, so it can make private the default.
 
 ## Decision
 
@@ -53,11 +53,12 @@ with `towerEndpoint` normalised (see 2.3). A request without a workspace belongs
 - The endpoint is part of the owner because workspace and user ids are unique only within one Platform
 - Platform remains the source of truth for membership: Wave asks it and never stores member lists
 
-#### 1.2 Visibility is explicit and defaults to public
+#### 1.2 Visibility is explicit and defaults to public on the current API
 
 **Decision:**
 - The submit request gets an optional `visibility` field, `public` or `private`
-- When the field is absent, the record is `public`
+- On the current submit endpoints (`/container-token`, `/v1alpha2/container`), when the field is absent the record is `public`
+- On the new submit API (4.3), when the field is absent the record of an authenticated request is `private`. A client sends `public` to opt out
 - `private` takes effect only on an authenticated request. On an anonymous request it is ignored and the record is public
 - Builds to the community repository (`defaultPublicRepository`) are always public: their names are deterministic and meant to be shared
 - Platform sends `private` for Data Studios builds: they are submitted with the studio user's token and the workspace (`SubmitContainerTokenRequestFactory`), so they are owned by that workspace. A Studios build is private only when the workspace sets its own container repository. Otherwise it goes to the community repository, through `tower.data-studio.wave.custom-image-registry` or Wave's default for freeze builds, and stays public by the rule above
@@ -67,6 +68,8 @@ with `towerEndpoint` normalised (see 2.3). A request without a workspace belongs
 **Rationale:**
 - Clients released before this change send nothing, so their behaviour doesn't change
 - Each client opts in on its own release schedule: Platform first, Nextflow and the Wave CLI when they are ready
+- Deriving visibility from the identity on the current endpoints was considered and rejected: on deploy it would make every authenticated client's records private, rebuilding and splitting the cache of builds that never asked for it, adding a Platform membership call to their submits and a sign-in to their pages, while the current read API (4.1) still returns those records to anyone
+- The new submit API defaults to private because moving to it is already a client change: the cost of private records lands only on clients that adopt it, and privacy no longer depends on each of them remembering to send `private`
 
 #### 1.3 Ownership rule
 
@@ -224,11 +227,24 @@ Once the new API ships, they are marked deprecated with a `Deprecation` header, 
 - Private records go through the access check (1.4): 401 without a valid token, 403 for a non-member
 - Responses have the same shape as the current endpoints, so clients move by changing the path and sending their token
 
-The submit endpoints are unchanged apart from the optional `visibility` field (2.1). Anonymous submits are still accepted.
+The current submit endpoints are unchanged apart from the optional `visibility` field (2.1). Anonymous submits are still accepted.
 
 **Rationale:**
 - Clients move on their own schedule, and nothing breaks for those that don't
 - The same check backs the pages and the API, so a record has one access rule everywhere
+
+#### 4.3 A new submit API iteration defaults to private
+
+**Decision:** Add a new version of the submit endpoint, alongside the new read API (4.2) and under the same version name:
+
+- The request and response have the same shape as `/v1alpha2/container`, including the optional `visibility` field
+- An authenticated request with no `visibility` creates private records. All the other rules of 1.2 apply unchanged: anonymous requests and builds to the community repository are always public, and `public` can be requested explicitly
+- Anonymous submits are still accepted, and create public records
+- The current submit endpoints keep the public default (1.2) until they are removed, on a date announced separately from the read API's
+
+**Rationale:**
+- Clients move to private by default by changing the path, without a new client option
+- Clients that don't move keep today's behaviour, so the cost of private records (2.2, 1.5) is never imposed on pinned releases
 
 ## Implementation Plan
 
@@ -242,6 +258,7 @@ Each pull request can be merged and released on its own. The first three change 
 | 4 | Access check | Service returning allow, 401 or 403 (1.3, 1.4). `TowerClient` user-info call without token store or refresh; `GET /user/{userId}/workspaces` call and response model; 60s caches. Workspace check at submit (1.5). `owner.orgId` from that listing (2.1) | M |
 | 5 | View pages | OpenID Connect sign-in against the record's Platform: discovery, authorization code with PKCE, callback, Wave session cookie (3). Access check on the record pages, filtering on the list pages, 401 and 403 templates, refused-view counter (3) | L |
 | 6 | New read API | New API version with optional bearer auth (4.2). `Deprecation` header on the current API (4.1) | M |
+| 7 | New submit API | Submit endpoint in the new API version, private by default for authenticated requests (4.3) | S |
 
 Outside Wave:
 
@@ -250,10 +267,10 @@ Outside Wave:
 | Platform | Register Wave as an OpenID Connect client with its callback URL, enable OpenID Connect (`TOWER_OIDC_PEM_PATH`) in each environment, and confirm its access tokens are accepted by `user-info` and `GET /user/{userId}/workspaces` | Before PR 5 ships |
 | Platform | Read build status and logs (`WaveClient.getBuildStatus`, `getLogs`, used by Data Studios' `CustomContainerWorker`) through the new read API, with a fresh access token minted for the studio's user on each read, as Platform already does to submit (`CustomContainerRequestSubmittor.getTowerAccessToken`), so token expiry during a long build doesn't matter. Point the Studios "Full log available" link at `/view/builds/{id}` instead of the raw `/v1alpha1/builds/{id}/logs` URL, which a browser can't authenticate to | After PR 6, before Platform sends `private` |
 | Platform | Send `visibility: private` for Data Studios builds (1.2) | After PR 5 is live |
-| Nextflow | Expose `wave.visibility`; read through the new API with the token | Any time after PRs 2 and 6 |
-| Wave CLI | Expose `--visibility`; read through the new API with the token | Any time after PRs 2 and 6 |
+| Nextflow | Submit and read through the new API with the token, so authenticated runs are private by default; expose `wave.visibility` to opt out with `public` | After PRs 6 and 7 |
+| Wave CLI | Submit and read through the new API with the token; expose `--visibility` to opt out with `public` | After PRs 6 and 7 |
 
-Rollout: PRs 1 to 6 change nothing visible, because no record is private yet; test on staging with a private request sent by hand. The first visible change is Platform sending `private`, a Platform-side switch that can be turned off without a Wave release. Removing the current read API is a later, announced step.
+Rollout: PRs 1 to 7 change nothing visible, because no record is private yet and no client uses the new submit API; test on staging with a private request sent by hand. The first visible change is Platform sending `private`, a Platform-side switch that can be turned off without a Wave release. Removing the current read API is a later, announced step.
 
 ### Tests
 
@@ -269,7 +286,8 @@ Rollout: PRs 1 to 6 change nothing visible, because no record is private yet; te
 ## Consequences
 
 - **The current API returns private records** to anyone holding the id until it is removed. Private records are protected on every path only after that, so the deprecation period should be short and announced with a date
-- **Privacy depends on clients opting in.** A client that should send `private` and doesn't creates a public record
+- **Privacy depends on clients opting in on the current API.** A client on the current submit endpoints that should send `private` and doesn't creates a public record. On the new submit API it is the reverse: a client that wants a shareable record must send `public`
+- **Two submit defaults coexist** until the current submit endpoints are removed: the same request is public on the current API and private on the new one
 - **A sign-in redirect on the first private page.** A viewer with no Wave session for the record's Platform is redirected through it once per session; with an active Platform session there is no prompt
 - **Platforms without OpenID Connect** can't sign viewers in, so their private records are readable only through the API (4.2)
 - **One more Platform call per viewer.** Reading a private record costs a user-info call and a workspace listing on the record's Platform, each cached for 60 seconds. Private submits with a workspace pay the workspace listing too
@@ -280,6 +298,6 @@ Rollout: PRs 1 to 6 change nothing visible, because no record is private yet; te
 ## Open Questions
 
 1. How does Wave register as a client of an enterprise Platform: a static client configured per Platform, or dynamic registration (`/register`)? And which scopes does Wave request so its token is accepted by `user-info` and the workspace listing?
-2. The version name of the new read API, and the deprecation date of the current one
+2. The version name of the new read and submit API, and the deprecation dates of the current read and submit endpoints
 3. Should the new API's `/status` endpoints also require a token for private records, or stay open since they expose only build state?
 4. Which repository does Seqera Cloud use for Data Studios builds (`tower.data-studio.wave.custom-image-registry`)? If it is the community registry, as on enterprise stage, only workspaces with their own container repository get private Studios builds (1.2)
