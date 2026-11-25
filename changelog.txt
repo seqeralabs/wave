@@ -1,4 +1,6 @@
 # Wave changelog
+1.45.1 - 25 Nov 2026
+- Stop writing the Platform access token to the logs (#1317) [0191b0dd7]
 1.45.0 - 24 Nov 2026
 - Strip user name, email and request IP from the read API responses (#1315) [44d0ef982]
 - Report a registry rate limit with an accurate message (#1304) [bb962005c]
