@@ -182,11 +182,11 @@ class ViewController {
     }
 
     /** Lists never start a sign-in: they use a session only if the viewer already has one */
-    protected boolean isReadable(RecordOwner owner, String visibility, String sessionId) {
+    protected RecordAccessService.Decision readDecision(RecordOwner owner, String visibility, String sessionId) {
         // a public row admits everyone, so a list of them reads the session store not at all
         if( !AccessRules.isPrivate(owner, visibility) )
-            return true
-        return decide(owner, visibility, sessionId, authService.session(sessionId)) == RecordAccessService.Decision.ALLOW
+            return RecordAccessService.Decision.ALLOW
+        return decide(owner, visibility, sessionId, authService.session(sessionId))
     }
 
     static protected MutableHttpResponse<?> authError(HttpStatus status, String message, String retryTo=null) {
@@ -197,6 +197,9 @@ class ViewController {
         if( retryTo ) model.retry_url = retryTo
         return HttpResponse.status(status).body(new ModelAndView("view-auth-error", model))
     }
+
+    static final private String PLATFORM_UNREACHABLE =
+            'Seqera Platform could not be reached to check access. Try again shortly.'
 
     protected HttpResponse<?> guard(RecordOwner owner, String visibility, String sessionId, String returnTo) {
         if( !AccessRules.isPrivate(owner, visibility) )
@@ -218,7 +221,7 @@ class ViewController {
             case RecordAccessService.Decision.FORBIDDEN:
                 return authError(HttpStatus.FORBIDDEN, 'This record belongs to a workspace you do not have access to.')
             default:
-                return authError(HttpStatus.SERVICE_UNAVAILABLE, 'Seqera Platform could not be reached to check access. Try again shortly.')
+                return authError(HttpStatus.SERVICE_UNAVAILABLE, PLATFORM_UNREACHABLE)
         }
     }
 
@@ -240,8 +243,17 @@ class ViewController {
                 log.debug "Found not build with id: $buildId"
                 return HttpResponse.ok(new ModelAndView("build-list", ["error_message": "Unknown build id '$buildId'"]))
             }
-            builds = builds.findAll { isReadable(it.owner, it.visibility, sessionId) }
+            boolean unavailable = false
+            builds = builds.findAll {
+                final decision = readDecision(it.owner, it.visibility, sessionId)
+                if( decision == RecordAccessService.Decision.UNAVAILABLE )
+                    unavailable = true
+                return decision == RecordAccessService.Decision.ALLOW
+            }
             if( !builds ) {
+                // a row Platform could not be asked about is not a row that is absent
+                if( unavailable )
+                    return authError(HttpStatus.SERVICE_UNAVAILABLE, PLATFORM_UNREACHABLE)
                 return HttpResponse.ok(new ModelAndView("build-list", ["error_message": "No build visible for id '$buildId'"]))
             }
             if( builds.size()==1 ) {
@@ -479,8 +491,16 @@ class ViewController {
                 log.debug "Found not scan with id: $scanId"
                 throw new NotFoundException("Unknown container scan id '$scanId'")
             }
-            scans = scans.findAll { isReadable(it.owner, it.visibility, sessionId) }
+            boolean unavailable = false
+            scans = scans.findAll {
+                final decision = readDecision(it.owner, it.visibility, sessionId)
+                if( decision == RecordAccessService.Decision.UNAVAILABLE )
+                    unavailable = true
+                return decision == RecordAccessService.Decision.ALLOW
+            }
             if( !scans ) {
+                if( unavailable )
+                    return authError(HttpStatus.SERVICE_UNAVAILABLE, PLATFORM_UNREACHABLE)
                 return HttpResponse.ok(new ModelAndView("scan-list", ["error_message": "No scan visible for id '$scanId'"]))
             }
             if( scans.size()==1 ) {

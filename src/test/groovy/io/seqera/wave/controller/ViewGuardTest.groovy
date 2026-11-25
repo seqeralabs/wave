@@ -24,6 +24,7 @@ import java.time.Instant
 
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.cookie.Cookie
+import io.micronaut.views.ModelAndView
 import io.seqera.wave.service.access.RecordAccessService
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.logs.BuildLogService
@@ -137,13 +138,59 @@ class ViewGuardTest extends Specification {
         def hidden = controller(Decision.FORBIDDEN, auth)
 
         when:
-        def keep = readable.isReadable(OWNER, 'private', 'sess-1')
-        def drop = hidden.isReadable(OWNER, 'private', 'sess-1')
+        def keep = readable.readDecision(OWNER, 'private', 'sess-1')
+        def drop = hidden.readDecision(OWNER, 'private', 'sess-1')
 
         then: 'a list never redirects the viewer mid-page'
         0 * auth.startSignIn(_, _)
-        keep
-        !drop
+        keep == Decision.ALLOW
+        drop == Decision.FORBIDDEN
+    }
+
+    def 'should tell a build list viewer that Platform is down, not that the records are gone' () {
+        given:
+        def record = new WaveBuildRecord(buildId: 'bd-abcdefghijklmn_1',
+                startTime: Instant.now(), owner: OWNER, visibility: 'private')
+        def ctl = new ViewController(
+                accessService: Mock(RecordAccessService) { check(_, _, _) >> decision },
+                authService: signsIn(true),
+                buildService: Mock(ContainerBuildService) { getAllBuilds(_) >> [record] } )
+
+        when:
+        def resp = ctl.viewBuild('bd-abcdefghijklmn', 'sess-1')
+
+        then:
+        resp.status() == status
+        and:
+        (resp.body() as ModelAndView).view.get() == view
+        ((resp.body() as ModelAndView).model.get() as Map).error_message == message
+
+        where:
+        decision             | status                         | view              | message
+        Decision.UNAVAILABLE | HttpStatus.SERVICE_UNAVAILABLE | 'view-auth-error' | 'Seqera Platform could not be reached to check access. Try again shortly.'
+        Decision.FORBIDDEN   | HttpStatus.OK                  | 'build-list'      | "No build visible for id 'bd-abcdefghijklmn'"
+    }
+
+    def 'should tell a scan list viewer that Platform is down, not that the records are gone' () {
+        given:
+        def ctl = new ViewController(
+                accessService: Mock(RecordAccessService) { check(_, _, _) >> decision },
+                authService: signsIn(true),
+                scanService: Mock(ContainerScanService) { getAllScans(_) >>
+                        [Mock(WaveScanRecord) { getOwner() >> OWNER; getVisibility() >> 'private' }] } )
+
+        when:
+        def resp = ctl.viewScan('sc-abcdefghijklmn', 'sess-1')
+
+        then:
+        resp.status() == status
+        and:
+        (resp.body() as ModelAndView).view.get() == view
+
+        where:
+        decision             | status                         | view
+        Decision.UNAVAILABLE | HttpStatus.SERVICE_UNAVAILABLE | 'view-auth-error'
+        Decision.FORBIDDEN   | HttpStatus.OK                  | 'scan-list'
     }
 
     /** The artifact routes the view pages link to, each serving one record type */
