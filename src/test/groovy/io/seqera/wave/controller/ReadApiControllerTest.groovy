@@ -37,6 +37,7 @@ import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.RecordOwner
+import io.seqera.wave.util.JacksonHelper
 
 /**
  * @author Munish Chouhan <munish.chouhan@seqera.io>
@@ -198,6 +199,52 @@ class ReadApiControllerTest extends Specification {
         'scans/logs'        | { it.getScanLogs('sc-1', null, null) }
         'container'         | { it.getContainerRecord('cr-1', null, null) }
         'container/status'  | { it.getContainerStatus('cr-1', null, null) }
+    }
+
+    def 'should not return the requester name, email or ip from the build record' () {
+        given: 'a public record carrying all three'
+        def record = new WaveBuildRecord(buildId: 'bd-1_1', startTime: Instant.now(), userId: 100L,
+                userName: 'foo-user', userEmail: 'foo@bar.com', requestIp: '10.20.30.40')
+        def ctl = new ReadApiController(
+                guard: guard(Mock(RecordAccessService) { check(_, _, _) >> RecordAccessService.Decision.ALLOW }),
+                buildService: Mock(ContainerBuildService) { getBuildRecord(_) >> record } )
+
+        when:
+        def json = JacksonHelper.toJson(ctl.getBuildRecord('bd-1_1', null, null).body())
+
+        then: 'the user id identifies the requester, and nothing else about them does'
+        json.contains('"userId":100')
+        and:
+        !json.contains('userName') && !json.contains('foo-user')
+        !json.contains('userEmail') && !json.contains('foo@bar.com')
+        !json.contains('requestIp') && !json.contains('10.20.30.40')
+    }
+
+    def 'should reduce the record on every route that returns one' () {
+        given: 'the models drop the fields, so what matters here is that the route asks them to'
+        def build = Mock(WaveBuildRecord) { getOwner() >> OWNER; getVisibility() >> 'public' }
+        def mirror = Mock(MirrorResult) { getOwner() >> OWNER; getVisibility() >> 'public' }
+        def container = Mock(WaveContainerRecord) { getOwner() >> OWNER; getVisibility() >> 'public' }
+        def ctl = new ReadApiController(
+                guard: guard(Mock(RecordAccessService) { check(_, _, _) >> RecordAccessService.Decision.ALLOW }),
+                buildService: Mock(ContainerBuildService) { getBuildRecord(_) >> build },
+                mirrorService: Mock(ContainerMirrorService) { getMirrorResult(_) >> mirror },
+                containerService: Mock(ContainerRequestService) { loadContainerRecord(_) >> container } )
+
+        when:
+        ctl.getBuildRecord('bd-1_1', null, null)
+        then:
+        1 * build.withUserIdOnly() >> build
+
+        when:
+        ctl.getMirrorRecord('mr-1', null, null)
+        then:
+        1 * mirror.withUserIdOnly() >> mirror
+
+        when:
+        ctl.getContainerRecord('cr-1', null, null)
+        then:
+        1 * container.withUserIdOnly() >> container
     }
 
 }

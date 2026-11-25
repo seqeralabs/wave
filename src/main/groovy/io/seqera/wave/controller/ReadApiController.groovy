@@ -88,7 +88,7 @@ class ReadApiController {
         final record = buildService?.getBuildRecord(buildId)
         if( !record )
             return HttpResponse.notFound()
-        return guard.refuse(record.owner, record.visibility, authorization, namedEndpoint) ?: HttpResponse.ok(record)
+        return guard.refuse(record.owner, record.visibility, authorization, namedEndpoint) ?: HttpResponse.ok(record.withUserIdOnly())
     }
 
     @Get("/builds/{buildId}/status")
@@ -134,7 +134,7 @@ class ReadApiController {
         final record = mirrorService?.getMirrorResult(mirrorId)
         if( !record )
             return HttpResponse.notFound()
-        return guard.refuse(record.owner, record.visibility, authorization, namedEndpoint) ?: HttpResponse.ok(record)
+        return guard.refuse(record.owner, record.visibility, authorization, namedEndpoint) ?: HttpResponse.ok(record.withUserIdOnly())
     }
 
     @Get("/scans/{scanId}")
