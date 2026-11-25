@@ -24,6 +24,7 @@ import java.time.Instant
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
+import io.seqera.wave.api.Visibility
 import io.seqera.wave.core.ContainerPlatform
 import com.fasterxml.jackson.annotation.JsonIgnore
 import io.seqera.wave.service.persistence.PersistOnly
@@ -57,7 +58,7 @@ class MirrorResult {
     final String scanId
     final Status status
     @JsonIgnore @PersistOnly final RecordOwner owner   // stored, not returned by the API
-    final String visibility                            // a Visibility value; null is read as public
+    final Visibility visibility                        // null is read as public
     final Duration duration
     final Integer exitCode
     final String logs

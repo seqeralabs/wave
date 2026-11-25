@@ -71,7 +71,7 @@ class RecordOwner implements MoshiSerializable {
      * @return The tenant to hash into a private build id, or {@code null} when the build is
      *      public or anonymous - in which case the id is unchanged from before this existed.
      */
-    static String tenantOf(PlatformId identity, String visibility) {
+    static String tenantOf(PlatformId identity, Visibility visibility) {
         return Visibility.isPrivate(visibility) ? of(identity)?.tenant() : null
     }
 

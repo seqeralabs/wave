@@ -29,6 +29,7 @@ import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.api.Visibility
 import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.tower.RecordOwner
@@ -192,8 +193,8 @@ class WaveContainerRecord {
     @PersistOnly
     final RecordOwner owner
 
-    /** a Visibility value; null is read as public */
-    final String visibility
+    /** null is read as public */
+    final Visibility visibility
 
     WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequest data, String waveImage, String addr, Instant expiration) {
         this.id = data.requestId

@@ -24,6 +24,7 @@ import java.time.Instant
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
+import io.seqera.wave.api.Visibility
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 /**
@@ -86,8 +87,8 @@ class ScanRequest {
      */
     final PlatformId identity
 
-    /** inherited from the parent; a Visibility value, null is read as public */
-    final String visibility
+    /** inherited from the parent; null is read as public */
+    final Visibility visibility
 
     static ScanRequest of(Map opts) {
         new ScanRequest(
@@ -101,7 +102,7 @@ class ScanRequest {
                 opts.workDir as Path,
                 opts.creationTime as Instant,
                 opts.identity as PlatformId,
-                opts.visibility as String
+                Visibility.of(opts.visibility)
         )
     }
 

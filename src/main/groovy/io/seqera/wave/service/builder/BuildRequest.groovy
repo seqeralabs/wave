@@ -29,6 +29,7 @@ import groovy.transform.EqualsAndHashCode
 import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.Visibility
 import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
@@ -165,8 +166,8 @@ class BuildRequest {
      */
     final ChildRefs scanChildIds
 
-    /** a Visibility value; null is read as public */
-    final String visibility
+    /** null is read as public */
+    final Visibility visibility
 
     BuildRequest(
             String containerId,
@@ -188,7 +189,7 @@ class BuildRequest {
             BuildCompression compression,
             String buildTemplate,
             boolean noEmail = false,
-            String visibility = null
+            Visibility visibility = null
     )
     {
         this.containerId = containerId
@@ -240,7 +241,7 @@ class BuildRequest {
         this.compression = opts.compression as BuildCompression
         this.buildId = opts.buildId ?: computeBuildId(containerId)
         this.buildTemplate = opts.buildTemplate
-        this.visibility = opts.visibility as String
+        this.visibility = Visibility.of(opts.visibility)
         this.noEmail = opts.noEmail as boolean
         this.buildChildIds = opts.buildChildIds as ChildRefs
         this.scanChildIds = opts.scanChildIds as ChildRefs

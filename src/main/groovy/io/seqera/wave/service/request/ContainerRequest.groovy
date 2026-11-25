@@ -25,6 +25,7 @@ import groovy.transform.CompileStatic
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ScanLevel
 import io.seqera.wave.api.ScanMode
+import io.seqera.wave.api.Visibility
 import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.model.ContainerCoordinates
@@ -61,7 +62,7 @@ class ContainerRequest {
     Boolean succeeded
     Instant creationTime
     boolean soci
-    String visibility   // a Visibility value; null is read as public
+    Visibility visibility   // null is read as public
 
     boolean durable() {
         return freeze || getMirror()
@@ -197,7 +198,7 @@ class ContainerRequest {
             Boolean succeeded,
             Instant creationTime,
             boolean soci,
-            String visibility
+            Visibility visibility
     )
     {
         return new ContainerRequest(
@@ -249,7 +250,7 @@ class ContainerRequest {
                 data.succeeded as Boolean,
                 data.creationTime as Instant,
                 data.soci as boolean,
-                data.visibility as String
+                Visibility.of(data.visibility)
         )
     }
 }

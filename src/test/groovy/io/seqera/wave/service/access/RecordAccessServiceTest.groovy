@@ -22,6 +22,7 @@ import spock.lang.Specification
 
 import java.util.concurrent.ExecutionException
 
+import io.seqera.wave.api.Visibility
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.RecordOwner
@@ -61,31 +62,31 @@ class RecordAccessServiceTest extends Specification {
 
     def 'should allow a public record without a token' () {
         expect:
-        svc(null).check(owner(1L, 10L), 'public', null) == Decision.ALLOW
+        svc(null).check(owner(1L, 10L), Visibility.PUBLIC, null) == Decision.ALLOW
         and: 'a record written before visibility existed is public'
         svc(null).check(owner(1L, 10L), null, null) == Decision.ALLOW
         and: 'so is one with no owner, whatever it asks for'
-        svc(null).check(null, 'private', null) == Decision.ALLOW
+        svc(null).check(null, Visibility.PRIVATE, null) == Decision.ALLOW
     }
 
     def 'should refuse a private record without a token' () {
         expect:
-        svc(null).check(owner(1L, 10L), 'private', null) == Decision.UNAUTHORIZED
+        svc(null).check(owner(1L, 10L), Visibility.PRIVATE, null) == Decision.UNAUTHORIZED
     }
 
     def 'should admit a member of the owning workspace' () {
         expect:
-        svc(caller(7L), listing([[100L, 10L, ['maintain']]])).check(owner(1L, 10L), 'private', 'tok') == Decision.ALLOW
+        svc(caller(7L), listing([[100L, 10L, ['maintain']]])).check(owner(1L, 10L), Visibility.PRIVATE, 'tok') == Decision.ALLOW
     }
 
     def 'should refuse a valid user outside the workspace' () {
         expect:
-        svc(caller(7L), listing([[100L, 99L, ['owner']]])).check(owner(1L, 10L), 'private', 'tok') == Decision.FORBIDDEN
+        svc(caller(7L), listing([[100L, 99L, ['owner']]])).check(owner(1L, 10L), Visibility.PRIVATE, 'tok') == Decision.FORBIDDEN
     }
 
     def 'should admit only the same user on a personal-workspace record' () {
         expect:
-        svc(caller(1L)).check(owner(1L, null), 'private', 'tok') == Decision.ALLOW
+        svc(caller(1L)).check(owner(1L, null), Visibility.PRIVATE, 'tok') == Decision.ALLOW
     }
 
     def 'should not let an org role reach another user personal-workspace record' () {
@@ -93,19 +94,19 @@ class RecordAccessServiceTest extends Specification {
         def wsp = listing([[100L, null, ['owner']]])
 
         expect: 'the null branch is terminal - a null-to-null match must not admit them'
-        svc(caller(7L), wsp).check(owner(1L, null), 'private', 'tok') == Decision.FORBIDDEN
+        svc(caller(7L), wsp).check(owner(1L, null), Visibility.PRIVATE, 'tok') == Decision.FORBIDDEN
     }
 
     def 'should fail closed when the Platform cannot be reached' () {
         expect: 'user-info unreachable'
-        svc(null).check(owner(1L, 10L), 'private', 'tok') == Decision.UNAVAILABLE
+        svc(null).check(owner(1L, 10L), Visibility.PRIVATE, 'tok') == Decision.UNAVAILABLE
         and: 'workspace listing unreachable'
-        svc(caller(7L), null).check(owner(1L, 10L), 'private', 'tok') == Decision.UNAVAILABLE
+        svc(caller(7L), null).check(owner(1L, 10L), Visibility.PRIVATE, 'tok') == Decision.UNAVAILABLE
     }
 
     def 'should refuse when Platform answers without a user' () {
         expect:
-        svc(new GetUserInfoResponse(user: null)).check(owner(1L, 10L), 'private', 'tok') == Decision.UNAUTHORIZED
+        svc(new GetUserInfoResponse(user: null)).check(owner(1L, 10L), Visibility.PRIVATE, 'tok') == Decision.UNAUTHORIZED
     }
 
     def 'should report a token Platform rejected apart from an unreachable Platform' () {
@@ -114,7 +115,7 @@ class RecordAccessServiceTest extends Specification {
             userInfoForAccess(_, _) >> { throw new ExecutionException(new HttpResponseException(401, 'Unauthorized')) }
         }
         expect:
-        new RecordAccessService(towerClient: client).check(owner(1L, 10L), 'private', 'stale') == Decision.REJECTED
+        new RecordAccessService(towerClient: client).check(owner(1L, 10L), Visibility.PRIVATE, 'stale') == Decision.REJECTED
     }
 
     def 'should decide the membership of the workspace a request names' () {

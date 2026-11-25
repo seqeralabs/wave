@@ -27,6 +27,7 @@ import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import com.fasterxml.jackson.annotation.JsonIgnore
+import io.seqera.wave.api.Visibility
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.tower.RecordOwner
@@ -56,7 +57,7 @@ class WaveScanRecord implements Cloneable {
     String logs
     Path workDir
     @JsonIgnore @PersistOnly RecordOwner owner   // inherited from the parent; stored, not returned by the API
-    String visibility                            // inherited from the parent; null is read as public
+    Visibility visibility                        // inherited from the parent; null is read as public
 
     /* required by jackson deserialization - do not remove */
     WaveScanRecord() {}

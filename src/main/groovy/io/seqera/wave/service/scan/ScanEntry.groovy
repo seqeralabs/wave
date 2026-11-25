@@ -25,6 +25,7 @@ import java.time.Instant
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
+import io.seqera.wave.api.Visibility
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.job.JobEntry
 import io.seqera.wave.service.persistence.WaveScanRecord
@@ -120,8 +121,8 @@ class ScanEntry implements StateEntry<String>, JobEntry {
      */
     RecordOwner owner
 
-    /** inherited from the parent; a Visibility value, null is read as public */
-    String visibility
+    /** inherited from the parent; null is read as public */
+    Visibility visibility
 
     @Override
     String getKey() {
@@ -247,7 +248,7 @@ class ScanEntry implements StateEntry<String>, JobEntry {
                 opts.exitCode as Integer,
                 opts.logs as String,
                 opts.owner as RecordOwner,
-                opts.visibility as String
+                Visibility.of(opts.visibility)
         )
     }
 

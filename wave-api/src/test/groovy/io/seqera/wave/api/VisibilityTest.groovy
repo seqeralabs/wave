@@ -18,6 +18,7 @@
 
 package io.seqera.wave.api
 
+import com.squareup.moshi.Moshi
 import spock.lang.Specification
 
 /**
@@ -25,25 +26,52 @@ import spock.lang.Specification
  */
 class VisibilityTest extends Specification {
 
-    def 'should accept only the documented values' () {
+    def 'should convert a wire value or a constant' () {
         expect:
-        // absent is valid and means public
-        Visibility.isValid(null)
-        Visibility.isValid('public')
-        Visibility.isValid('private')
-        and:
-        !Visibility.isValid('Private')
-        !Visibility.isValid('secret')
-        !Visibility.isValid('')
+        Visibility.of(VALUE) == EXPECTED
+
+        where:
+        VALUE               | EXPECTED
+        null                | null
+        'public'            | Visibility.PUBLIC
+        'private'           | Visibility.PRIVATE
+        'Private'           | Visibility.PRIVATE
+        Visibility.PRIVATE  | Visibility.PRIVATE
     }
 
-    def 'should read only the exact private value as private' () {
+    def 'should reject an unknown value' () {
+        when:
+        Visibility.of(VALUE)
+        then:
+        thrown(IllegalArgumentException)
+
+        where:
+        VALUE << ['secret', '']
+    }
+
+    def 'should read only private as private' () {
         expect:
-        Visibility.isPrivate('private')
+        Visibility.isPrivate(Visibility.PRIVATE)
         and:
         !Visibility.isPrivate(null)
-        !Visibility.isPrivate('public')
-        !Visibility.isPrivate('Private')
+        !Visibility.isPrivate(Visibility.PUBLIC)
+    }
+
+    def 'should use the lowercase wire value' () {
+        expect:
+        Visibility.PUBLIC.value() == 'public'
+        Visibility.PRIVATE.toString() == 'private'
+    }
+
+    def 'should serialise with Moshi using the lowercase wire value' () {
+        given:
+        def adapter = new Moshi.Builder().build().adapter(Visibility)
+
+        expect:
+        adapter.toJson(Visibility.PRIVATE) == '"private"'
+        adapter.toJson(Visibility.PUBLIC) == '"public"'
+        adapter.fromJson('"private"') == Visibility.PRIVATE
+        adapter.fromJson('"public"') == Visibility.PUBLIC
     }
 
 }

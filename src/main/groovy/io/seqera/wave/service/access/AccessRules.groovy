@@ -40,7 +40,7 @@ class AccessRules {
      * A record is private only when it has an owner to check against. Both a null visibility -
      * written before the field existed - and an explicit "public" read as public.
      */
-    static boolean isPrivate(RecordOwner owner, String visibility) {
+    static boolean isPrivate(RecordOwner owner, Visibility visibility) {
         return owner?.towerEndpoint != null && Visibility.isPrivate(visibility)
     }
 

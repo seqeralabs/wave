@@ -23,6 +23,7 @@ import spock.lang.Specification
 import java.time.Instant
 
 import io.seqera.serde.moshi.MoshiEncodeStrategy
+import io.seqera.wave.api.Visibility
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.mirror.MirrorEntry
 import io.seqera.wave.service.mirror.MirrorRequest
@@ -167,20 +168,25 @@ class RecordOwnerSerdeTest extends Specification {
 
     def 'should round-trip visibility through both stores' () {
         given:
-        def record = new WaveBuildRecord(buildId: 'bd-1_1', startTime: Instant.now(), visibility: 'private')
+        def record = new WaveBuildRecord(buildId: 'bd-1_1', startTime: Instant.now(), visibility: Visibility.PRIVATE)
 
-        expect: 'the data column'
-        Mapper.fromJson(WaveBuildRecord, Mapper.toJson(record)).visibility == 'private'
+        expect: 'the data column stores the lowercase wire value'
+        Mapper.toJson(record).contains('"visibility":"private"')
+        Mapper.fromJson(WaveBuildRecord, Mapper.toJson(record)).visibility == Visibility.PRIVATE
+        and: 'a row written while visibility was a string still loads'
+        Mapper.fromJson(WaveBuildRecord, '{"buildId":"bd-1_1","visibility":"private"}').visibility == Visibility.PRIVATE
+        Mapper.fromJson(WaveBuildRecord, '{"buildId":"bd-1_1","visibility":"public"}').visibility == Visibility.PUBLIC
 
         and: 'and the Redis state store, where a scan carries its parent visibility'
         def encoder = new MoshiEncodeStrategy<ScanEntry>() {}
         def entry = ScanEntry.create(ScanRequest.of(
                 scanId: 'sc-1', buildId: 'bd-1_1', targetImage: 'docker.io/foo:latest',
                 platform: ContainerPlatform.DEFAULT, workDir: java.nio.file.Path.of('/some/path'),
-                creationTime: Instant.now(), identity: PlatformId.NULL, visibility: 'private' ))
-        encoder.decode(encoder.encode(entry)).visibility == 'private'
-        and: 'unlike the owner, visibility is returned by the API'
-        JacksonHelper.toJson(record).contains('"visibility"')
+                creationTime: Instant.now(), identity: PlatformId.NULL, visibility: Visibility.PRIVATE ))
+        encoder.encode(entry).contains('"visibility":"private"')
+        encoder.decode(encoder.encode(entry)).visibility == Visibility.PRIVATE
+        and: 'unlike the owner, visibility is returned by the API, lowercase'
+        JacksonHelper.toJson(record).contains('"visibility":"private"')
     }
 
     def 'should omit the workspace id when there is none' () {

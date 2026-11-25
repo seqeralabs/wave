@@ -425,7 +425,7 @@ class ContainerControllerTest extends Specification {
                 validationService: validationService,
                 scanService: scanService,
                 accessService: access )
-        def id = { String vis, PlatformId who -> controller.makeBuildRequest(
+        def id = { Visibility vis, PlatformId who -> controller.makeBuildRequest(
                 new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), visibility: vis), who, '') }
 
         def anonymous = id(null, PlatformId.NULL)
@@ -437,11 +437,11 @@ class ContainerControllerTest extends Specification {
         anonymous.buildId == userB.buildId
 
         and: 'asking for private while anonymous changes nothing - the request stays public'
-        id('private', PlatformId.NULL).buildId == anonymous.buildId
+        id(Visibility.PRIVATE, PlatformId.NULL).buildId == anonymous.buildId
 
         when: 'the same content is built privately from two workspaces'
-        def ws10 = id('private', new PlatformId(new User(id: 1), 10L, 'tok', 'https://api.cloud.seqera.io'))
-        def ws20 = id('private', new PlatformId(new User(id: 1), 20L, 'tok', 'https://api.cloud.seqera.io'))
+        def ws10 = id(Visibility.PRIVATE, new PlatformId(new User(id: 1), 10L, 'tok', 'https://api.cloud.seqera.io'))
+        def ws20 = id(Visibility.PRIVATE, new PlatformId(new User(id: 1), 20L, 'tok', 'https://api.cloud.seqera.io'))
 
         then: 'each workspace gets its own build, and neither collides with the public one'
         ws10.buildId != ws20.buildId
@@ -450,17 +450,17 @@ class ContainerControllerTest extends Specification {
         ws10.scanId != ws20.scanId
 
         and: 'the same workspace twice gives one build'
-        id('private', new PlatformId(new User(id: 9), 10L, 'other-tok', 'https://api.cloud.seqera.io')).buildId == ws10.buildId
+        id(Visibility.PRIVATE, new PlatformId(new User(id: 9), 10L, 'other-tok', 'https://api.cloud.seqera.io')).buildId == ws10.buildId
 
         and: 'the same workspace id on two Platforms is two tenants'
-        id('private', new PlatformId(new User(id: 1), 10L, 'tok', 'https://other.io')).buildId != ws10.buildId
+        id(Visibility.PRIVATE, new PlatformId(new User(id: 1), 10L, 'tok', 'https://other.io')).buildId != ws10.buildId
 
         and: 'a personal-workspace private build is scoped to the user'
-        def userOnly = id('private', new PlatformId(new User(id: 1), null, 'tok', 'https://api.cloud.seqera.io'))
-        userOnly.buildId != id('private', new PlatformId(new User(id: 2), null, 'tok', 'https://api.cloud.seqera.io')).buildId
+        def userOnly = id(Visibility.PRIVATE, new PlatformId(new User(id: 1), null, 'tok', 'https://api.cloud.seqera.io'))
+        userOnly.buildId != id(Visibility.PRIVATE, new PlatformId(new User(id: 2), null, 'tok', 'https://api.cloud.seqera.io')).buildId
 
         and: 'two spellings of one Platform are one tenant'
-        id('private', new PlatformId(new User(id: 1), 10L, 'tok', 'HTTPS://API.cloud.seqera.io:443/')).buildId == ws10.buildId
+        id(Visibility.PRIVATE, new PlatformId(new User(id: 1), 10L, 'tok', 'HTTPS://API.cloud.seqera.io:443/')).buildId == ws10.buildId
     }
 
     static final String COMMUNITY_REPO = 'public.cr.seqera.io/wave'
@@ -484,17 +484,17 @@ class ContainerControllerTest extends Specification {
         where:
         DESC                             | ASKED              | IDENTITY        | REPO                      | EXPECTED
         'absent'                         | null               | VISIBILITY_AUTH            | 'docker.io/foo'           | Visibility.PUBLIC
-        'explicit public'                | 'public'           | VISIBILITY_AUTH            | 'docker.io/foo'           | Visibility.PUBLIC
-        'private + authenticated'        | 'private'          | VISIBILITY_AUTH            | 'docker.io/foo'           | Visibility.PRIVATE
-        'private + anonymous'            | 'private'          | PlatformId.NULL | 'docker.io/foo'           | Visibility.PUBLIC
-        'private + null identity'        | 'private'          | null            | 'docker.io/foo'           | Visibility.PUBLIC
-        'private + community repo'       | 'private'          | VISIBILITY_AUTH            | COMMUNITY_REPO                 | Visibility.PUBLIC
-        'private + community subpath'    | 'private'          | VISIBILITY_AUTH            | "$COMMUNITY_REPO/some/image"   | Visibility.PUBLIC
-        'private + no repo'              | 'private'          | VISIBILITY_AUTH            | null                      | Visibility.PRIVATE
+        'explicit public'                | Visibility.PUBLIC           | VISIBILITY_AUTH            | 'docker.io/foo'           | Visibility.PUBLIC
+        'private + authenticated'        | Visibility.PRIVATE          | VISIBILITY_AUTH            | 'docker.io/foo'           | Visibility.PRIVATE
+        'private + anonymous'            | Visibility.PRIVATE          | PlatformId.NULL | 'docker.io/foo'           | Visibility.PUBLIC
+        'private + null identity'        | Visibility.PRIVATE          | null            | 'docker.io/foo'           | Visibility.PUBLIC
+        'private + community repo'       | Visibility.PRIVATE          | VISIBILITY_AUTH            | COMMUNITY_REPO                 | Visibility.PUBLIC
+        'private + community subpath'    | Visibility.PRIVATE          | VISIBILITY_AUTH            | "$COMMUNITY_REPO/some/image"   | Visibility.PUBLIC
+        'private + no repo'              | Visibility.PRIVATE          | VISIBILITY_AUTH            | null                      | Visibility.PRIVATE
         // merely containing the community name is not the community repository
-        'private + lookalike repo'       | 'private'          | VISIBILITY_AUTH            | 'other.io/public.cr.seqera.io/wave' | Visibility.PRIVATE
+        'private + lookalike repo'       | Visibility.PRIVATE          | VISIBILITY_AUTH            | 'other.io/public.cr.seqera.io/wave' | Visibility.PRIVATE
         // an endpoint with no user is still anonymous: ContainerController defaults the endpoint in
-        'private + endpoint, no user'    | 'private'          | new PlatformId(null, null, null, 'https://api.cloud.seqera.io') | 'docker.io/foo' | Visibility.PUBLIC
+        'private + endpoint, no user'    | Visibility.PRIVATE          | new PlatformId(null, null, null, 'https://api.cloud.seqera.io') | 'docker.io/foo' | Visibility.PUBLIC
     }
 
     def 'should refuse a private request naming a workspace the caller is not in' () {
@@ -506,7 +506,7 @@ class ContainerControllerTest extends Specification {
         def controller = new ContainerController(
                 inspectService: Mock(ContainerInspectServiceImpl), buildConfig: buildConfig,
                 validationService: validationService, accessService: access )
-        def req = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), visibility: 'private')
+        def req = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), visibility: Visibility.PRIVATE)
         def who = { Long wsp -> new PlatformId(new User(id: 1), wsp, 'tok', 'https://api.cloud.seqera.io') }
 
         when: 'a workspace the caller holds'
@@ -536,7 +536,7 @@ class ContainerControllerTest extends Specification {
 
         when:
         controller.makeBuildRequest(
-                new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), visibility: 'private'),
+                new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), visibility: Visibility.PRIVATE),
                 new PlatformId(new User(id: 1), 10L, 'tok', 'https://api.cloud.seqera.io'), '')
         then:
         thrown(HttpResponseException)
