@@ -24,7 +24,6 @@ import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.ScanEnabled
-import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.serde.moshi.MoshiEncodeStrategy
 import io.seqera.data.store.state.AbstractStateStore
 import io.seqera.data.store.state.impl.StateProvider
@@ -45,26 +44,6 @@ class ScanIdStore extends AbstractStateStore<ScanId> {
 
     ScanIdStore(StateProvider<String, String> provider) {
         super(provider, new MoshiEncodeStrategy<ScanId>() {})
-    }
-
-    /**
-     * The key an entry is stored under, which both the write and the failure cleanup must use.
-     *
-     * The two reach it from different spellings of the same image - the request's own on the way
-     * in, the stored record's normalised one on the way out - so the key is normalised and the
-     * scan id is left hashed from the name as it was given.
-     */
-    static String key(String containerImage) {
-        if( !containerImage )
-            return containerImage
-        try {
-            return ContainerCoordinates.parse(containerImage).getTargetContainer()
-        }
-        catch (IllegalArgumentException e) {
-            // the cleanup runs where a throw would lose the scan record, and a name that cannot
-            // be parsed still keys consistently on both sides as it stands
-            return containerImage
-        }
     }
 
     @Override

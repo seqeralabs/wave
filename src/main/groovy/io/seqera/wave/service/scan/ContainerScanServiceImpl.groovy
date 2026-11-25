@@ -120,7 +120,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
             return null
         // create a new scan id if there's no entry for the given target image
         final result = scanIdStore
-                .putIfAbsentAndCount(ScanIdStore.key(targetImage), ScanId.of(targetImage, digest))
+                .putIfAbsentAndCount(targetImage, ScanId.of(targetImage, digest))
         // return the value updated by the put operation
         return result.value.toString()
     }
@@ -376,7 +376,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<ScanE
             // this is needed to prevent the caching of the scanId and
             // allow re-scanning the container in case of a job failure
             if( scan.done() && !scan.succeeded() ) {
-                cleanupService.cleanupScanId(ScanIdStore.key(scan.containerImage))
+                cleanupService.cleanupScanId(scan.containerImage)
             }
         }
         catch (Throwable t){

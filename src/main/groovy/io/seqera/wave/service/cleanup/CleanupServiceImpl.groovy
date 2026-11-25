@@ -161,7 +161,7 @@ class CleanupServiceImpl implements Runnable, CleanupService {
     }
 
     @Override
-    void cleanupScanId(String key) {
-        store.add(SCANID_PREFIX + key, scanConfig.failureDuration.toSeconds())
+    void cleanupScanId(String containerImage) {
+        store.add(SCANID_PREFIX + containerImage, scanConfig.failureDuration.toSeconds())
     }
 }

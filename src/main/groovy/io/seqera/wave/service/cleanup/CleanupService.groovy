@@ -29,7 +29,6 @@ interface CleanupService {
 
     void cleanupJob(JobSpec job, Integer exitStatus)
 
-    /** @param key the scan id store key, as built by {@code ScanIdStore.key()} */
-    void cleanupScanId(String key)
+    void cleanupScanId(String containerImage)
 
 }
