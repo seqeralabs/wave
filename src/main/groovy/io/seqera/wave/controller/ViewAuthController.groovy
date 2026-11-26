@@ -73,17 +73,17 @@ class ViewAuthController {
         // a state this browser did not start, already used, or expired
         final pending = authService.consume(state, stateHash)
         if( !pending )
-            return unauthorized('This sign-in link has expired. Open the page again to retry.')
+            return ViewController.authError(HttpStatus.UNAUTHORIZED, 'This sign-in link has expired. Open the page again to retry.')
 
         // the viewer cancelled at Platform, or Platform refused: not an expired link
         if( error )
-            return unauthorized("Seqera Platform did not complete the sign-in: ${error}.".toString(), pending.returnTo)
+            return ViewController.authError(HttpStatus.UNAUTHORIZED, "Seqera Platform did not complete the sign-in: ${error}.".toString(), pending.returnTo)
         if( !code )
-            return unauthorized('Seqera Platform returned no authorization code.', pending.returnTo)
+            return ViewController.authError(HttpStatus.UNAUTHORIZED, 'Seqera Platform returned no authorization code.', pending.returnTo)
 
         final newSession = authService.completeSignIn(pending, code, sessionId)
         if( !newSession )
-            return unauthorized('Seqera Platform refused the sign-in.', pending.returnTo)
+            return ViewController.authError(HttpStatus.UNAUTHORIZED, 'Seqera Platform refused the sign-in.', pending.returnTo)
 
         // see-other, not the default permanent redirect: a cached one would pin the browser
         // to a dead single-use state
@@ -104,10 +104,6 @@ class ViewAuthController {
                 .httpOnly(true)
                 .secure(authService.secureCookie())
                 .sameSite(SameSite.Lax)
-    }
-
-    static protected MutableHttpResponse<?> unauthorized(String message, String retryTo=null) {
-        return ViewController.authError(HttpStatus.UNAUTHORIZED, message, retryTo)
     }
 
 }

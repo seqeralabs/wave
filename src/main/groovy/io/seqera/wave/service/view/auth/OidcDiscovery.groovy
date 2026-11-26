@@ -33,7 +33,6 @@ import io.seqera.serde.moshi.MoshiSerializable
 @CompileStatic
 class OidcDiscovery implements MoshiSerializable {
 
-    String issuer
     String authorization_endpoint
     String token_endpoint
 
