@@ -415,6 +415,8 @@ Deletion is permanent. Records and objects removed by retention cannot be recove
 A record type is skipped when the service that owns its objects is disabled, so that the objects are not left behind: build records are kept when `wave.build.enabled` is `false`, and scan records when `wave.scan.enabled` is `false`.
 :::
 
+When Wave deletes a record but the object it points at cannot be removed, the object is left behind and nothing collects it later. Set a lifecycle rule on `wave.build.logs.path`, `wave.build.locks.path` and the scan reports path at the matching retention period plus a margin, as the backstop for those objects.
+
 ### Build process logs
 
 Configure how Wave stores and delivers build logs from containers and Kubernetes pods. You can retrieve these logs later or include them in build completion emails.
