@@ -70,13 +70,13 @@ Configure general Wave application settings.
 
 ## Feature toggles
 
-Each Wave feature is an independent toggle. Wave Lite runs with all of them off, which is what the `lite` Micronaut environment applies.
+Each toggle controls which requests Wave accepts. Wave Lite runs with all of them off, which is what the `lite` Micronaut environment applies. Outside the `lite` environment, mirroring and scanning run on the build pipeline's job infrastructure and require `wave.build.enabled` as well as their own toggle.
 
 `wave.build.enabled` *(optional)*
-: When `true`, Wave provisions containers with on-demand builds (default: `true`). Freeze and scanning both depend on the build pipeline and are unavailable when this is `false`.
+: When `true`, Wave provisions containers with on-demand builds (default: `true`). Freeze, scanning, and mirroring all depend on the build pipeline and are unavailable when this is `false`. On Kubernetes, setting this to `false` outside the `lite` environment prevents Wave from starting.
 
 `wave.mirror.enabled` *(optional)*
-: When `true`, Wave can mirror images into a target repository (default: `true`).
+: When `true`, Wave can mirror images into a target repository (default: `true`). Requires `wave.build.enabled`.
 
 `wave.scan.enabled` *(optional)*
 : When `true`, activates vulnerability scanning (default: `false`). Requires `wave.build.enabled` and `wave.scan.reports.path`.
