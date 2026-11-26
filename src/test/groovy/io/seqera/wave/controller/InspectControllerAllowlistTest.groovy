@@ -57,7 +57,7 @@ class InspectControllerAllowlistTest extends Specification {
         then:
         def e = thrown(HttpClientResponseException)
         e.status == HttpStatus.BAD_REQUEST
-        e.message.contains('is not allowed for anonymous requests')
+        e.message.contains('is not in the configured registry allowlist')
 
         where:
         containerImage << [

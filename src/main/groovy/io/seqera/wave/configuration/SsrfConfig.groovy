@@ -36,9 +36,12 @@ class SsrfConfig {
     Boolean ssrfProtectionEnabled
 
     /**
-     * Registries that anonymous (unauthenticated) requests are allowed to reference.
-     * Entries are hostnames, optionally with a {@code *.} wildcard prefix e.g. {@code *.amazonaws.com}.
-     * When unset no allowlist restriction is applied; authenticated requests are never restricted.
+     * Registries that container inspect requests are allowed to reference. The restriction
+     * applies to all callers, authenticated or not.
+     * Entries are hostnames (optionally with a {@code *.} wildcard prefix e.g. {@code *.amazonaws.com}),
+     * IP literals e.g. {@code 203.0.113.5}, or CIDR ranges e.g. {@code 203.0.113.0/24}. IP and CIDR
+     * entries match only a registry named by an IP literal; no DNS resolution is performed.
+     * When unset no allowlist restriction is applied.
      * Only effective when {@code wave.security.ssrf-protection.enabled} is {@code true}.
      */
     @Nullable

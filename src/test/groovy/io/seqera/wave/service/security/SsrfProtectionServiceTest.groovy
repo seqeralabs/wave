@@ -23,8 +23,6 @@ import spock.lang.Unroll
 
 import io.seqera.wave.configuration.SsrfConfig
 import io.seqera.wave.exception.BadRequestException
-import io.seqera.wave.tower.PlatformId
-import io.seqera.wave.tower.User
 /**
  *
  * @author Oussama El Azizi <oussama.elazizi@seqera.io>
@@ -87,9 +85,49 @@ class SsrfProtectionServiceTest extends Specification {
     }
 
     @Unroll
-    def 'anonymous access to #registry with allowlist #allowlist should be allowed'() {
+    def 'host #host blocked by range rules should be allowed when allow-listed by IP/CIDR #allowlist'() {
         when:
-        service(true, allowlist).checkAnonymousRegistryAccess(registry, PlatformId.NULL)
+        service(true, allowlist).checkHost(host)
+        then:
+        noExceptionThrown()
+
+        where:
+        host                | allowlist
+        '10.0.0.5'          | ['10.0.0.5']            // exact internal IP
+        '10.0.0.5'          | ['10.0.0.0/24']         // internal CIDR
+        '10.0.0.5'          | ['docker.io', '10.0.0.0/8']
+        '169.254.169.254'   | ['169.254.169.254']     // operator explicitly permits metadata IP
+        '127.0.0.1'         | ['127.0.0.0/8']
+    }
+
+    @Unroll
+    def 'host #host blocked by range rules should stay blocked for allowlist #allowlist'() {
+        when:
+        service(true, allowlist).checkHost(host)
+        then:
+        thrown(BadRequestException)
+
+        where:
+        host           | allowlist
+        '10.0.0.5'     | null                 // no allowlist
+        '10.0.0.5'     | ['docker.io']        // only a hostname entry — no IP/CIDR exemption
+        '10.0.0.5'     | ['*.example.com']    // wildcard does not exempt an IP
+        '10.0.0.5'     | ['10.0.1.0/24']      // CIDR that does not cover the host
+        '10.0.0.5'     | ['2001:db8::/32']    // IPv6 CIDR cannot exempt an IPv4 host
+        'localhost'    | ['10.0.0.0/8']       // a non-IP host is never exempt by IP/CIDR
+    }
+
+    def 'the endpoint host should be exempt when allow-listed by CIDR'() {
+        when:
+        service(true, ['10.0.0.0/24']).checkEndpoint(new URI('https://10.0.0.5:5000/v2/'))
+        then:
+        noExceptionThrown()
+    }
+
+    @Unroll
+    def 'access to #registry with allowlist #allowlist should be allowed'() {
+        when:
+        service(true, allowlist).checkRegistryAllowed(registry)
         then:
         noExceptionThrown()
 
@@ -101,15 +139,26 @@ class SsrfProtectionServiceTest extends Specification {
         'QUAY.IO'                                   | ['docker.io', 'quay.io']
         '12345.dkr.ecr.eu-west-1.amazonaws.com'     | ['*.amazonaws.com']
         'amazonaws.com'                             | ['*.amazonaws.com']
+        // IP literal entries
+        '203.0.113.5'                               | ['203.0.113.5']
+        '203.0.113.5:5000'                          | ['203.0.113.5']
+        '2001:db8::1'                               | ['2001:db8::1']
+        // CIDR entries
+        '203.0.113.5'                               | ['203.0.113.0/24']
+        '203.0.113.255'                             | ['203.0.113.0/24']
+        '10.1.2.3'                                  | ['10.0.0.0/8']
+        '2001:db8::abcd'                            | ['2001:db8::/32']
+        // mixed allowlist
+        '203.0.113.5'                               | ['docker.io', '203.0.113.0/24']
     }
 
     @Unroll
-    def 'anonymous access to #registry with allowlist #allowlist should be rejected'() {
+    def 'access to #registry with allowlist #allowlist should be rejected'() {
         when:
-        service(true, allowlist).checkAnonymousRegistryAccess(registry, PlatformId.NULL)
+        service(true, allowlist).checkRegistryAllowed(registry)
         then:
         def e = thrown(BadRequestException)
-        e.message.contains('is not allowed for anonymous requests')
+        e.message.contains('is not in the configured registry allowlist')
 
         where:
         registry                                    | allowlist
@@ -117,39 +166,37 @@ class SsrfProtectionServiceTest extends Specification {
         'kubernetes.default.svc'                    | ['docker.io', 'quay.io']
         'evil-amazonaws.com'                        | ['*.amazonaws.com']
         'amazonaws.com.evil.io'                     | ['*.amazonaws.com']
+        // IP just outside the CIDR
+        '203.0.114.1'                               | ['203.0.113.0/24']
+        '10.1.2.3'                                  | ['10.0.0.0/16']
+        // different IP literal
+        '203.0.113.6'                               | ['203.0.113.5']
+        // a hostname is NOT matched by a CIDR (no DNS resolution)
+        'registry.internal'                         | ['10.0.0.0/8']
+        // IPv4 host must not match an IPv6 CIDR and vice-versa
+        '203.0.113.5'                               | ['2001:db8::/32']
     }
 
-    def 'authenticated identity should not be restricted by the allowlist'() {
-        given:
-        def srv = service(true, ['docker.io'])
-        def identity = new PlatformId(new User(id:1), 100, 'token')
-
-        when:
-        srv.checkAnonymousRegistryAccess('ghcr.io', identity)
-        then:
-        noExceptionThrown()
-    }
-
-    def 'null identity should be treated as anonymous'() {
-        when:
-        service(true, ['docker.io']).checkAnonymousRegistryAccess('ghcr.io', null)
+    def 'allowlist applies to every request regardless of caller'() {
+        when: 'an unlisted registry is referenced'
+        service(true, ['docker.io']).checkRegistryAllowed('ghcr.io')
         then:
         thrown(BadRequestException)
     }
 
     def 'allowlist should not be applied when empty or protection is disabled'() {
         when: 'no allowlist is configured'
-        service(true, null).checkAnonymousRegistryAccess('ghcr.io', PlatformId.NULL)
+        service(true, null).checkRegistryAllowed('ghcr.io')
         then:
         noExceptionThrown()
 
         when: 'the allowlist is empty'
-        service(true, []).checkAnonymousRegistryAccess('ghcr.io', PlatformId.NULL)
+        service(true, []).checkRegistryAllowed('ghcr.io')
         then:
         noExceptionThrown()
 
         when: 'protection is disabled'
-        service(false, ['docker.io']).checkAnonymousRegistryAccess('ghcr.io', PlatformId.NULL)
+        service(false, ['docker.io']).checkRegistryAllowed('ghcr.io')
         then:
         noExceptionThrown()
     }

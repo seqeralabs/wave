@@ -282,8 +282,8 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
     ContainerOrIndexSpec containerOrIndexSpec(String containerImage, @Nullable String arch, @Nullable PlatformId identity) {
         final path = ContainerCoordinates.parse(containerImage)
 
-        // anonymous requests may only reference allow-listed registries (when configured)
-        ssrfProtection.checkAnonymousRegistryAccess(path.registry, identity)
+        // requests may only reference allow-listed registries (when an allowlist is configured)
+        ssrfProtection.checkRegistryAllowed(path.registry)
 
         final creds = credentialsProvider.getCredentials(path, identity)
         log.debug "Inspect credentials for repository: ${containerImage} => $creds"
