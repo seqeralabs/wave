@@ -21,6 +21,7 @@ package io.seqera.wave.auth
 
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
+import io.seqera.wave.util.RegHelper
 
 /**
  * A class that model the absence of registry credentials
@@ -41,9 +42,14 @@ class MissingCredentials implements RegistryCredentials {
 
     String getPassword() { null }
 
+    /**
+     * The id is a Platform access token: render a hash of it so that the token is never
+     * written to the logs, while the string stays unique per token. This string is part
+     * of the registry auth token cache key, see {@code RegistryAuthServiceImpl.CacheKey}
+     */
     @Override
     String toString() {
-        return "MissingCredentials[$id]"
+        return "MissingCredentials[${id ? 'id-' + RegHelper.sipHash(id) : id}]"
     }
 
     /**

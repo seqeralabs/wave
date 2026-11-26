@@ -81,7 +81,7 @@ class SociIndexServiceImplTest extends Specification {
             it.layerDigest == BIG &&
             it.repository == 'registry.io/wave/soci-ztoc' &&
             it.authJson == '{"auths":{}}' &&
-            it.requestId.startsWith('soci-') })
+            it.requestId.startsWith('si-') })
         0 * jobService._
     }
 
@@ -163,7 +163,7 @@ class SociIndexServiceImplTest extends Specification {
         given:
         def jobStore = Mock(SociIndexStateStore)
         def service = new SociIndexServiceImpl(config: config, jobStore: jobStore)
-        def request = new SociIndexRequest(requestId: 'soci-1', layerDigest: BIG, spanSize: 4194304, authJson: '{"auths":{}}')
+        def request = new SociIndexRequest(requestId: 'si-1', layerDigest: BIG, spanSize: 4194304, authJson: '{"auths":{}}')
         def entry = SociIndexEntry.of(request)
         def stdout = 'some log line\n{"layerDigest":"' + BIG + '","layerMediaType":"' + GZIP + '","ztocDigest":"sha256:zbig","ztocSize":1234,"spanSize":4194304}\n'
 
@@ -178,7 +178,7 @@ class SociIndexServiceImplTest extends Specification {
         def jobStore = Mock(SociIndexStateStore)
         def jobService = Mock(JobService)
         def service = new SociIndexServiceImpl(config: config, jobStore: jobStore, jobService: jobService)
-        def request = new SociIndexRequest(requestId: 'soci-1', layerDigest: BIG, spanSize: 4194304)
+        def request = new SociIndexRequest(requestId: 'si-1', layerDigest: BIG, spanSize: 4194304)
 
         when:
         service.onJobCompletion(Mock(JobSpec), SociIndexEntry.of(request), JobState.completed(1, 'soci-indexer: unable to access layer'))
@@ -193,8 +193,8 @@ class SociIndexServiceImplTest extends Specification {
         def jobStore = Mock(SociIndexStateStore)
         def service = new SociIndexServiceImpl(config: config, strategy: strategy, jobStore: jobStore)
         def dir = java.nio.file.Files.createTempDirectory('test')
-        def request = new SociIndexRequest(requestId: 'soci-1', layerDigest: BIG, spanSize: 4194304, workDir: dir.resolve('soci-1'), authJson: '{"auths":{}}')
-        def job = JobSpec.sociIndex(request.key, 'soci-1', java.time.Instant.now(), Duration.ofMinutes(1), request.workDir)
+        def request = new SociIndexRequest(requestId: 'si-1', layerDigest: BIG, spanSize: 4194304, workDir: dir.resolve('si-1'), authJson: '{"auths":{}}')
+        def job = JobSpec.sociIndex(request.key, 'si-1', java.time.Instant.now(), Duration.ofMinutes(1), request.workDir)
         def entry = SociIndexEntry.of(request)
 
         when:
@@ -202,9 +202,9 @@ class SociIndexServiceImplTest extends Specification {
         then: 'the pending entry ttl is refreshed, the job may have waited in the queue'
         1 * jobStore.put(entry.key, entry)
         then:
-        1 * strategy.launchJob('soci-1', request)
+        1 * strategy.launchJob('si-1', request)
         result.launchTime != null
-        java.nio.file.Files.exists(dir.resolve('soci-1/config.json'))
+        java.nio.file.Files.exists(dir.resolve('si-1/config.json'))
 
         cleanup:
         dir?.deleteDir()

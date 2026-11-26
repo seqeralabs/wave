@@ -162,6 +162,36 @@ class ContainerHelperTest extends Specification {
                 '''.stripIndent()
     }
 
+    def 'should create container file for `conda/pixi:v1-lock` template with lock URL'() {
+        given:
+        def req = new SubmitContainerTokenRequest(
+                packages: new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['https://example.com/pixi.lock']),
+                buildTemplate: 'conda/pixi:v1-lock'
+        )
+
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
+
+        then:
+        result.contains('ADD https://example.com/pixi.lock /opt/wave/pixi.lock')
+        result.contains('pixi install --frozen')
+    }
+
+    def 'should create container file for `conda/pixi:v1-lock` template with environment'() {
+        given:
+        def req = new SubmitContainerTokenRequest(
+                packages: new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: 'dmVyc2lvbjogNgo='),
+                buildTemplate: 'conda/pixi:v1-lock'
+        )
+
+        when:
+        def result = ContainerHelper.containerFileFromRequest(req, LAYERS_IMAGE)
+
+        then:
+        result.contains('COPY conda.yml /opt/wave/pixi.lock')
+        result.contains('pixi install --frozen')
+    }
+
     def 'should validate conda file helper' () {
         given:
         def CONDA = 'this and that'
@@ -233,6 +263,36 @@ class ContainerHelperTest extends Specification {
             - this
             - that
             '''.stripIndent()
+    }
+
+    def 'should return pixi lock content from condaFileFromRequest for `conda/pixi:v1-lock` template'() {
+        given:
+        def lockContent = 'version: 6\nenvironments:\n  default:\n'
+        def encoded = Base64.encoder.encodeToString(lockContent.bytes)
+        def req = new SubmitContainerTokenRequest(
+                packages: new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: encoded),
+                buildTemplate: 'conda/pixi:v1-lock'
+        )
+
+        when:
+        def result = ContainerHelper.condaFileFromRequest(req)
+
+        then:
+        result == lockContent
+    }
+
+    def 'should return null from condaFileFromRequest for `conda/pixi:v1-lock` template with URL'() {
+        given:
+        def req = new SubmitContainerTokenRequest(
+                packages: new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['https://example.com/pixi.lock']),
+                buildTemplate: 'conda/pixi:v1-lock'
+        )
+
+        when:
+        def result = ContainerHelper.condaFileFromRequest(req)
+
+        then:
+        result == null
     }
 
     def 'should create response v1' () {
@@ -355,6 +415,30 @@ class ContainerHelperTest extends Specification {
         'http://foo.com'                | 'http://foo.com'
         'https://api.tower.nf'          | 'https://api.cloud.seqera.io'
         'https://api.stage-tower.net'   | 'https://api.cloud.stage-seqera.io'
+    }
+
+    def 'should normalise platform endpoints' () {
+        expect:
+        ContainerHelper.normalisePlatformEndpoint(ENDPOINT) == EXPECTED
+
+        where:
+        ENDPOINT                                | EXPECTED
+        null                                    | null
+        ''                                      | null
+        'https://api.cloud.seqera.io'           | 'https://api.cloud.seqera.io'
+        // trailing slash dropped
+        'https://api.cloud.seqera.io/'          | 'https://api.cloud.seqera.io'
+        'https://foo.com/api/'                  | 'https://foo.com/api'
+        // scheme and host lowercased, path left alone
+        'HTTPS://API.CLOUD.SEQERA.IO'           | 'https://api.cloud.seqera.io'
+        'https://FOO.com/Api'                   | 'https://foo.com/Api'
+        // default port dropped, explicit one kept
+        'https://foo.com:443'                   | 'https://foo.com'
+        'http://foo.com:80/api'                 | 'http://foo.com/api'
+        'https://foo.com:8443'                  | 'https://foo.com:8443'
+        // not a parseable absolute URL: trimmed and left as-is
+        'foo.com'                               | 'foo.com'
+        '  https://foo.com  '                   | 'https://foo.com'
     }
 
     def 'should find conda name with named recipe' () {

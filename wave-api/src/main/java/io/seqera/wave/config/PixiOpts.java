@@ -39,6 +39,11 @@ public class PixiOpts {
     final public static String DEFAULT_PIXI_IMAGE = "public.cr.seqera.io/wave/pixi:0.61.0-noble";
 
     /**
+     * Default Pixi builder image of the {@code conda/pixi:v1-lock} template, supporting lock file format v7.
+     */
+    final public static String DEFAULT_PIXI_LOCK_IMAGE = "public.cr.seqera.io/wave/pixi:0.81.0-noble";
+
+    /**
      * Default base image for the final container.
      */
     final public static String DEFAULT_BASE_IMAGE = "ubuntu:24.04";

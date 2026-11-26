@@ -27,6 +27,7 @@ import java.time.OffsetDateTime
 
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.ApiClient
+import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.apis.BatchV1Api
 import io.kubernetes.client.openapi.apis.CoreV1Api
 import io.kubernetes.client.openapi.models.V1EnvVar
@@ -39,6 +40,7 @@ import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
 import io.micronaut.context.ApplicationContext
 import io.seqera.wave.configuration.BlobCacheConfig
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.MirrorConfig
 import io.seqera.wave.configuration.SociConfig
 import io.seqera.wave.configuration.ScanConfig
@@ -912,15 +914,15 @@ class K8sServiceImplTest extends Specification {
         def ctx = ApplicationContext.run(PROPS)
         def k8sService = ctx.getBean(K8sServiceImpl)
         def args = ['soci-indexer', 'index', '-source', 'docker.io/library/ubuntu@sha256:a']
-        def workDir = Path.of('/build/work/soci-1')
-        def credsFile = Path.of('/build/work/soci-1/config.json')
+        def workDir = Path.of('/build/work/si-1')
+        def credsFile = Path.of('/build/work/si-1/config.json')
         def config = new SociConfig(limitsMemory: '1Gi')
 
         when:
-        def job = k8sService.sociIndexJobSpec('soci-1', 'soci-indexer:v1', args, workDir, credsFile, config, null)
+        def job = k8sService.sociIndexJobSpec('si-1', 'soci-indexer:v1', args, workDir, credsFile, config, null)
 
         then:
-        job.metadata.name == 'soci-1'
+        job.metadata.name == 'si-1'
         job.spec.template.spec.containers[0].image == 'soci-indexer:v1'
         job.spec.template.spec.containers[0].args == args
         job.spec.template.spec.containers[0].resources.limits.memory.toSuffixedString() == '1Gi'
@@ -929,7 +931,7 @@ class K8sServiceImplTest extends Specification {
         with(job.spec.template.spec.containers[0].volumeMounts[0]) {
             mountPath == '/tmp/docker/config.json'
             readOnly == true
-            subPath == 'work/soci-1/config.json'
+            subPath == 'work/si-1/config.json'
         }
 
         cleanup:
@@ -1153,6 +1155,83 @@ class K8sServiceImplTest extends Specification {
         jobStarted()              | K8sService.JobStatus.Pending
         jobUnknown()              | K8sService.JobStatus.Pending
         jobConditionFailed()      | K8sService.JobStatus.Failed
+    }
+
+    def 'should adopt the existing job when a launch is redelivered'() {
+        given:
+        def NS = 'foo'
+        def NAME = 'wave-build-123'
+        def k8sClient = Mock(K8sClient)
+        def api = Mock(BatchV1Api)
+        def createRequest = Mock(BatchV1Api.APIcreateNamespacedJobRequest)
+        def readRequest = Mock(BatchV1Api.APIreadNamespacedJobRequest)
+        def existing = new V1Job(metadata: new V1ObjectMeta(name: NAME))
+        def service = new K8sServiceImpl(k8sClient: k8sClient, namespace: NS, buildConfig: new BuildConfig())
+
+        when:
+        def result = service.launchBuildJob(NAME, 'docker://test-image', ['arg1'], Path.of('/build/work/xyz'), null, Duration.ofMinutes(10), null)
+
+        then: 'the job is created by the first launch attempt'
+        1 * k8sClient.batchV1Api() >> api
+        1 * api.createNamespacedJob(NS, _) >> createRequest
+        1 * createRequest.execute() >> { throw new ApiException(409, 'Conflict', null, '{"reason":"AlreadyExists"}') }
+        and: 'the redelivered launch adopts the running job instead of failing'
+        1 * api.readNamespacedJob(NAME, NS) >> readRequest
+        1 * readRequest.execute() >> existing
+        and:
+        noExceptionThrown()
+        result.is(existing)
+    }
+
+    def 'should propagate a job launch failure other than a conflict'() {
+        given:
+        def NS = 'foo'
+        def NAME = 'wave-build-123'
+        def k8sClient = Mock(K8sClient)
+        def api = Mock(BatchV1Api)
+        def createRequest = Mock(BatchV1Api.APIcreateNamespacedJobRequest)
+        def service = new K8sServiceImpl(k8sClient: k8sClient, namespace: NS, buildConfig: new BuildConfig())
+
+        when:
+        service.launchBuildJob(NAME, 'docker://test-image', ['arg1'], Path.of('/build/work/xyz'), null, Duration.ofMinutes(10), null)
+
+        then:
+        1 * k8sClient.batchV1Api() >> api
+        1 * api.createNamespacedJob(NS, _) >> createRequest
+        1 * createRequest.execute() >> { throw new ApiException(403, 'Forbidden') }
+        and:
+        0 * api.readNamespacedJob(_, _)
+        and:
+        def e = thrown(ApiException)
+        e.code == 403
+    }
+
+    def 'should adopt the existing soci index job when a launch is redelivered'() {
+        given:
+        def NS = 'foo'
+        def NAME = 'si-123'
+        def WORK_DIR = Path.of('/build/work/si-123')
+        def config = new SociConfig()
+        def spec = new V1Job(metadata: new V1ObjectMeta(name: NAME))
+        def existing = new V1Job(metadata: new V1ObjectMeta(name: NAME))
+        def k8sClient = Mock(K8sClient)
+        def api = Mock(BatchV1Api)
+        def createRequest = Mock(BatchV1Api.APIcreateNamespacedJobRequest)
+        def readRequest = Mock(BatchV1Api.APIreadNamespacedJobRequest)
+        def service = Spy(new K8sServiceImpl(k8sClient: k8sClient, namespace: NS))
+
+        when:
+        def result = service.launchSociIndexJob(NAME, 'soci-indexer:v1', ['index'], WORK_DIR, null, config, null)
+
+        then:
+        1 * service.sociIndexJobSpec(NAME, 'soci-indexer:v1', ['index'], WORK_DIR, null, config, null) >> spec
+        1 * k8sClient.batchV1Api() >> api
+        1 * api.createNamespacedJob(NS, spec) >> createRequest
+        1 * createRequest.execute() >> { throw new ApiException(409, 'Conflict', null, '{"reason":"AlreadyExists"}') }
+        1 * api.readNamespacedJob(NAME, NS) >> readRequest
+        1 * readRequest.execute() >> existing
+        and:
+        result.is(existing)
     }
 
     def 'should create scan job spec with dns config'() {

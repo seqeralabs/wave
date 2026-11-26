@@ -84,4 +84,39 @@ class RegistryAuthTest extends Specification {
         RegistryAuth.parse('foo') == null
         RegistryAuth.parse(null) == null
     }
+
+    def 'should parse auth scheme case-insensitively'() {
+        expect:
+        RegistryAuth.parse('BEARER realm="https://quay.io/v2/auth",service="quay.io"')
+                == new RegistryAuth(new URI('https://quay.io/v2/auth'), 'quay.io', RegistryAuth.Type.Bearer)
+        and:
+        RegistryAuth.parse('bearer realm="https://quay.io/v2/auth"')
+                == new RegistryAuth(new URI('https://quay.io/v2/auth'), null, RegistryAuth.Type.Bearer)
+        and:
+        RegistryAuth.parse('BASIC realm="http://foo",service="bar"')
+                == new RegistryAuth(new URI('http://foo'), 'bar', RegistryAuth.Type.Basic)
+        and:
+        // realm is not a URL, the lookup service falls back to the registry endpoint
+        RegistryAuth.parse('BASIC realm="User-Token-Realm"') == null
+    }
+
+    def 'should resolve auth type' () {
+        expect:
+        RegistryAuth.Type.of(NAME) == EXPECTED
+
+        where:
+        NAME        | EXPECTED
+        'Basic'     | RegistryAuth.Type.Basic
+        'BASIC'     | RegistryAuth.Type.Basic
+        'basic'     | RegistryAuth.Type.Basic
+        'Bearer'    | RegistryAuth.Type.Bearer
+        'BEARER'    | RegistryAuth.Type.Bearer
+    }
+
+    def 'should fail to resolve unknown auth type' () {
+        when:
+        RegistryAuth.Type.of('Negotiate')
+        then:
+        thrown(IllegalArgumentException)
+    }
 }

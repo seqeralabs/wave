@@ -171,10 +171,23 @@ public class SubmitContainerTokenRequest implements Cloneable {
      */
     public boolean soci;
 
+    /**
+     * Visibility of the records produced by this request: {@link Visibility#PUBLIC} or
+     * {@link Visibility#PRIVATE}.
+     *
+     * Absent means public, so clients released before this field existed keep the behaviour they
+     * have today. {@code private} applies only to a request carrying a Platform identity, and
+     * never to the community repository - in both of those cases it is ignored and the record is
+     * public.
+     */
+    public String visibility;
+
 
     public SubmitContainerTokenRequest copyWith(Map opts) {
         try {
             final SubmitContainerTokenRequest copy = (SubmitContainerTokenRequest) this.clone();
+            if( opts.containsKey("visibility") )
+                copy.visibility = (String)opts.get("visibility");
             if( opts.containsKey("towerAccessToken") )
                 copy.towerAccessToken = (String)opts.get("towerAccessToken");
             if( opts.containsKey("towerRefreshToken") )
@@ -379,6 +392,11 @@ public class SubmitContainerTokenRequest implements Cloneable {
         return this;
     }
 
+    public SubmitContainerTokenRequest withVisibility(String value) {
+        this.visibility = value;
+        return this;
+    }
+
     public boolean formatSingularity() {
         return "sif".equals(format);
     }
@@ -388,6 +406,7 @@ public class SubmitContainerTokenRequest implements Cloneable {
         return "SubmitContainerTokenRequest{" +
                 "towerAccessToken='" + ObjectUtils.redact(towerAccessToken) + '\'' +
                 ", towerRefreshToken='" + ObjectUtils.redact(towerRefreshToken) + '\'' +
+                ", visibility='" + visibility + '\'' +
                 ", towerEndpoint='" + towerEndpoint + '\'' +
                 ", towerWorkspaceId=" + towerWorkspaceId +
                 ", containerImage='" + containerImage + '\'' +

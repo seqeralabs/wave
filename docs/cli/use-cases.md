@@ -65,7 +65,7 @@ Conda builds support the following arguments:
 
 - `--conda-base-image`: A base image for installing Conda packages (default: `mambaorg/micromamba:1.5.10-noble`).
 - `--conda-channels`: A comma-separated list of Conda channels (default: `conda-forge,bioconda`).
-- `--conda-file`: A path or URL to a [Conda lock file][conda-lock].
+- `--conda-file`: A path or URL to a [Conda lock file][conda-lock]. With the `conda/pixi:v1-lock` build template, the path of a `pixi.lock` file.
 - `--conda-package`: A Conda package to install. Supports expressions such as `bioconda::samtools=1.17` or `samtools>=1.0,<1.17`. Accepts a comma-separated list or can be specified multiple times.
 - `--conda-run-command`: A Docker `RUN` command to execute during the build. Can be specified multiple times.
 - `--build-template`: A build template for the container build. See [Build a container with a build template](#build-a-container-with-a-build-template) for more details.
@@ -97,12 +97,19 @@ The Wave CLI supports build templates for creating container images from Conda p
 | `conda/micromamba:v2-fast` | Multi-stage build using Micromamba 2.x that splits the Conda environment into multiple layers of at most 500 MB each before compression, with rare exceptions. Docker only. |
 | `conda/pixi:v1`       | Multi-stage build using [Pixi][pixi] package manager. Produces smaller images with faster dependency resolution (Singularity still uses a single-stage build). |
 | `conda/pixi:v1-fast`  | Multi-stage build using [Pixi][pixi] that splits the Conda environment into multiple layers of at most 500 MB each before compression, with rare exceptions. Docker only. |
+| `conda/pixi:v1-lock`  | Multi-stage build using [Pixi][pixi] that installs the environment from a `pixi.lock` file without re-solving it. See [Pixi lock file builds](../features/container-builds.mdx#pixi-lock-file-builds). |
 
 **Related CLI arguments**
 
-Build template selection supports the following argument:
+Build template selection supports the following arguments:
 
 - `--build-template`: A build template for container builds.
+- `--pixi-image`: The Pixi builder image (default: `public.cr.seqera.io/wave/pixi:0.61.0-noble`).
+- `--pixi-base-image`: The base image of the final stage (default: `ubuntu:24.04`). The image must provide `/bin/bash`.
+- `--pixi-base-packages`: Space-separated Conda packages added to every Pixi build (default: `conda-forge::procps-ng`). Replaces the default list.
+- `--pixi-run-command`: A line appended to the build file, for example `RUN mkdir -p /data`. Can be specified multiple times.
+
+Wave CLI 1.8.1 added the `--pixi-*` arguments.
 
 **Benefits of multi-stage templates**
 
@@ -114,7 +121,7 @@ Multi-stage build templates offer several advantages:
 
 **Singularity builds use single-stage**
 
-When building Singularity containers (`--singularity`) with the `conda/micromamba:v2` or `conda/pixi:v1` templates, single-stage builds are used. Singularity's proot-based builder cannot preserve file permissions when transferring files across stages, so the conda/pixi environment is installed directly in a single stage using the mamba/pixi image as the base.
+When building Singularity containers (`--singularity`) with the `conda/micromamba:v2`, `conda/pixi:v1`, or `conda/pixi:v1-lock` templates, single-stage builds are used. Singularity's proot-based builder cannot preserve file permissions when transferring files across stages, so the conda/pixi environment is installed directly in a single stage using the mamba/pixi image as the base.
 
 As a result, the `baseImage` option has no effect on Singularity builds. It only applies to Docker builds. The multi-stage image size optimization is also not available for Singularity.
 
@@ -132,6 +139,17 @@ Build a container using the Pixi template:
 wave \
   --conda-package bamtools=2.5.2 \
   --build-template conda/pixi:v1
+```
+
+Build a container using the Pixi template with custom build options:
+
+```bash
+wave \
+  --conda-package bioconda::samtools=1.17 \
+  --build-template conda/pixi:v1 \
+  --pixi-base-image rocker/r-ver:4.4.1 \
+  --pixi-base-packages 'conda-forge::procps-ng conda-forge::gzip' \
+  --pixi-run-command 'RUN mkdir -p /data'
 ```
 
 Build a container using the Micromamba v2 template:
@@ -157,6 +175,14 @@ Build the same layered container using Pixi:
 wave \
   --conda-package bioconda::gatk4=4.6.2.0 \
   --build-template conda/pixi:v1-fast
+```
+
+Build a container from an existing Pixi lock file, without re-solving the environment:
+
+```bash
+wave \
+  --conda-file pixi.lock \
+  --build-template conda/pixi:v1-lock
 ```
 
 Build a Singularity container using Pixi:
@@ -430,7 +456,7 @@ wave -i quay.io/biocontainers/samtools:0.1.16--2 \
 
 ## Enable SOCI lazy loading
 
-Attach a [SOCI](../soci.md) index to a container, so that hosts running the SOCI snapshotter start it before the image is fully downloaded:
+Attach a [SOCI](../features/soci.mdx) index to a container, so that hosts running the SOCI snapshotter start it before the image is fully downloaded:
 
 ```bash
 wave -i rocker/r-ver:4.4.1 --platform linux/arm64 --soci

@@ -29,6 +29,7 @@ import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.BuildEnabled
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
+import io.seqera.wave.service.job.JobHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static java.nio.file.StandardOpenOption.CREATE
@@ -74,9 +75,7 @@ class DockerBuildStrategy extends BuildStrategy {
             .redirectErrorStream(true)
             .start()
 
-        if( process.waitFor()!=0 ) {
-            throw new IllegalStateException("Unable to launch build container - exitCode=${process.exitValue()}; output=${process.text}")
-        }
+        JobHelper.awaitDockerLaunch(process, jobName, "build container")
     }
 
     private String cmdToStr(List<String> cmd) {

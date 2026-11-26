@@ -22,6 +22,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.core.ContainerAugmenter
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.tower.PlatformId
@@ -70,14 +71,29 @@ class FreezeServiceImpl implements FreezeService {
         // get the container manifest
         final entry = inspectService.containerEntrypoint(containerFile, ContainerPlatform.parseOrDefault(req.containerPlatform), identity)
         if( entry ) {
+            // use the same format as the container augmenter i.e. a JSON array
+            // when the entrypoint has more than one element
+            final chain = ContainerAugmenter.processEntryPoint(entry)
             if( req.formatSingularity() ) {
-                return containerFile + "%environment\n  export WAVE_ENTRY_CHAIN=\"${entry.join(' ')}\"\n"
+                return containerFile + "%environment\n  export WAVE_ENTRY_CHAIN=\"${escapeQuoted(chain, true)}\"\n"
             } else {
-                return containerFile + "ENV WAVE_ENTRY_CHAIN=\"${entry.join(' ')}\"\n"
+                return containerFile + "ENV WAVE_ENTRY_CHAIN=\"${escapeQuoted(chain, false)}\"\n"
             }
         }
         else
             return containerFile
+    }
+
+    /**
+     * Escape a value to be placed in a double-quoted string of a Dockerfile {@code ENV}
+     * instruction or, when {@code shell} is true, of a shell (Singularity {@code %environment}) script
+     */
+    static protected String escapeQuoted(String value, boolean shell) {
+        final result = value
+                .replace('\\', '\\\\')
+                .replace('"', '\\"')
+                .replace('$', '\\$')
+        return shell ? result.replace('`', '\\`') : result
     }
 
     @Override

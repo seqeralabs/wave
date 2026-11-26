@@ -42,8 +42,8 @@ class JobManagerTest extends Specification {
         def config = new JobManagerConfig(maxRunningJobs: 20)
         def manager = new JobManager(config: config, sociConfig: new SociConfig(reservedJobs: 5))
         and:
-        def soci = JobSpec.sociIndex('soci-1', 'soci-1', Instant.now(), Duration.ofMinutes(10), Path.of('/work'))
-        def push = JobSpec.sociPush('soci-2', 'soci-2', Instant.now(), Duration.ofMinutes(10), Path.of('/work'))
+        def soci = JobSpec.sociIndex('si-1', 'si-1', Instant.now(), Duration.ofMinutes(10), Path.of('/work'))
+        def push = JobSpec.sociPush('sp-2', 'sp-2', Instant.now(), Duration.ofMinutes(10), Path.of('/work'))
         def build = JobSpec.build('bd-1', 'bd-1', Instant.now(), Duration.ofMinutes(10), Path.of('/work'))
 
         expect:
