@@ -44,4 +44,19 @@ class MissingCredentialsTest extends Specification {
         expect:
         !new MissingCredentials('a')
     }
+
+    def 'should not render the access token' () {
+        given:
+        def token = 'eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxMDAifQ.c2lnbmF0dXJl'
+
+        expect:
+        !new MissingCredentials(token).toString().contains(token)
+        new MissingCredentials(token).toString() ==~ /MissingCredentials\[id-[0-9a-f]+\]/
+        and: 'the rendering is stable and unique per token, as the auth cache key requires'
+        new MissingCredentials(token).toString() == new MissingCredentials(token).toString()
+        new MissingCredentials(token).toString() != new MissingCredentials(token + 'x').toString()
+        and:
+        new MissingCredentials(null).toString() == 'MissingCredentials[null]'
+    }
+
 }

@@ -237,7 +237,7 @@ class RegHelper {
             hasher.putUnencodedChars(Character.toString(0x1C))
         }
         hasher.putUnencodedChars(Character.toString(0x1E))
-        return hasher.hash()
+        return hasher.hash().toString()
     }
 
     static String layerName(ContainerLayer layer) {

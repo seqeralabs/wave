@@ -20,6 +20,7 @@ package io.seqera.wave.exception
 
 import groovy.transform.CompileStatic
 import io.micronaut.http.HttpStatus
+import org.apache.commons.lang3.exception.ExceptionUtils
 
 /**
  * Generic Http response exception
@@ -51,11 +52,22 @@ class HttpResponseException extends WaveException implements HttpError {
 
     HttpStatus statusCode() { statusCode }
 
+    /**
+     * @return true when this status appears anywhere in the cause chain. The call completes
+     *      through a future, so the answer usually arrives wrapped in an ExecutionException.
+     */
+    static boolean matches(Throwable e, HttpStatus status) {
+        return ExceptionUtils.getThrowableList(e).any {
+            it instanceof HttpResponseException && (it as HttpResponseException).statusCode() == status
+        }
+    }
+
     @Override
     String getMessage() {
         def result = super.getMessage()
-        result += " - HTTP status=${statusCode?.code ?: '-'}"
-        result += " - response=${response ?: '-'}"
+        // the upstream details are only worth reporting when there is an upstream response
+        if( response )
+            result += " - HTTP status=${statusCode?.code ?: '-'} - response=${response}"
         return result
     }
 }

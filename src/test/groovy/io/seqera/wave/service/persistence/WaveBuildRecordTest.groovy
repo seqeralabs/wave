@@ -183,4 +183,42 @@ class WaveBuildRecordTest extends Specification {
         1       | Duration.ofSeconds(1) | false            | BuildStatusResponse.Status.COMPLETED   | true
         0       | Duration.ofSeconds(1) | true             | BuildStatusResponse.Status.COMPLETED   | true
     }
+
+    def 'should return a copy exposing only the user id' () {
+        given:
+        def record = new WaveBuildRecord(
+                buildId: 'bd-1_1',
+                targetImage: 'foo.com/repo:tag',
+                userName: 'foo-user',
+                userEmail: 'foo@bar.com',
+                userId: 100,
+                requestIp: '10.20.30.40',
+                startTime: Instant.now(),
+                scanId: 'sc-1' )
+
+        when:
+        def result = record.withUserIdOnly()
+        def json = JacksonHelper.toJson(result)
+
+        then:
+        result.userId == 100
+        result.userName == null
+        result.userEmail == null
+        result.requestIp == null
+        and:
+        result.buildId == record.buildId
+        result.targetImage == record.targetImage
+        result.startTime == record.startTime
+        result.scanId == record.scanId
+        and:
+        json.contains('"userId":100')
+        !json.contains('userName')
+        !json.contains('userEmail')
+        !json.contains('requestIp')
+        and: 'the original record is unchanged'
+        record.userName == 'foo-user'
+        record.userEmail == 'foo@bar.com'
+        record.requestIp == '10.20.30.40'
+    }
+
 }

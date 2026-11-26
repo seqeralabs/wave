@@ -15,7 +15,6 @@ model WaveContainerRecord {
   fingerprint?: string;
   timestamp: string;
   zoneId?: string;
-  ipAddress?: string;
   sourceImage?: string;
   sourceDigest?: string;
   waveImage?: string;
