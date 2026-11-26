@@ -27,6 +27,7 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpRequest
+import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.MutableHttpResponse
 import io.micronaut.http.cookie.SameSite
@@ -48,7 +49,6 @@ import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.http.HttpStatus
 import io.seqera.wave.service.access.AccessRules
 import io.seqera.wave.service.access.RecordAccessService
-import io.seqera.wave.service.view.auth.RefusedViewCounter
 import io.seqera.wave.service.view.auth.ViewAuthService
 import io.seqera.wave.service.view.auth.ViewSession
 import io.seqera.wave.tower.RecordOwner
@@ -133,7 +133,7 @@ class ViewController {
 
     @Inject
     @Nullable
-    private RefusedViewCounter refusedViews
+    private MeterRegistry meterRegistry
 
     @Get('/mirrors/{mirrorId}')
     HttpResponse viewMirror(String mirrorId, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
@@ -190,12 +190,10 @@ class ViewController {
     }
 
     static protected MutableHttpResponse<?> authError(HttpStatus status, String message, String retryTo=null) {
-        final model = new HashMap<String,Object>(2)
-        model.error_message = message
         // a link back to the page, not to owner.towerEndpoint: that is the API address, and it is
         // whatever endpoint the record's submitter paired
-        if( retryTo ) model.retry_url = retryTo
-        return HttpResponse.status(status).body(new ModelAndView("view-auth-error", model))
+        return HttpResponse.status(status).body(
+                new ModelAndView("view-auth-error", [error_message: message, retry_url: retryTo]))
     }
 
     static final private String PLATFORM_UNREACHABLE =
@@ -209,20 +207,30 @@ class ViewController {
         if( decision == RecordAccessService.Decision.ALLOW )
             return null
 
-        refusedViews?.increment(authService.known(owner?.towerEndpoint), decision.toString())
         switch (decision) {
             case RecordAccessService.Decision.REJECTED:
                 // the token has expired, so sign in again
             case RecordAccessService.Decision.UNAUTHORIZED:
                 final signIn = authService.startSignIn(owner.towerEndpoint, returnTo)
-                return signIn
-                        ? HttpResponse.seeOther(URI.create(signIn.url)).cookie(authService.stateCookie(signIn.state, signIn.stateHash, 600))
-                        : authError(HttpStatus.UNAUTHORIZED, 'This record belongs to a Seqera Platform workspace, and Wave cannot sign viewers in to it.')
+                // sending a first-time viewer to sign in is not a refusal, so it is not counted
+                if( signIn )
+                    return HttpResponse.seeOther(URI.create(signIn.url)).cookie(authService.stateCookie(signIn.state, signIn.stateHash, 600))
+                refused(owner, decision)
+                return authError(HttpStatus.UNAUTHORIZED, 'This record belongs to a Seqera Platform workspace, and Wave cannot sign viewers in to it.')
             case RecordAccessService.Decision.FORBIDDEN:
+                refused(owner, decision)
                 return authError(HttpStatus.FORBIDDEN, 'This record belongs to a workspace you do not have access to.')
             default:
+                refused(owner, decision)
                 return authError(HttpStatus.SERVICE_UNAVAILABLE, PLATFORM_UNREACHABLE)
         }
+    }
+
+    /** Counts only a viewer actually turned away: the sign-in redirect would drown that signal */
+    private void refused(RecordOwner owner, RecordAccessService.Decision decision) {
+        meterRegistry?.counter('wave.view.refused',
+                'endpoint', authService.known(owner?.towerEndpoint),
+                'outcome', decision.toString())?.increment()
     }
 
     @Get('/builds/{buildId}')
