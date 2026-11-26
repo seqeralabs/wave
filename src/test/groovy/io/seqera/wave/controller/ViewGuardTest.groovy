@@ -63,10 +63,11 @@ class ViewGuardTest extends Specification {
                 ? new ViewSession(tokens: [(OWNER.towerEndpoint): 'tok'])
                 : null
         Mock(ViewAuthService) {
-            startSignIn(_, _) >> new SignInRedirect('https://platform.io/authorize?state=abc', 'hashed')
+            startSignIn(_, _) >> new SignInRedirect('https://platform.io/authorize?state=abc', 'hashed', 'abc')
             session(_) >> stored
             secureCookie() >> true
-            stateCookie(_, _) >> { String v, long age -> Cookie.of(ViewAuthService.STATE_COOKIE, v).path('/view/auth').httpOnly(true).maxAge(age) }
+            stateCookie(_, _, _) >> { String st, String v, long age ->
+                Cookie.of(ViewAuthService.stateCookieName(st), v).path('/view/auth').httpOnly(true).maxAge(age) }
         }
     }
 
@@ -78,8 +79,8 @@ class ViewGuardTest extends Specification {
         resp.status() == HttpStatus.SEE_OTHER
         resp.header('location') == 'https://platform.io/authorize?state=abc'
         and: 'the reply is only accepted back from this browser'
-        resp.getCookie(ViewAuthService.STATE_COOKIE).get().value == 'hashed'
-        resp.getCookie(ViewAuthService.STATE_COOKIE).get().isHttpOnly()
+        resp.getCookie(ViewAuthService.stateCookieName('abc')).get().value == 'hashed'
+        resp.getCookie(ViewAuthService.stateCookieName('abc')).get().isHttpOnly()
     }
 
     def 'should show the 401 page when that Platform cannot sign viewers in' () {
@@ -92,7 +93,7 @@ class ViewGuardTest extends Specification {
         then:
         resp.status() == HttpStatus.UNAUTHORIZED
         and: 'and does not offer a sign-in that cannot happen'
-        !resp.getCookie(ViewAuthService.STATE_COOKIE).isPresent()
+        !resp.getCookie(ViewAuthService.stateCookieName('abc')).isPresent()
     }
 
     def 'should drop a rejected session token and send the viewer to sign in again' () {

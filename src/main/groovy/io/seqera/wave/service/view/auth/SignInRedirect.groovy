@@ -34,4 +34,6 @@ import groovy.transform.CompileStatic
 class SignInRedirect {
     String url
     String stateHash
+    /** Names the cookie that holds {@code stateHash}, so concurrent sign-ins keep one each */
+    String state
 }

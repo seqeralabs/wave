@@ -216,7 +216,7 @@ class ViewController {
             case RecordAccessService.Decision.UNAUTHORIZED:
                 final signIn = authService.startSignIn(owner.towerEndpoint, returnTo)
                 return signIn
-                        ? HttpResponse.seeOther(URI.create(signIn.url)).cookie(authService.stateCookie(signIn.stateHash, 600))
+                        ? HttpResponse.seeOther(URI.create(signIn.url)).cookie(authService.stateCookie(signIn.state, signIn.stateHash, 600))
                         : authError(HttpStatus.UNAUTHORIZED, 'This record belongs to a Seqera Platform workspace, and Wave cannot sign viewers in to it.')
             case RecordAccessService.Decision.FORBIDDEN:
                 return authError(HttpStatus.FORBIDDEN, 'This record belongs to a workspace you do not have access to.')

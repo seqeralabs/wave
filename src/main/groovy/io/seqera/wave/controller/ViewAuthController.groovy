@@ -22,6 +22,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.MutableHttpResponse
 import io.micronaut.http.HttpStatus
@@ -59,9 +60,13 @@ class ViewAuthController {
                              @Nullable @QueryValue String state,
                              @Nullable @QueryValue String error,
                              @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId,
-                             @Nullable @CookieValue(ViewAuthService.STATE_COOKIE) String stateHash)
+                             HttpRequest<?> request)
     {
-        return expire(callback0(code, state, error, sessionId, stateHash))
+        // read by name, not @CookieValue: the name depends on the state this callback carries
+        final stateHash = request.cookies.findCookie(ViewAuthService.stateCookieName(state))
+                .map(Cookie::getValue)
+                .orElse(null)
+        return expire(callback0(code, state, error, sessionId, stateHash), state)
     }
 
     private MutableHttpResponse<?> callback0(String code, String state, String error, String sessionId, String stateHash) {
@@ -88,8 +93,8 @@ class ViewAuthController {
     }
 
     /** The state cookie is single-use: drop it whichever way the callback ends */
-    protected MutableHttpResponse<?> expire(MutableHttpResponse<?> response) {
-        return response.cookie(authService.stateCookie('', 0))
+    protected MutableHttpResponse<?> expire(MutableHttpResponse<?> response, String state) {
+        return response.cookie(authService.stateCookie(state, '', 0))
     }
 
     protected Cookie sessionCookie(String sessionId) {
