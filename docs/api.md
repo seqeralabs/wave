@@ -113,7 +113,7 @@ The endpoint returns the name of the container request made available by Wave.
 | `towerEndpoint`                     | Seqera Platform service endpoint from where container registry credentials are retrieved (optional). Default `https://api.cloud.seqera.io`.                       |
 | `towerAccessToken`                  | Access token of the user account granting access to the Seqera Platform service specified via `towerEndpoint` (optional).                      |
 | `towerWorkspaceId`                  | ID of the Seqera Platform workspace from where the container registry credentials are retrieved (optional). When omitted the personal workspace is used. |
-| `visibility`                        | `public` or `private` (optional, default `public`). A `private` record is readable only with a Seqera Platform token for the workspace that owns it, and its build and scan ids are scoped to that workspace. `private` needs an authenticated request that names a workspace and its own container repository; otherwise the record stays public. |
+| `visibility`                        | `public` or `private` (optional, default `public`). A `private` record is readable only with a Seqera Platform token for the workspace that owns it, and its build and scan ids are scoped to that workspace. `private` is honoured for any authenticated request whose build does not target the community repository, the personal workspace included. An anonymous request, or one building to the community repository, stays public. |
 
 #### Response
 
