@@ -829,6 +829,31 @@ Configure thread monitoring to detect and diagnose thread exhaustion issues. Whe
 `wave.thread-monitor.interval` *(optional)*
 : Interval for the thread monitor check (default: `5m`).
 
+## Record access and view sign-in
+
+Private records are readable only by members of the Seqera Platform workspace that owns them. Wave decides access with the Platform the record was created on, and signs viewers of the `/view` pages in through that Platform using OpenID Connect.
+
+`wave.access-check.cache.duration` *(optional)*
+: How long an access check caches a Platform user-info reply or workspace listing (default: `60s`).
+  This is the delay before a revoked token or a removed workspace membership takes effect.
+
+`wave.view.auth.clients.<name>.endpoint` *(required to sign viewers in)*
+: Seqera Platform endpoint this OpenID Connect client belongs to, spelled as that Platform pairs with Wave. `<name>` is a label of your choosing.
+
+`wave.view.auth.clients.<name>.client-id` *(required to sign viewers in)*
+: Client id registered with that Platform for Wave's callback URL, `<wave.server.url>/view/auth/callback`.
+
+`wave.view.auth.clients.<name>.client-secret` *(required to sign viewers in)*
+: Client secret issued with that client id.
+
+`wave.view.auth.pending-duration` *(optional)*
+: How long a started sign-in may wait at Platform before its state expires (default: `5m`).
+
+`wave.view.auth.session-duration` *(optional)*
+: Lifetime of the Wave view session created by a successful sign-in (default: `12h`).
+
+A Platform with no client listed here cannot sign viewers in: its private records show a 401 page, and remain readable through the API with a Platform token.
+
 ## Trace
 
 Configure slow endpoint logging to identify HTTP endpoints that exceed expected response times.
