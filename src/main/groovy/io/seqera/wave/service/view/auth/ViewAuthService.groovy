@@ -85,13 +85,21 @@ class ViewAuthService {
      * The state cookie, set with a lifetime and cleared with zero. Both go through here: a
      * clearing Set-Cookie only takes effect when its path and attributes match the one that set it.
      */
-    Cookie stateCookie(String value, long maxAge) {
-        return Cookie.of(STATE_COOKIE, value)
+    Cookie stateCookie(String state, String value, long maxAge) {
+        return Cookie.of(stateCookieName(state), value)
                 .path('/view/auth')
                 .httpOnly(true)
                 .secure(secureCookie())
                 .sameSite(SameSite.Lax)
                 .maxAge(maxAge)
+    }
+
+    /**
+     * One cookie per sign-in, named after the state it carries: two private pages opened before
+     * either returns would otherwise overwrite each other's hash and fail both callbacks.
+     */
+    static String stateCookieName(String state) {
+        return state ? "${STATE_COOKIE}-${state.take(8)}".toString() : STATE_COOKIE
     }
 
     /** A Secure cookie is dropped over plain http, which would loop a dev viewer through sign-in */
@@ -130,7 +138,7 @@ class ViewAuthService {
                 code_challenge: challengeOf(verifier),
                 code_challenge_method: 'S256' ]
         final url = "${discovery.authorization_endpoint}?${OidcDiscoveryClient.formEncode(params)}".toString()
-        return new SignInRedirect(url, challengeOf(state))
+        return new SignInRedirect(url, challengeOf(state), state)
     }
 
     /**
@@ -192,9 +200,9 @@ class ViewAuthService {
             sessionStore.put(sessionId, session.without(towerEndpoint))
     }
 
-    /** @return the endpoint when Wave can sign in to it, otherwise a constant - keeps metric labels bounded */
+    /** @return the client's name when Wave can sign in to that endpoint, otherwise a constant */
     String known(String towerEndpoint) {
-        return clientId(towerEndpoint) ? towerEndpoint : 'other'
+        return client(towerEndpoint)?.name ?: 'other'
     }
 
     static private String rnd() {

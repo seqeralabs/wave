@@ -21,6 +21,7 @@ package io.seqera.wave.service.view.auth
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.micronaut.context.annotation.EachProperty
+import io.seqera.service.pairing.PairingEndpoint
 import io.micronaut.context.annotation.Parameter
 
 /**
@@ -54,9 +55,9 @@ class ViewAuthClient {
         this.name = name
     }
 
-    /** Matched against the endpoint as paired, give or take the trailing slash a config easily gains */
+    /** The form the pairing key and the tenant use, so a spelling that pairs can also sign in */
     static String key(String endpoint) {
-        return endpoint?.trim()?.replaceAll('/+$', '')
+        return PairingEndpoint.normalise(endpoint)
     }
 
     boolean matches(String towerEndpoint) {

@@ -111,6 +111,31 @@ class ViewAuthServiceTest extends Specification {
         signIn == null
     }
 
+    def 'should find the client for every spelling that pairs to the same Platform' () {
+        given: 'a client registered under the canonical spelling'
+        def service = svc(usable(), [('https://api.cloud.seqera.io'): 'wave-client|secret'])
+
+        expect: 'a submit naming any of these pairs, so its records must sign in too'
+        service.clientId(spelling) == 'wave-client'
+
+        where:
+        spelling << [
+                'https://api.cloud.seqera.io',
+                'https://api.cloud.seqera.io/',
+                'https://API.cloud.seqera.io',
+                'https://api.cloud.seqera.io:443',
+                'HTTPS://api.cloud.seqera.io' ]
+    }
+
+    def 'should name the state cookie after the sign-in it belongs to' () {
+        expect: 'two private pages opened at once keep a cookie each'
+        ViewAuthService.stateCookieName('aaaaaaaa11') != ViewAuthService.stateCookieName('bbbbbbbb22')
+        and: 'the callback can name the cookie from the state it carries'
+        ViewAuthService.stateCookieName('aaaaaaaa11') == "${ViewAuthService.STATE_COOKIE}-aaaaaaaa"
+        and: 'no state falls back to the plain name, so a stray callback still clears something'
+        ViewAuthService.stateCookieName(null) == ViewAuthService.STATE_COOKIE
+    }
+
     def 'should return no url when the Platform cannot sign viewers in' () {
         expect: 'no client registered for that endpoint'
         svc(usable(), [:]).startSignIn(EP, '/view/builds/bd-1') == null
