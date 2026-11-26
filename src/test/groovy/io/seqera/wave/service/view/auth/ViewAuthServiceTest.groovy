@@ -33,7 +33,6 @@ class ViewAuthServiceTest extends Specification {
 
     private static OidcDiscovery usable() {
         new OidcDiscovery(
-                issuer: EP,
                 authorization_endpoint: "$EP/authorize",
                 token_endpoint: "$EP/token" )
     }
@@ -111,6 +110,29 @@ class ViewAuthServiceTest extends Specification {
         signIn == null
     }
 
+    def 'should hold one token per Platform, whatever spelling a record carries' () {
+        given: 'a token stored under the spelling the signed-in record used'
+        def session = new ViewSession().withToken('https://api.cloud.seqera.io/', 'tok')
+
+        expect: 'another record of the same Platform finds it'
+        session.tokenFor(spelling) == 'tok'
+
+        where:
+        spelling << [
+                'https://api.cloud.seqera.io',
+                'https://api.cloud.seqera.io/',
+                'https://API.cloud.seqera.io',
+                'https://api.cloud.seqera.io:443' ]
+    }
+
+    def 'should drop the token for a Platform however the record spells it' () {
+        given:
+        def session = new ViewSession().withToken('https://api.cloud.seqera.io', 'tok')
+
+        expect:
+        session.without('https://api.cloud.seqera.io:443').tokenFor('https://api.cloud.seqera.io') == null
+    }
+
     def 'should find the client for every spelling that pairs to the same Platform' () {
         given: 'a client registered under the canonical spelling'
         def service = svc(usable(), [('https://api.cloud.seqera.io'): 'wave-client|secret'])
@@ -140,7 +162,7 @@ class ViewAuthServiceTest extends Specification {
         expect: 'no client registered for that endpoint'
         svc(usable(), [:]).startSignIn(EP, '/view/builds/bd-1') == null
         and: 'the Platform serves no OpenID Connect endpoints'
-        svc(new OidcDiscovery(issuer: EP), [(EP): 'wave-client|secret']).startSignIn(EP, '/view/builds/bd-1') == null
+        svc(new OidcDiscovery(), [(EP): 'wave-client|secret']).startSignIn(EP, '/view/builds/bd-1') == null
     }
 
     def 'should consume a state exactly once, and only for the browser that started it' () {
