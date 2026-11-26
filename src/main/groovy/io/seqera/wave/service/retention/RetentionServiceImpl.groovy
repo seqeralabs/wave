@@ -22,6 +22,7 @@ import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.util.function.Consumer
+import java.util.function.Predicate
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -88,7 +89,7 @@ class RetentionServiceImpl implements RetentionService {
         count += purge0(RecordType.REQUEST, config.request, slice(deadline, 3), null)
         count += purge0(RecordType.MIRROR, config.mirror, slice(deadline, 2), null)
         if( scanService )
-            count += purge0(RecordType.SCAN, config.scan, slice(deadline, 1), id -> scanService.deleteReports(id))
+            count += purge0(RecordType.SCAN, config.scan, slice(deadline, 1), id -> scanService.deleteReports(id), id -> scanService.getScanState(id) != null)
         return count
     }
 
@@ -107,7 +108,7 @@ class RetentionServiceImpl implements RetentionService {
      * or the deadline is reached. Draining within the pass is what keeps retention converging: one
      * batch per run caps removals at a rate a busy type can outrun.
      */
-    protected long purge0(RecordType type, Duration period, Instant deadline, @Nullable Consumer<String> artifacts) {
+    protected long purge0(RecordType type, Duration period, Instant deadline, @Nullable Consumer<String> artifacts, @Nullable Predicate<String> inUse=null) {
         if( !Instant.now(clock).isBefore(deadline) ) {
             log.warn "Retention skipped ${type} records - the pass ran out of time before reaching them"
             return 0
@@ -115,27 +116,37 @@ class RetentionServiceImpl implements RetentionService {
         final before = Instant.now(clock).minus(period)
         long total = 0
         long orphaned = 0
+        int kept = 0
         boolean complete = false
         while( Instant.now(clock) < deadline ) {
-            final ids = persistenceService.findIdsOlderThan(type, before, config.batchSize)
+            // the query is oldest first from offset zero, so a record left in place comes back at
+            // the head of the next batch: widen the batch by what was kept, or it blocks the queue
+            final int limit = config.batchSize + kept
+            final ids = persistenceService.findIdsOlderThan(type, before, limit)
             if( !ids ) {
                 complete = true
                 break
             }
-            final failed = deleteArtifacts0(type, artifacts, ids)
-            if( failed && failed==ids.size() ) {
-                // not one bad record but a broken dependency: retrying the rest of the pass would
-                // only orphan every object it touches, so leave the rows for the next run
-                log.error "Retention could not delete the artifacts of any ${type} record - abandoning this pass, ${total} record(s) removed so far"
-                return total
+            final List<String> due = inUse ? ids.findAll { !inUse.test(it) } : ids
+            kept = ids.size() - due.size()
+            if( due ) {
+                final failed = deleteArtifacts0(type, artifacts, due)
+                if( failed && failed==due.size() ) {
+                    // not one bad record but a broken dependency: retrying the rest of the pass would
+                    // only orphan every object it touches, so leave the rows for the next run
+                    log.error "Retention could not delete the artifacts of any ${type} record - abandoning this pass, ${total} record(s) removed so far"
+                    return total
+                }
+                orphaned += failed
+                total += persistenceService.deleteByIds(type, due)
             }
-            orphaned += failed
-            total += persistenceService.deleteByIds(type, ids)
-            if( ids.size() < config.batchSize ) {
+            if( ids.size() < limit ) {
                 complete = true
                 break
             }
         }
+        if( kept )
+            log.debug "Retention kept ${kept} ${type} record(s) still in use - they go on a later pass"
         if( total )
             log.info "Retention removed ${total} ${type} record(s) older than ${period}"
         if( !complete )

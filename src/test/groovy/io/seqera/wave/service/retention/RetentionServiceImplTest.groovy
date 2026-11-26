@@ -31,6 +31,7 @@ import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.RecordType
 import io.seqera.wave.service.scan.ContainerScanService
+import io.seqera.wave.service.scan.ScanEntry
 /**
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
@@ -236,6 +237,36 @@ class RetentionServiceImplTest extends Specification {
         1 * persistence.findIdsOlderThan(RecordType.MIRROR, _, _) >> []
         and:
         noExceptionThrown()
+        count == 1
+    }
+
+    def 'should keep a scan whose state is still live and purge the rest'() {
+        given: 'two aged scan rows, one of them re-scanned under the same id'
+        def persistence = Mock(PersistenceService)
+        def scanSvc = Mock(ContainerScanService)
+        def svc = service(
+                config: config(batchSize: 2),
+                persistenceService: persistence,
+                buildLogService: Mock(BuildLogService),
+                scanService: scanSvc )
+
+        when:
+        def count = svc.purge()
+
+        then: 'sc-live is still in the scan state store, so its reports are left alone'
+        1 * persistence.findIdsOlderThan(RecordType.SCAN, _, 2) >> ['sc-live', 'sc-dead']
+        1 * scanSvc.getScanState('sc-live') >> Mock(ScanEntry)
+        1 * scanSvc.getScanState('sc-dead') >> null
+        0 * scanSvc.deleteReports('sc-live')
+        1 * scanSvc.deleteReports('sc-dead')
+        1 * persistence.deleteByIds(RecordType.SCAN, ['sc-dead']) >> 1
+
+        then: 'the next batch is widened by what was kept, so the kept row cannot block the queue'
+        1 * persistence.findIdsOlderThan(RecordType.SCAN, _, 3) >> ['sc-live']
+        1 * scanSvc.getScanState('sc-live') >> Mock(ScanEntry)
+        0 * persistence.deleteByIds(RecordType.SCAN, [])
+
+        and:
         count == 1
     }
 
