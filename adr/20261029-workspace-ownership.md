@@ -45,7 +45,7 @@ Making records private by default on the current submit endpoints isn't an optio
 tenant = "${towerEndpoint}:${workspaceId ?: 'user:' + userId}"
 ```
 
-with `towerEndpoint` normalised (see 2.3). A request without a workspace belongs to the user's personal workspace, so its owner is the user. Anonymous requests have no owner.
+with `towerEndpoint` in its canonical form (see 2.3). A request without a workspace belongs to the user's personal workspace, so its owner is the user. Anonymous requests have no owner.
 
 **Rationale:**
 - Platform's unit of access is the workspace: its members share pipelines, runs and credentials, so they should share the Wave records those produce
@@ -129,7 +129,7 @@ and no cached result                                 → 503
 
 ```
 owner {
-  towerEndpoint   // normalised, see 2.3
+  towerEndpoint   // as the request carried it, see 2.3
   userId
   workspaceId     // null for a personal workspace
   orgId           // set on private records with a workspace, for accounting
@@ -169,9 +169,12 @@ attrs.containerFile, condaFile, platform, repository, buildContext, containerCon
 
 #### 2.3 One canonical endpoint string
 
-**Decision:** Normalise the endpoint once at submit, after `patchPlatformEndpoint`: lowercase the scheme and host, drop the default port and the trailing slash. Use the same form as the key the pairing lookup accepts.
+**Decision:** The tenant key (1.1) is computed from the canonical form of the endpoint: lowercase scheme and host, no default port, no trailing slash, the same form as the pairing key (`PairingEndpoint.normalise`). The stored `owner.towerEndpoint` keeps the spelling the request carried.
 
-**Rationale:** the endpoint is now part of the owner. It decides the build id, the owner and the Platform a token is checked against. Two spellings of the same Platform would otherwise become two owners.
+**Rationale:**
+- The endpoint is part of the tenant, which decides the build id and who owns a record. Two spellings of the same Platform would otherwise become two tenants
+- The stored endpoint is not normalised: the access check calls the Platform at that address and the pairing lookup resolves it, so a rewritten value could miss both. The owner is persisted, so correcting it later would need a backfill
+- This depends on lib-pairing normalising the pairing key too (seqeralabs/libseqera#177, lib-pairing 1.3.0). Without it, a Platform paired under another spelling of an already-paired host would fold into that Platform's tenant. lib-pairing 1.3.0 must be released before the read API (#1286) merges
 
 ### 3. View Pages
 
@@ -189,6 +192,8 @@ attrs.containerFile, condaFile, platform, repository, buildContext, containerCon
 2. A user already signed in to Platform is sent straight back to Wave's callback (`/view/auth/callback`) with a code. A user who isn't signs in to Platform first
 3. Wave exchanges the code at the Platform's `/token` and stores the token in a Wave session: a host-only, `HttpOnly`, `Secure`, `SameSite=Lax` cookie referencing the token server side, one token per Platform endpoint
 4. The access check (1.4) runs with that token, exactly as the API path checks a bearer token: `userInfo` on the record's Platform, then the workspace listing. The token is never refreshed (1.4): when it expires, the next private page signs in again, which is a redirect with no prompt while the Platform session lasts
+
+Wave is a static OpenID Connect client configured per Platform; dynamic registration isn't needed, though Platform advertises a `registration_endpoint`. It requests the scopes `openid profile email`. Checked against a running Platform: the discovery document is served under the API address (`${towerEndpoint}/.well-known/openid-configuration`), and a token issued with these scopes is accepted by both `user-info` and `GET /user/{userId}/workspaces`.
 
 - **Sign-in fails or is refused: 401.** The page says "This build belongs to a Seqera Platform workspace. Sign in to Seqera Platform to view it", with a link that restarts the sign-in
 - **Signed in, not a member: 403.** The page says the record belongs to a workspace the viewer doesn't have access to
@@ -221,12 +226,13 @@ Once the new API ships, they are marked deprecated with a `Deprecation` header, 
 
 #### 4.2 A new read API iteration
 
-**Decision:** Add a new version of the read endpoints, covering the same resources and sub-resources as 4.1:
+**Decision:** Add a new version of the read endpoints, `/v1`, covering the same resources and sub-resources as 4.1:
 
 - `Authorization: Bearer` is optional
 - Public records are returned without a token, as today
 - Private records go through the access check (1.4): 401 without a valid token, 403 for a non-member
-- Responses have the same shape as the current endpoints, so clients move by changing the path and sending their token
+- The `/status` routes of builds and container requests go through the check too: a private record's status needs a token like the record itself
+- Responses have the same shape as the current endpoints, so clients move by changing the path and sending their token. Neither returns the requester's name, email or IP
 
 The current submit endpoints are unchanged apart from the optional `visibility` field (2.1). Anonymous submits are still accepted.
 
@@ -251,9 +257,11 @@ The current submit endpoints are unchanged apart from the optional `visibility` 
 
 Each pull request can be merged and released on its own. The first three change no behaviour, because no client sends `private` yet.
 
+None of this is released yet. The 1.45 line reverts #1280, which brought the owner, visibility, tenant-scoped build ids and the access check (`872ae513c`, plus `8c7423e18` for the mirror leftovers), and `v1.45.0` and `v1.45.1` were cut after the revert: the released versions record no owner, no visibility and no tenant-scoped ids. Master keeps all three.
+
 | # | Pull request | Scope | Size |
 |---|---|---|---|
-| 1 | Record the owner | Endpoint normalisation (2.3). `owner` on the four records (2.1). Scan identity carried through `ScanEntry`. Serialisation tests for records without `owner` | S |
+| 1 | Record the owner | Canonical endpoint in the tenant key (2.3). `owner` on the four records (2.1). Scan identity carried through `ScanEntry`. Serialisation tests for records without `owner` | S |
 | 2 | Visibility field | `visibility` on the submit request, v1 and v2, and on mirror requests. Ignored when anonymous or for the community repository (1.2). Stored on records; scans inherit from their parent | S |
 | 3 | Owner in build id | `makeContainerId` takes the owner for private builds only (2.2). Tests that public and anonymous ids don't change | S |
 | 4 | Access check | Service returning allow, 401 or 403 (1.3, 1.4). `TowerClient` user-info call without token store or refresh; `GET /user/{userId}/workspaces` call and response model; 60s caches. Workspace check at submit (1.5). `owner.orgId` from that listing (2.1) | M |
@@ -265,7 +273,7 @@ Outside Wave:
 
 | Component | Change | When |
 |---|---|---|
-| Platform | Register Wave as an OpenID Connect client with its callback URL, enable OpenID Connect (`TOWER_OIDC_PEM_PATH`) in each environment, and confirm its access tokens are accepted by `user-info` and `GET /user/{userId}/workspaces` | Before PR 5 ships |
+| Platform | Register Wave as an OpenID Connect client with its callback URL, and enable OpenID Connect (`TOWER_OIDC_PEM_PATH`) in each environment. Its tokens are already accepted by `user-info` and `GET /user/{userId}/workspaces` (3) | Before PR 5 ships |
 | Platform | Read build status and logs (`WaveClient.getBuildStatus`, `getLogs`, used by Data Studios' `CustomContainerWorker`) through the new read API, with a fresh access token minted for the studio's user on each read, as Platform already does to submit (`CustomContainerRequestSubmittor.getTowerAccessToken`), so token expiry during a long build doesn't matter. Point the Studios "Full log available" link at `/view/builds/{id}` instead of the raw `/v1alpha1/builds/{id}/logs` URL, which a browser can't authenticate to | After PR 6, before Platform sends `private` |
 | Platform | Send `visibility: private` for Data Studios builds (1.2) | After PR 5 is live |
 | Nextflow | Submit and read through the new API with the token, so authenticated runs are private by default; expose `wave.visibility` to opt out with `public` | After PRs 6 and 7 |
@@ -293,12 +301,10 @@ Rollout: PRs 1 to 7 change nothing visible, because no record is private yet and
 - **Platforms without OpenID Connect** can't sign viewers in, so their private records are readable only through the API (4.2)
 - **One more Platform call per viewer.** Reading a private record costs a user-info call and a workspace listing on the record's Platform, each cached for 60 seconds. Private submits with a workspace pay the workspace listing too
 - **More builds, scans and cache storage.** Once Platform sends `private`, content that today is built and scanned once is built, scanned and cached once per workspace that requests it (2.2)
-- **Scans of existing images** are keyed by image and digest, so they are shared by everyone who scans the same image. They contain only vulnerability data. Adding the owner to that scan id is a small follow-up
+- **Scans of existing images** are scoped to the tenant (`ScanIdStore.key(image, tenant)`), so a private scan isn't shared with other workspaces
 - **Existing records stay public** for as long as they are kept
 
 ## Open Questions
 
-1. How does Wave register as a client of an enterprise Platform: a static client configured per Platform, or dynamic registration (`/register`)? And which scopes does Wave request so its token is accepted by `user-info` and the workspace listing?
-2. The version name of the new read and submit API, and the deprecation dates of the current read and submit endpoints
-3. Should the new API's `/status` endpoints also require a token for private records, or stay open since they expose only build state?
-4. Which repository does Seqera Cloud use for Data Studios builds (`tower.data-studio.wave.custom-image-registry`)? If it is the community registry, as on enterprise stage, only workspaces with their own container repository get private Studios builds (1.2)
+1. The deprecation dates of the current read and submit endpoints. And does the `/w1` name planned in #1048 still conflict now that `/v1` has shipped in the stack?
+2. Which repository does Seqera Cloud use for Data Studios builds (`tower.data-studio.wave.custom-image-registry`)? If it is the community registry, as on enterprise stage, only workspaces with their own container repository get private Studios builds (1.2)
