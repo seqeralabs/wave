@@ -5,7 +5,7 @@ description: Add on-demand container builds, mirroring, and scanning to a Wave L
 
 The full Wave configuration is a Wave Lite deployment on Amazon EKS with on-demand builds, freeze, mirroring, and security scanning enabled. Provision the AWS build infrastructure those features need, then turn them on by extending your existing Wave Lite deployment.
 
-The feature toggles control which requests Wave accepts, not which infrastructure it needs. Mirroring, scanning, and freeze all run on the build pipeline's Kubernetes job infrastructure, so on Kubernetes they require `build.enabled: true` even when you only want one of them. With `build.enabled: false`, Wave fails to start on Kubernetes.
+Mirroring and scanning run as Kubernetes jobs that use the build settings, and freeze is a build, so they all require `build.enabled: true`. With `build.enabled: false`, Wave fails to start while the `wave.build.k8s` settings from this page are present: to turn builds off, remove that block.
 
 :::info[**Prerequisites**]
 
