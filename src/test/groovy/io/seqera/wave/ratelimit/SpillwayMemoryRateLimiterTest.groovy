@@ -38,7 +38,7 @@ class SpillwayMemoryRateLimiterTest extends Specification {
 
 
     def setup() {
-        applicationContext = ApplicationContext.run('test', 'rate-limit')
+        applicationContext = ApplicationContext.run('test', 'rate-limit', 'rate-limit-test')
         rateLimiter = applicationContext.getBean(SpillwayRateLimiter)
     }
 

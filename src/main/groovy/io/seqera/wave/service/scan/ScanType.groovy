@@ -27,7 +27,7 @@ enum ScanType {
 
     Default("json", "report.json"),
     Spdx("spdx-json", "spdx.json"),
-    CycloneDx("cyclonedx", "cyclonedx.json"),
+    CycloneDx("cyclonedx", "cyclonedx.json");
 
     final private String format;
     final private String output;

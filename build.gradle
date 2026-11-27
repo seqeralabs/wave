@@ -11,7 +11,7 @@ buildscript {
 plugins {
     id 'io.seqera.wave.java-library-conventions'
     id 'io.seqera.wave.groovy-application-conventions'
-    id "io.micronaut.minimal.application" version "4.6.2"
+    id "io.micronaut.minimal.application" version "5.0.2"
     id "com.google.cloud.tools.jib" version "3.5.4"
     id 'jacoco'
 }
@@ -97,8 +97,8 @@ dependencies {
     implementation 'io.kubernetes:client-java:27.0.1'
     implementation 'io.kubernetes:client-java-api-fluent:27.0.1'
     implementation 'com.google.code.gson:gson:2.15.0'
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
-    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
+    // java.time support is built into Jackson 3 databind (former jackson-datatype-jsr310)
+    implementation 'tools.jackson.dataformat:jackson-dataformat-yaml'
     // Moshi dependencies now provided by lib-serde-moshi
     implementation 'redis.clients:jedis:8.0.2'
     implementation 'io.github.resilience4j:resilience4j-ratelimiter:0.17.0'
@@ -145,6 +145,8 @@ dependencies {
     // bump version to prevent security issue
     runtimeOnly 'org.apache.commons:commons-lang3:3.22.0'
     runtimeOnly platform("io.netty:netty-bom:$nettyVersion")
+    // Jackson 3 (tools.jackson.*) versions are managed by the Micronaut platform BOM;
+    // the Jackson 2 BOM stays to pin the transitive Jackson 2 still pulled by other libraries
     implementation platform('com.fasterxml.jackson:jackson-bom:2.23.0')
     constraints {
         implementation 'org.jsoup:jsoup:1.24.1'

@@ -18,8 +18,8 @@
 
 package io.seqera.wave.configuration
 
-import javax.annotation.Nullable
-import javax.annotation.PostConstruct
+import io.micronaut.core.annotation.Nullable
+import jakarta.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.transform.ToString

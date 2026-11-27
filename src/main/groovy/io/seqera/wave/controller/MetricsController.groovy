@@ -18,7 +18,7 @@
 
 package io.seqera.wave.controller
 
-import javax.annotation.Nullable
+import io.micronaut.core.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j

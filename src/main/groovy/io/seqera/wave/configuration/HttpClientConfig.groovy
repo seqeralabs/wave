@@ -20,7 +20,7 @@ package io.seqera.wave.configuration
 
 import java.net.Authenticator
 import java.time.Duration
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j

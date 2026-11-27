@@ -21,7 +21,7 @@ package io.seqera.wave.service.k8s
 import java.nio.file.Path
 import java.time.Duration
 import java.util.regex.Pattern
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -230,7 +230,7 @@ class K8sServiceImpl implements K8sService {
      * @return A {@link V1VolumeMount} representing the mount path for the build config
      */
     protected V1VolumeMount mountBuildStorage(Path workDir, String storageMountPath, boolean readOnly) {
-        assert workDir, "K8s mount build storage is mandatory"
+        assert workDir != null, "K8s mount build storage is mandatory"
 
         final vol = new V1VolumeMount()
                 .name('build-data')
@@ -304,7 +304,7 @@ class K8sServiceImpl implements K8sService {
         final volumes = new ArrayList<V1Volume>(5)
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
-        if( credsFile ){
+        if( credsFile != null ) {
             if( !singularity ) {
                 mounts.add(0, mountHostPath(credsFile, storageMountPath, '/home/user/.docker/config.json'))
             }
@@ -543,7 +543,7 @@ class K8sServiceImpl implements K8sService {
         final volumes = new ArrayList<V1Volume>(5)
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
-        if( credsFile ){
+        if( credsFile != null ) {
             if( !singularity ) {
                 mounts.add(0, mountHostPath(credsFile, storageMountPath, '/home/user/.docker/config.json'))
             }
@@ -617,7 +617,7 @@ class K8sServiceImpl implements K8sService {
             // use 'command' to override the entrypoint of the container
                     .withCommand(args)
                     .withNewSecurityContext().withPrivileged(false).endSecurityContext()
-            if( credsFile) {
+            if( credsFile != null ) {
                 // init container to copy change owner of docker config and remote.yaml
                 spec.withInitContainers(new V1ContainerBuilder()
                         .withName("permissions-fix")
@@ -663,7 +663,7 @@ class K8sServiceImpl implements K8sService {
         final volumes = new ArrayList<V1Volume>(5)
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
-        if( credsFile ){
+        if( credsFile != null ) {
             mounts.add(0, mountHostPath(credsFile, storageMountPath, Trivy.CONFIG_MOUNT_PATH))
         }
 
@@ -770,7 +770,7 @@ class K8sServiceImpl implements K8sService {
         final volumes = new ArrayList<V1Volume>(5)
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
-        if( credsFile ){
+        if( credsFile != null ) {
             mounts.add(0, mountHostPath(credsFile, storageMountPath, credsPath))
         }
 

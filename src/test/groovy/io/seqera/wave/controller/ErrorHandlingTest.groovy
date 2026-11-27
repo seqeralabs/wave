@@ -128,6 +128,7 @@ class ErrorHandlingTest extends Specification {
         and: 'no internal details are leaked'
         !error.message.contains('io.seqera')
         !error.message.contains('com.fasterxml.jackson')
+        !error.message.contains('tools.jackson')
     }
 
     def 'sanitizeErrorMessage should handle edge cases'() {

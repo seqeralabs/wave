@@ -44,7 +44,7 @@ class SpillwayRedisRateLimiterTest extends Specification implements RedisTestCon
     Jedis jedis
 
     def setup() {
-        applicationContext = ApplicationContext.run('test', 'redis','rate-limit')
+        applicationContext = ApplicationContext.run('test', 'redis', 'rate-limit', 'rate-limit-test')
         rateLimiter = applicationContext.getBean(SpillwayRateLimiter)
         jedis = new Jedis(redisHostName, redisPort as int)
         jedis.flushAll()

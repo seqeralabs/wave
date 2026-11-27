@@ -33,16 +33,16 @@ class CleanupServiceTest extends Specification {
         when:
         service.cleanupEntry('job:foo')
         then:
-        1 * service.cleanupJob0('foo') >> null
+        1 * service.cleanupJob0('foo') >> { }
 
         when:
         service.cleanupEntry('dir:/some/data/dir')
         then:
-        1 * service.cleanupDir0('/some/data/dir') >> null
+        1 * service.cleanupDir0('/some/data/dir') >> { }
 
         when:
         service.cleanupEntry('scanid:foo:bar')
         then:
-        1 * service.cleanupScanId0('foo:bar') >> null
+        1 * service.cleanupScanId0('foo:bar') >> { }
     }
 }

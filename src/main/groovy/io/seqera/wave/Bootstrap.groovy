@@ -18,7 +18,7 @@
 
 package io.seqera.wave
 
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j

@@ -377,9 +377,9 @@ class ContainerBuildServiceTest extends Specification {
         service.onJobCompletion(job, build, state)
 
         then:
-        1 * scanService.scanOnBuild(_) >> null
+        1 * scanService.scanOnBuild(_)
         and:
-        1 * buildStore.storeBuild(req.targetImage, _) >> null
+        1 * buildStore.storeBuild(req.targetImage, _)
         and:
         1 * proxyService.getImageDigest(_, _) >> 'digest'
         and:
@@ -411,7 +411,7 @@ class ContainerBuildServiceTest extends Specification {
         service.onJobException(job, build, error)
 
         then:
-        1 * buildStore.storeBuild(req.targetImage, _) >> null
+        1 * buildStore.storeBuild(req.targetImage, _)
         and:
         1 * persistenceService.saveBuildAsync(_) >> null
         and:
@@ -440,7 +440,7 @@ class ContainerBuildServiceTest extends Specification {
         service.onJobTimeout(job, build)
 
         then:
-        1 * buildStore.storeBuild(req.targetImage, _) >> null
+        1 * buildStore.storeBuild(req.targetImage, _)
         and:
         1 * persistenceService.saveBuildAsync(_) >> null
         and:

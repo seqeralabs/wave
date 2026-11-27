@@ -18,11 +18,12 @@
 
 package io.seqera.wave.util
 
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonDeserializer
-import com.fasterxml.jackson.databind.JsonNode
 import groovy.transform.CompileStatic
+import tools.jackson.core.JacksonException
+import tools.jackson.core.JsonParser
+import tools.jackson.databind.DeserializationContext
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.ValueDeserializer
 
 /**
  * Custom deserializer for Fusion version strings.
@@ -30,10 +31,10 @@ import groovy.transform.CompileStatic
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @CompileStatic
-class FusionVersionStringDeserializer extends JsonDeserializer<String> {
+class FusionVersionStringDeserializer extends ValueDeserializer<String> {
     @Override
-    String deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-        JsonNode node = p.getCodec().readTree(p);
+    String deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
+        JsonNode node = ctxt.readTree(p)
 
         if (node.isTextual()) {
             return node.asText()

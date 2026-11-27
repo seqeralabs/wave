@@ -82,7 +82,7 @@ class DockerMirrorStrategy extends MirrorStrategy {
                          '--name', name,
                          '-v', "$workDir:$workDir".toString() ]
 
-        if( credsFile ) {
+        if( credsFile != null ) {
             wrapper.add('-v')
             wrapper.add("$credsFile:/tmp/config.json:ro".toString())
 

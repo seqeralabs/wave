@@ -66,6 +66,7 @@ import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
 import reactor.core.publisher.Mono
+import reactor.core.publisher.MonoSink
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
 import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
 /**
@@ -200,7 +201,7 @@ class ViewController {
 
     Map<String,?> renderBuildsView(List<WaveBuildRecord> results) {
         // create template binding
-        final bindingMap = new HashMap<String, ?>(3)
+        final bindingMap = new HashMap<String, Object>(3)
         if( results ) {
             bindingMap.put("build_image", results[0].targetImage)
             bindingMap.put("build_format", results[0].format?.render() ?: 'Docker')
@@ -343,7 +344,7 @@ class ViewController {
         final resp = httpClient.retrieve(post, SubmitContainerTokenResponse)
 
         // Use Mono to handle the Publisher and create a Publisher<HttpResponse>
-        return Mono.create { sink ->
+        return Mono.<HttpResponse>create { MonoSink<HttpResponse> sink ->
             resp.subscribe(new Subscriber<SubmitContainerTokenResponse>() {
 
                 @Override
@@ -419,7 +420,7 @@ class ViewController {
 
     Map<String,?> renderScansView(List<WaveScanRecord> results) {
         // create template binding
-        final bindingMap = new HashMap<String, ?>(3)
+        final bindingMap = new HashMap<String, Object>(3)
         if( results ) {
             bindingMap.put("scan_container_image", results[0].containerImage)
             final binding = new ArrayList<Map<String,String>>()

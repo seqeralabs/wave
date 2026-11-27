@@ -21,7 +21,7 @@ package io.seqera.wave.service.mail.impl
 import java.time.Instant
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j

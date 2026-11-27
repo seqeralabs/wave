@@ -100,7 +100,7 @@ class MirrorRequest {
     static MirrorRequest create(String sourceImage, String targetImage, String digest, ContainerPlatform platform, Path workspace, String authJson, String scanId, Instant ts, String offsetId, PlatformId identity, String visibility = null) {
         assert sourceImage, "Argument 'sourceImage' cannot be null"
         assert targetImage, "Argument 'targetImage' cannot be empty"
-        assert workspace, "Argument 'workspace' cannot be null"
+        assert workspace != null, "Argument 'workspace' cannot be null"
         assert digest, "Argument 'digest' cannot be empty"
 
         final mirrorId = ID_PREFIX + LongRndKey.rndHex()

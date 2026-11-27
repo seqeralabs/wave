@@ -199,7 +199,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
                 Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             }
             // save remote files for singularity
-            if( configFile && req.formatSingularity()) {
+            if( configFile != null && req.formatSingularity()) {
                 final remoteFile = req.workDir.resolve('singularity-remote.yaml')
                 final content = RegHelper.singularityRemoteFile(req.targetImage)
                 Files.write(remoteFile, content.bytes, CREATE, WRITE, TRUNCATE_EXISTING)

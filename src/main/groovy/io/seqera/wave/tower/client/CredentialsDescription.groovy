@@ -34,8 +34,10 @@ class CredentialsDescription implements MoshiSerializable {
     String provider
     String registry
 
+    // NOTE: Micronaut 5 maps Jackson annotations to bean introspection metadata at compile time,
+    // and a private member annotated with @JsonProperty is rejected as a non-accessible property.
     @JsonProperty("keys")
-    private void unpackRegistry(Map<String,Object> keys) {
+    void unpackRegistry(Map<String,Object> keys) {
         if (this.provider == 'container-reg') {
             this.registry = keys?.get("registry") ?: WaveDefault.DOCKER_IO
         } else {
