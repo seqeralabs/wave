@@ -33,6 +33,7 @@ import io.seqera.wave.core.RoutePath
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.proxy.ProxyClient
+import io.seqera.wave.service.security.SsrfProtectionService
 import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -62,6 +63,9 @@ class ManifestAssembler {
 
     @Inject
     private HttpClientConfig httpConfig
+
+    @Inject
+    private SsrfProtectionService ssrfProtection
 
     /**
      * Create and push an OCI Image Index (manifest list) to the registry.
@@ -216,5 +220,6 @@ class ManifestAssembler {
                 .withCredentials(creds)
                 .withLoginService(loginService)
                 .withPushMode(pushMode)
+                .withSsrfProtection(ssrfProtection.enabled)
     }
 }

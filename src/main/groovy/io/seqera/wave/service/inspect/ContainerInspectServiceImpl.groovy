@@ -43,6 +43,7 @@ import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.model.ContainerOrIndexSpec
 import io.seqera.wave.proxy.ProxyClient
+import io.seqera.wave.service.security.SsrfProtectionService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
@@ -85,6 +86,9 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
 
     @Inject
     private HttpClientConfig httpConfig
+
+    @Inject
+    private SsrfProtectionService ssrfProtection
 
     /**
      * {@inheritDoc}
@@ -247,6 +251,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
                 .withRegistry(registry)
                 .withCredentials(creds)
                 .withLoginService(loginService)
+                .withSsrfProtection(ssrfProtection.enabled)
     }
 
     private ConfigSpec fetchConfig0(ContainerPath path, RegistryCredentials creds, ContainerPlatform platform) {
@@ -276,6 +281,9 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
     @Override
     ContainerOrIndexSpec containerOrIndexSpec(String containerImage, @Nullable String arch, @Nullable PlatformId identity) {
         final path = ContainerCoordinates.parse(containerImage)
+
+        // requests may only reference allow-listed registries (when an allowlist is configured)
+        ssrfProtection.checkRegistryAllowed(path.registry)
 
         final creds = credentialsProvider.getCredentials(path, identity)
         log.debug "Inspect credentials for repository: ${containerImage} => $creds"

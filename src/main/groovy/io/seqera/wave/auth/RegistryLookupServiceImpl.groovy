@@ -28,6 +28,7 @@ import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.exception.RegistryForwardException
 import io.seqera.wave.http.HttpClientFactory
+import io.seqera.wave.service.security.SsrfProtectionService
 import io.seqera.util.retry.Retryable
 import jakarta.inject.Inject
 import jakarta.inject.Named
@@ -56,6 +57,9 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
 
     @Inject
     private RegistryLookupCache cache
+
+    @Inject
+    private SsrfProtectionService ssrfProtection
 
     protected RegistryAuth lookup0(URI endpoint) {
         final httpClient = HttpClientFactory.followRedirectsHttpClient()
@@ -93,6 +97,10 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     @Override
     RegistryInfo lookup(String registry) {
         final endpoint = registryEndpoint(registry)
+        // all registry traffic goes through this lookup — validating here refuses loopback,
+        // private, link-local and metadata addresses before any socket is opened, and before
+        // the result can be cached
+        ssrfProtection.checkEndpoint(endpoint)
         final auth = cache.getOrCompute(endpoint.toString(), (k) -> lookup0(endpoint), cache.duration)
         return new RegistryInfo(registry, endpoint, auth)
     }
