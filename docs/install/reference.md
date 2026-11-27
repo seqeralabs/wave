@@ -70,16 +70,16 @@ Configure general Wave application settings.
 
 ## Feature toggles
 
-Each toggle controls which requests Wave accepts. Wave Lite runs with all of them off, which is what the `lite` Micronaut environment applies. Build, mirror, scan, and blob cache run as jobs that exist only outside the `lite` environment, and mirroring and scanning also require `wave.build.enabled`.
+Each toggle controls which requests Wave accepts. Wave Lite runs with all of them off, which is what the `lite` Micronaut environment applies. Build, mirror, scan, and blob cache run as jobs that exist only outside the `lite` environment. Mirroring also requires `wave.build.enabled` whatever the job strategy, and when the `wave.build.k8s` settings are present, `wave.build.enabled: false` prevents Wave from starting at all.
 
 `wave.build.enabled` *(optional)*
-: When `true`, Wave provisions containers with on-demand builds (default: `true`). Freeze, scanning, and mirroring all depend on the build pipeline and are unavailable when this is `false`. If any `wave.build.k8s.*` setting is present, setting this to `false` prevents Wave from starting.
+: When `true`, Wave provisions containers with on-demand builds (default: `true`). Freeze and mirroring depend on the build pipeline and are unavailable when this is `false`, as is scanning of built or mirrored containers. If any `wave.build.k8s.*` setting is present, setting this to `false` prevents Wave from starting.
 
 `wave.mirror.enabled` *(optional)*
 : When `true`, Wave can mirror images into a target repository (default: `true`). Requires `wave.build.enabled`.
 
 `wave.scan.enabled` *(optional)*
-: When `true`, activates vulnerability scanning (default: `false`). Requires `wave.build.enabled` and `wave.scan.reports.path`.
+: When `true`, activates vulnerability scanning (default: `false`). Requires `wave.scan.reports.path`. Scanning a built or mirrored container also requires `wave.build.enabled`; scanning a pass-through container does not.
 
 `wave.blob-cache.enabled` *(optional)*
 : When `true`, Wave caches container layers in object storage (default: `false`). Requires the blob cache storage settings.
