@@ -391,7 +391,7 @@ data:
           path: "s3://<s3-bucket>/wave/build-logs"
         locks:
           path: "s3://<s3-bucket>/wave/build-locks"
-      # Independent toggles. Enable only what you need.
+      # Optional features. They run on the build settings above, so keep build.enabled: true.
       mirror:
         enabled: true
       scan:
