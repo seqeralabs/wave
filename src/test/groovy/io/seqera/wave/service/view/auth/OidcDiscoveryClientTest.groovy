@@ -20,6 +20,9 @@ package io.seqera.wave.service.view.auth
 
 import spock.lang.Specification
 
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+
 /**
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
@@ -29,6 +32,37 @@ class OidcDiscoveryClientTest extends Specification {
 
     private static OidcDiscovery usable() {
         new OidcDiscovery(authorization_endpoint: "$EP/authorize", token_endpoint: "$EP/token")
+    }
+
+    def 'should take the access token from the exchange, and only when there is one' () {
+        given:
+        def reply = Mock(HttpResponse) { statusCode() >> status; body() >> payload }
+        def client = new OidcDiscoveryClient() {
+            @Override protected OidcDiscovery fetch(String endpoint) { usable() }
+            @Override protected HttpResponse<String> post(HttpRequest request) { reply }
+        }
+
+        expect:
+        client.exchangeCode(EP, 'wave', 'secret', 'https://wave.test/view/auth/callback', 'a-code', 'verifier') == token
+
+        where:
+        status | payload                                  || token
+        200    | '{"access_token":"tok","expires_in":60}'  || 'tok'
+        200    | '{"token_type":"Bearer"}'                 || null
+        400    | '{"error":"invalid_grant"}'               || null
+        401    | '{"error":"invalid_client"}'              || null
+        500    | ''                                        || null
+    }
+
+    def 'should answer null when the token endpoint cannot be reached' () {
+        given:
+        def client = new OidcDiscoveryClient() {
+            @Override protected OidcDiscovery fetch(String endpoint) { usable() }
+            @Override protected HttpResponse<String> post(HttpRequest request) { throw new IOException('refused') }
+        }
+
+        expect: 'the viewer gets the refusal page, not a stack trace'
+        client.exchangeCode(EP, 'wave', 'secret', 'https://wave.test/view/auth/callback', 'a-code', 'verifier') == null
     }
 
     def 'should cache a successful discovery' () {

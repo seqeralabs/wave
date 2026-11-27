@@ -85,6 +85,11 @@ class OidcDiscoveryClient {
         return found
     }
 
+    /** The token POST on its own, so a test can stand in for the response, as fetch does */
+    protected HttpResponse<String> post(HttpRequest request) {
+        return tokenHttp.send(request, HttpResponse.BodyHandlers.ofString())
+    }
+
     protected OidcDiscovery fetch(String towerEndpoint) {
         try {
             final uri = URI.create("${towerEndpoint}/.well-known/openid-configuration")
@@ -122,7 +127,7 @@ class OidcDiscoveryClient {
                     .header('Content-Type', 'application/x-www-form-urlencoded')
                     .POST(HttpRequest.BodyPublishers.ofString(body))
                     .build()
-            final resp = tokenHttp.send(req, HttpResponse.BodyHandlers.ofString())
+            final resp = post(req)
             if( resp.statusCode() != 200 ) {
                 // the OAuth error body names the misconfiguration and carries no token
                 log.warn "OIDC token exchange with '$towerEndpoint' returned ${resp.statusCode()} - ${resp.body()?.take(500)}"
