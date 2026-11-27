@@ -43,7 +43,7 @@ class ViewAuthControllerTest extends Specification {
 
     private ViewAuthService auth(PendingSignIn pending, String session=null) {
         Mock(ViewAuthService) {
-            consume(_, _) >> pending
+            _ * consume(_, _) >> pending
             completeSignIn(_, _, _) >> session
             stateCookie(_, _, _) >> { String st, String v, long age ->
                 Cookie.of(ViewAuthService.stateCookieName(st), v).path('/view/auth').maxAge(age) }
@@ -72,6 +72,25 @@ class ViewAuthControllerTest extends Specification {
         message(resp) == 'This sign-in link has expired. Open the page again to retry.'
         and: 'the single-use cookie is cleared whichever way the callback ends'
         resp.getCookie(ViewAuthService.stateCookieName('a-state')).get().maxAge == 0
+    }
+
+    def 'should read and clear only the cookie its own state names' () {
+        given: 'two private pages were opened before either returned'
+        def first = 'aaaaaaaa11'
+        def second = 'bbbbbbbb22'
+        def auth = auth(new PendingSignIn(towerEndpoint: EP, codeVerifier: 'v', returnTo: '/view/builds/bd-1_1'), 'new-session')
+        def request = callbackRequest([
+                (ViewAuthService.stateCookieName(first)): 'hash-of-first',
+                (ViewAuthService.stateCookieName(second)): 'hash-of-second' ])
+
+        when: 'the first sign-in comes back'
+        def resp = controller(auth).callback('a-code', first, null, null, request)
+
+        then: 'its own hash is the one checked'
+        1 * auth.consume(first, 'hash-of-first')
+        and: 'and only its own cookie is cleared, so the second sign-in survives'
+        resp.getCookie(ViewAuthService.stateCookieName(first)).get().maxAge == 0
+        !resp.getCookie(ViewAuthService.stateCookieName(second)).isPresent()
     }
 
     def 'should name the reason when Platform did not complete the sign-in' () {
