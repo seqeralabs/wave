@@ -27,6 +27,7 @@ import groovy.transform.ToString
 import com.fasterxml.jackson.annotation.JsonIgnore
 import io.seqera.wave.api.BuildCompression
 import io.seqera.wave.api.BuildStatusResponse
+import io.seqera.wave.api.Visibility
 import io.seqera.wave.core.ChildRefs
 import io.seqera.wave.service.builder.BuildEntry
 import io.seqera.wave.service.builder.BuildEvent
@@ -67,7 +68,7 @@ class WaveBuildRecord implements Cloneable {
     ChildRefs buildChildIds
     ChildRefs scanChildIds
     @JsonIgnore @PersistOnly RecordOwner owner   // stored, not returned by the API
-    String visibility                            // a Visibility value; null is read as public
+    Visibility visibility                        // null is read as public
 
     Boolean succeeded() {
         return duration != null ? (exitStatus==0) : null

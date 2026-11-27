@@ -24,6 +24,7 @@ import java.time.Instant
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
+import io.seqera.wave.api.Visibility
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import io.seqera.random.LongRndKey
@@ -94,10 +95,10 @@ class MirrorRequest {
      */
     final PlatformId identity
 
-    /** a Visibility value; null is read as public */
-    final String visibility
+    /** null is read as public */
+    final Visibility visibility
 
-    static MirrorRequest create(String sourceImage, String targetImage, String digest, ContainerPlatform platform, Path workspace, String authJson, String scanId, Instant ts, String offsetId, PlatformId identity, String visibility = null) {
+    static MirrorRequest create(String sourceImage, String targetImage, String digest, ContainerPlatform platform, Path workspace, String authJson, String scanId, Instant ts, String offsetId, PlatformId identity, Visibility visibility = null) {
         assert sourceImage, "Argument 'sourceImage' cannot be null"
         assert targetImage, "Argument 'targetImage' cannot be empty"
         assert workspace, "Argument 'workspace' cannot be null"

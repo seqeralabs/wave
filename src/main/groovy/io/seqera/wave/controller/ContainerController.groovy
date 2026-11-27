@@ -381,7 +381,7 @@ class ContainerController {
      * request has an owner and does not target the community repository. Anything else is public
      * silently, never an error: an anonymous {@code private} is ignored so no released client breaks.
      */
-    protected String resolveVisibility(SubmitContainerTokenRequest req, PlatformId identity, String buildRepository) {
+    protected Visibility resolveVisibility(SubmitContainerTokenRequest req, PlatformId identity, String buildRepository) {
         final honoured = Visibility.isPrivate(req.visibility)
                 && RecordOwner.of(identity) != null
                 && !buildConfig.isCommunityRepo(buildRepository)
@@ -389,7 +389,7 @@ class ContainerController {
     }
 
     /** A private request must belong to the workspace it names, or a caller could compute another workspace's private build id */
-    protected void checkWorkspaceAccess(PlatformId identity, String visibility) {
+    protected void checkWorkspaceAccess(PlatformId identity, Visibility visibility) {
         // a public record's owner gates nothing
         if( !Visibility.isPrivate(visibility) )
             return
@@ -584,7 +584,7 @@ class ContainerController {
         String scanId
         ChildRefs scanChildIds = null
         Boolean succeeded
-        String visibility
+        Visibility visibility
         if( req.containerFile && ContainerPlatform.of(req.containerPlatform).isMultiArch() ) {
             if( !buildService ) throw new UnsupportedBuildServiceException()
             final build0 = makeBuildRequest(req, identity, ip)
@@ -765,8 +765,6 @@ class ContainerController {
     }
 
     void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException {
-        if( !Visibility.isValid(req.visibility) )
-            throw new BadRequestException("Invalid value for attribute `visibility`: '$req.visibility' - allowed values are 'public' and 'private'")
         String msg
         //check conda file size
         if( req.condaFile && buildConfig && req.condaFile.length() > buildConfig.maxCondaFileSize )

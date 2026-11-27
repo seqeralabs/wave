@@ -23,6 +23,7 @@ import java.util.function.Supplier
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.http.HttpStatus
+import io.seqera.wave.api.Visibility
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.RecordOwner
 import io.seqera.wave.tower.auth.JwtAuth
@@ -62,7 +63,7 @@ class RecordAccessService {
     private TowerClient towerClient
 
     /** The read path: may the bearer of this token read the record? */
-    Decision check(RecordOwner owner, String visibility, String token) {
+    Decision check(RecordOwner owner, Visibility visibility, String token) {
         if( !AccessRules.isPrivate(owner, visibility) )
             return Decision.ALLOW
         if( !token )

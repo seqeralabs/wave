@@ -180,14 +180,14 @@ public class SubmitContainerTokenRequest implements Cloneable {
      * never to the community repository - in both of those cases it is ignored and the record is
      * public.
      */
-    public String visibility;
+    public Visibility visibility;
 
 
     public SubmitContainerTokenRequest copyWith(Map opts) {
         try {
             final SubmitContainerTokenRequest copy = (SubmitContainerTokenRequest) this.clone();
             if( opts.containsKey("visibility") )
-                copy.visibility = (String)opts.get("visibility");
+                copy.visibility = Visibility.of(opts.get("visibility"));
             if( opts.containsKey("towerAccessToken") )
                 copy.towerAccessToken = (String)opts.get("towerAccessToken");
             if( opts.containsKey("towerRefreshToken") )
@@ -392,7 +392,7 @@ public class SubmitContainerTokenRequest implements Cloneable {
         return this;
     }
 
-    public SubmitContainerTokenRequest withVisibility(String value) {
+    public SubmitContainerTokenRequest withVisibility(Visibility value) {
         this.visibility = value;
         return this;
     }

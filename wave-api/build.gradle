@@ -28,5 +28,8 @@ configurations.configureEach {
 
 dependencies {
     implementation 'com.squareup.moshi:moshi:1.15.2'
+    // compile-only: the annotation names the enum wire values for Jackson, and a client without
+    // Jackson on the classpath ignores it
+    compileOnly 'com.fasterxml.jackson.core:jackson-annotations:2.23'
     implementation 'com.squareup.moshi:moshi-adapters:1.15.2'
 }

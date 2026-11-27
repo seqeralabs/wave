@@ -24,6 +24,7 @@ import spock.lang.Unroll
 
 import java.util.concurrent.ExecutionException
 
+import io.seqera.wave.api.Visibility
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.RecordOwner
@@ -43,10 +44,10 @@ class AccessRulesTest extends Specification {
 
         where:
         OWNER                                          | VISIBILITY | EXPECTED
-        new RecordOwner(towerEndpoint: EP, userId: 1L) | 'private'  | true
-        new RecordOwner(towerEndpoint: EP, userId: 1L) | 'public'   | false
+        new RecordOwner(towerEndpoint: EP, userId: 1L) | Visibility.PRIVATE  | true
+        new RecordOwner(towerEndpoint: EP, userId: 1L) | Visibility.PUBLIC   | false
         new RecordOwner(towerEndpoint: EP, userId: 1L) | null       | false
-        null                                           | 'private'  | false
+        null                                           | Visibility.PRIVATE  | false
     }
 
     def 'should let only its owner read a personal-workspace record' () {
