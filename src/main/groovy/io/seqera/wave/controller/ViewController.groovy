@@ -207,26 +207,25 @@ class ViewController {
         if( decision == RecordAccessService.Decision.ALLOW )
             return null
 
+        // an expired token signs in again, so both decisions offer it before anything is refused
+        final signIn = decision in [RecordAccessService.Decision.REJECTED, RecordAccessService.Decision.UNAUTHORIZED]
+                ? authService.startSignIn(owner.towerEndpoint, returnTo)
+                : null
+        if( signIn )
+            return HttpResponse.seeOther(URI.create(signIn.url)).cookie(authService.stateCookie(signIn))
+
+        refused(owner, decision)
         switch (decision) {
-            case RecordAccessService.Decision.REJECTED:
-                // the token has expired, so sign in again
-            case RecordAccessService.Decision.UNAUTHORIZED:
-                final signIn = authService.startSignIn(owner.towerEndpoint, returnTo)
-                // sending a first-time viewer to sign in is not a refusal, so it is not counted
-                if( signIn )
-                    return HttpResponse.seeOther(URI.create(signIn.url)).cookie(authService.stateCookie(signIn.state, signIn.stateHash, 600))
-                refused(owner, decision)
-                return authError(HttpStatus.UNAUTHORIZED, 'This record belongs to a Seqera Platform workspace, and Wave cannot sign viewers in to it.')
             case RecordAccessService.Decision.FORBIDDEN:
-                refused(owner, decision)
                 return authError(HttpStatus.FORBIDDEN, 'This record belongs to a workspace you do not have access to.')
-            default:
-                refused(owner, decision)
+            case RecordAccessService.Decision.UNAVAILABLE:
                 return authError(HttpStatus.SERVICE_UNAVAILABLE, PLATFORM_UNREACHABLE)
+            default:
+                return authError(HttpStatus.UNAUTHORIZED, 'This record belongs to a Seqera Platform workspace, and Wave cannot sign viewers in to it.')
         }
     }
 
-    /** Counts only a viewer actually turned away: the sign-in redirect would drown that signal */
+    /** Only a viewer actually turned away: counting the sign-in redirect would drown the signal */
     private void refused(RecordOwner owner, RecordAccessService.Decision decision) {
         meterRegistry?.counter('wave.view.refused',
                 'endpoint', authService.known(owner?.towerEndpoint),

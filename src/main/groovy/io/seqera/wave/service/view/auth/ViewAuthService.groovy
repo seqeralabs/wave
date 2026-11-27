@@ -20,6 +20,7 @@ package io.seqera.wave.service.view.auth
 
 import java.security.MessageDigest
 import java.security.SecureRandom
+import java.time.Duration
 import java.util.regex.Pattern
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -48,8 +49,11 @@ class ViewAuthService {
     /** Holds the hash of the state this browser started a sign-in with */
     static final String STATE_COOKIE = 'wave-view-state'
 
-    /** What rnd() emits, and all a state may hold for its name to be safe in a Set-Cookie */
+    /** What rnd() emits; the callback refuses a state outside this set before naming a cookie */
     static final Pattern STATE_CHARS = ~/[A-Za-z0-9_-]{8,}/
+
+    /** How much of the state names its cookie - the pattern's minimum length is this */
+    static private final int NAME_PREFIX = 8
 
     /** The claim marker outlives the entry it consumes, so the state cannot be replayed */
     static private final String CLAIMED = 'claimed/'
@@ -68,6 +72,10 @@ class ViewAuthService {
     @Value('${wave.server.url}')
     private String serverUrl
 
+    /** The cookie outlives nothing the sign-in itself does: the pending entry expires with it */
+    @Value('${wave.view.auth.pending-duration:5m}')
+    private Duration pendingDuration
+
     /** Registered per paired Platform; sign-in is unavailable for any endpoint not listed */
     @Inject
     @Nullable
@@ -83,6 +91,11 @@ class ViewAuthService {
 
     protected String clientSecret(String towerEndpoint) {
         return client(towerEndpoint)?.clientSecret
+    }
+
+    /** The cookie binding a started sign-in to this browser, living exactly as long as it does */
+    Cookie stateCookie(SignInRedirect signIn) {
+        return stateCookie(signIn.state, signIn.stateHash, pendingDuration.toSeconds())
     }
 
     /**
@@ -103,9 +116,9 @@ class ViewAuthService {
      * either returns would otherwise overwrite each other's hash and fail both callbacks.
      */
     static String stateCookieName(String state) {
-        // the callback takes its state from the query string, and the strict cookie encoder throws
-        // on a name holding ';', '=', ',' or a space - a garbled link must not become a 500
-        return state && state ==~ STATE_CHARS ? "${STATE_COOKIE}-${state.take(8)}".toString() : STATE_COOKIE
+        // belt and braces: the callback rejects a state outside STATE_CHARS before it gets here,
+        // and the strict cookie encoder throws on a name holding ';', '=', ',' or a space
+        return state && state ==~ STATE_CHARS ? "${STATE_COOKIE}-${state.take(NAME_PREFIX)}".toString() : STATE_COOKIE
     }
 
     /** A Secure cookie is dropped over plain http, which would loop a dev viewer through sign-in */

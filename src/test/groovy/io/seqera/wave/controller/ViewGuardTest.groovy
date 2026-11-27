@@ -66,8 +66,8 @@ class ViewGuardTest extends Specification {
             startSignIn(_, _) >> new SignInRedirect('https://platform.io/authorize?state=abc', 'hashed', 'abc')
             session(_) >> stored
             secureCookie() >> true
-            stateCookie(_, _, _) >> { String st, String v, long age ->
-                Cookie.of(ViewAuthService.stateCookieName(st), v).path('/view/auth').httpOnly(true).maxAge(age) }
+            stateCookie(_) >> { SignInRedirect r ->
+                Cookie.of(ViewAuthService.stateCookieName(r.state), r.stateHash).path('/view/auth').httpOnly(true).maxAge(300) }
         }
     }
 
