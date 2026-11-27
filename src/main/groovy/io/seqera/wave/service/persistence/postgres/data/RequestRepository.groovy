@@ -28,7 +28,7 @@ import io.micronaut.data.repository.CrudRepository
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @JdbcRepository(dialect = Dialect.POSTGRES)
-interface RequestRepository extends CrudRepository<RequestRow, String> {
+interface RequestRepository extends CrudRepository<RequestRow, String>, RetentionRepository<RequestRow> {
 
     @Query('''
         UPDATE wave_request

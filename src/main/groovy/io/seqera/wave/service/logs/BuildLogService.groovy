@@ -43,4 +43,7 @@ interface BuildLogService {
     String fetchCondaLockString(String buildId)
 
     StreamedFile fetchCondaLockStream(String buildId)
+
+    // missing objects are ignored; a failure throws so the caller can count the orphan it leaves
+    void deleteArtifacts(String buildId)
 }

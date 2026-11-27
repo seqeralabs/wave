@@ -380,6 +380,43 @@ Wave deletes build job resources and work directories after builds complete. Con
 `wave.cleanup.run-interval` *(optional)*
 : Interval between cleanup runs (default: `30s`).
 
+### Data retention
+
+Wave can delete build, container request, mirror and scan records once they pass a configured age, together with the build logs, Conda lock files and scan reports they point at.
+
+:::warning
+Deletion is permanent. Records and objects removed by retention cannot be recovered, and Wave keeps no copy of them elsewhere.
+:::
+
+`wave.retention.enabled` *(optional)*
+: Whether records past their retention period are deleted. When `false`, no record is ever removed (default: `false`).
+
+`wave.retention.build` *(optional)*
+: How long a build record, its build log and its Conda lock file are kept (default: `90d`).
+
+`wave.retention.request` *(optional)*
+: How long a container request record is kept (default: `90d`).
+
+`wave.retention.mirror` *(optional)*
+: How long a mirror record is kept (default: `90d`).
+
+`wave.retention.scan` *(optional)*
+: How long a scan record and its SPDX and CycloneDX reports are kept (default: `5d`).
+  Wave keeps resolving the scan id of a cached build for `wave.scan.id.duration` (default: `7d`).
+  While this period is the shorter of the two, a cached build requested after its scan record is deleted, but before its scan id expires, is scanned again under the same id.
+
+`wave.retention.interval` *(optional)*
+: Interval between retention runs (default: `1h`).
+
+`wave.retention.batch-size` *(optional)*
+: Maximum number of records deleted per batch within a run (default: `1000`).
+
+:::note
+A record type is skipped when the service that owns its objects is disabled, so that the objects are not left behind: build records are kept when `wave.build.enabled` is `false`, and scan records when `wave.scan.enabled` is `false`.
+:::
+
+When Wave deletes a record but the object it points at cannot be removed, the object is left behind and nothing collects it later. Set a lifecycle rule on `wave.build.logs.path`, `wave.build.locks.path` and the scan reports path at the matching retention period plus a margin, as the backstop for those objects.
+
 ### Build process logs
 
 Configure how Wave stores and delivers build logs from containers and Kubernetes pods. You can retrieve these logs later or include them in build completion emails.

@@ -19,15 +19,20 @@
 package io.seqera.wave.service.logs
 
 import spock.lang.Specification
+import spock.lang.TempDir
 import spock.lang.Unroll
+
+import java.nio.file.Path
 
 import io.micronaut.objectstorage.InputStreamMapper
 import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.aws.AwsS3Configuration
 import io.micronaut.objectstorage.aws.AwsS3ObjectStorageEntry
 import io.micronaut.objectstorage.aws.AwsS3Operations
+import io.micronaut.objectstorage.request.UploadRequest
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.localfs.LocalStorageOperations
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.test.AwsS3TestContainer
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
@@ -42,6 +47,35 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 class BuildLogsServiceTest extends Specification implements AwsS3TestContainer {
+
+    @TempDir
+    Path tempDir
+
+    def 'should delete the log and the conda lock of a build' () {
+        given:
+        def storage = new LocalStorageOperations(tempDir)
+        def service = new BuildLogServiceImpl(logsStoreOps: storage, locksStoreOps: storage, buildConfig: new BuildConfig())
+        and:
+        storage.upload(UploadRequest.fromBytes('the log'.bytes, service.logKey('bd-1')))
+        storage.upload(UploadRequest.fromBytes('the lock'.bytes, service.condaLockKey('bd-1')))
+
+        expect:
+        storage.exists(service.logKey('bd-1'))
+        storage.exists(service.condaLockKey('bd-1'))
+
+        when:
+        service.deleteArtifacts('bd-1')
+
+        then: 'both objects go, under the same keys the upload path writes'
+        !storage.exists(service.logKey('bd-1'))
+        !storage.exists(service.condaLockKey('bd-1'))
+
+        when: 'a build that never stored either of them'
+        service.deleteArtifacts('bd-2')
+
+        then:
+        noExceptionThrown()
+    }
 
     @Unroll
     def 'should make log key name' () {

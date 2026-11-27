@@ -28,7 +28,7 @@ import io.micronaut.data.repository.CrudRepository
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @JdbcRepository(dialect = Dialect.POSTGRES)
-interface ScanRepository extends CrudRepository<ScanRow, String> {
+interface ScanRepository extends CrudRepository<ScanRow, String>, RetentionRepository<ScanRow> {
 
     /**
      * Find all scan records for the given scanId or a partial ID.

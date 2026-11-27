@@ -31,7 +31,7 @@ import io.seqera.wave.service.mirror.MirrorResult
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @JdbcRepository(dialect = Dialect.POSTGRES)
-interface MirrorRepository extends CrudRepository<MirrorRow, String> {
+interface MirrorRepository extends CrudRepository<MirrorRow, String>, RetentionRepository<MirrorRow> {
 
     @Nullable
     @Query('''

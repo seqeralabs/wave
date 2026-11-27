@@ -27,6 +27,7 @@ import io.micronaut.context.annotation.Secondary
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.mirror.MirrorResult
 import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.persistence.RecordType
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
@@ -154,6 +155,17 @@ class LocalPersistenceService implements PersistenceService {
     CompletableFuture<Void> saveMirrorResultAsync(MirrorResult mirror) {
         mirrorStore.put(mirror.mirrorId, mirror)
         CompletableFuture.<Void>completedFuture(null)
+    }
+
+    // this store is in-memory and lives only as long as the process, so it has nothing to retain
+    @Override
+    List<String> findIdsOlderThan(RecordType type, Instant before, int limit) {
+        return List.<String>of()
+    }
+
+    @Override
+    long deleteByIds(RecordType type, Collection<String> ids) {
+        return 0
     }
 
 }

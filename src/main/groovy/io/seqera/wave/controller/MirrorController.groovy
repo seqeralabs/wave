@@ -61,7 +61,7 @@ class MirrorController {
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     @Get("/v1alpha1/mirrors/{mirrorId}/logs")
     HttpResponse<String> getScanLog(String mirrorId){
-        final logs = mirrorService.getMirrorResult(mirrorId).logs
+        final logs = mirrorService.getMirrorResult(mirrorId)?.logs
         return logs
                 ? (HttpResponse.ok(logs)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=${mirrorId}.log"))

@@ -50,4 +50,7 @@ interface ContainerScanService {
 
     StreamedFile fetchReportStream(String scanId, ScanType type)
 
+    // missing objects are ignored; a failure throws so the caller can count the orphan it leaves
+    void deleteReports(String scanId)
+
 }
