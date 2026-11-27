@@ -22,6 +22,7 @@ import spock.lang.Specification
 
 import java.time.Instant
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.cookie.Cookie
 import io.micronaut.views.ModelAndView
@@ -107,6 +108,30 @@ class ViewGuardTest extends Specification {
         1 * auth.forget('sess-1', _, OWNER.towerEndpoint)
         and:
         resp.status() == HttpStatus.SEE_OTHER
+    }
+
+    def 'should count only the refusals, with a token Platform rejected among them' () {
+        given:
+        def registry = new SimpleMeterRegistry()
+        def auth = signsIn(true)
+        auth.known(_) >> 'platform-io'
+        def ctl = new ViewController(
+                accessService: Mock(RecordAccessService) { check(_, _, _) >> decision },
+                authService: auth,
+                meterRegistry: registry )
+
+        when:
+        ctl.guard(OWNER, 'private', 'sess-1', RETURN_TO)
+
+        then: 'a first visit sent to sign in is not a refusal; a rejected token is, though it also redirects'
+        registry.find('wave.view.refused').tag('outcome', decision.toString()).counter()?.count() == counted
+
+        where:
+        decision             || counted
+        Decision.UNAUTHORIZED || null
+        Decision.REJECTED     || 1d
+        Decision.FORBIDDEN    || 1d
+        Decision.UNAVAILABLE  || 1d
     }
 
     def 'should show the 403 page to a viewer outside the workspace' () {

@@ -211,10 +211,13 @@ class ViewController {
         final signIn = decision in [RecordAccessService.Decision.REJECTED, RecordAccessService.Decision.UNAUTHORIZED]
                 ? authService.startSignIn(owner.towerEndpoint, returnTo)
                 : null
+        // a first visit sent to sign in is not a refusal, but a token Platform refused is: a
+        // sign-in loop would show up here and nowhere else
+        if( !signIn || decision == RecordAccessService.Decision.REJECTED )
+            refused(owner, decision)
         if( signIn )
             return HttpResponse.seeOther(URI.create(signIn.url)).cookie(authService.stateCookie(signIn))
 
-        refused(owner, decision)
         switch (decision) {
             case RecordAccessService.Decision.FORBIDDEN:
                 return authError(HttpStatus.FORBIDDEN, 'This record belongs to a workspace you do not have access to.')
@@ -225,7 +228,7 @@ class ViewController {
         }
     }
 
-    /** Only a viewer actually turned away: counting the sign-in redirect would drown the signal */
+    /** Not the ordinary first visit: counting that redirect would drown the signal */
     private void refused(RecordOwner owner, RecordAccessService.Decision decision) {
         meterRegistry?.counter('wave.view.refused',
                 'endpoint', authService.known(owner?.towerEndpoint),
