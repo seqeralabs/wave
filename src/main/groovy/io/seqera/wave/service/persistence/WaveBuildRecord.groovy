@@ -67,7 +67,7 @@ class WaveBuildRecord implements Cloneable {
     ChildRefs buildChildIds
     ChildRefs scanChildIds
     @JsonIgnore @PersistOnly RecordOwner owner   // stored, not returned by the API
-    String visibility                            // a Visibility value
+    String visibility                            // a Visibility value; null is read as public
 
     Boolean succeeded() {
         return duration != null ? (exitStatus==0) : null
