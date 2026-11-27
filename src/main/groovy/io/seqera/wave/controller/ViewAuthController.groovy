@@ -51,6 +51,8 @@ import jakarta.inject.Inject
 @CompileStatic
 class ViewAuthController {
 
+    static private final String EXPIRED = 'This sign-in link has expired. Open the page again to retry.'
+
     @Inject
     private ViewAuthService authService
 
@@ -62,6 +64,9 @@ class ViewAuthController {
                              @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId,
                              HttpRequest<?> request)
     {
+        // a state this never issued: refuse it before it names a cookie to read or to clear
+        if( !state || !(state ==~ ViewAuthService.STATE_CHARS) )
+            return ViewController.authError(HttpStatus.UNAUTHORIZED, EXPIRED)
         // read by name, not @CookieValue: the name depends on the state this callback carries
         final stateHash = request.cookies.findCookie(ViewAuthService.stateCookieName(state))
                 .map(Cookie::getValue)
@@ -73,7 +78,7 @@ class ViewAuthController {
         // a state this browser did not start, already used, or expired
         final pending = authService.consume(state, stateHash)
         if( !pending )
-            return ViewController.authError(HttpStatus.UNAUTHORIZED, 'This sign-in link has expired. Open the page again to retry.')
+            return ViewController.authError(HttpStatus.UNAUTHORIZED, EXPIRED)
 
         // the viewer cancelled at Platform, or Platform refused: not an expired link
         if( error )

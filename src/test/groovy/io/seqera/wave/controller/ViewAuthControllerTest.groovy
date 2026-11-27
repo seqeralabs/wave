@@ -23,7 +23,8 @@ import spock.lang.Specification
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.cookie.Cookie
-import io.micronaut.http.cookie.Cookies
+import io.micronaut.http.HttpMethod
+import io.micronaut.http.simple.SimpleHttpRequest
 import io.micronaut.views.ModelAndView
 import io.seqera.wave.service.view.auth.PendingSignIn
 import io.seqera.wave.service.view.auth.ViewAuthService
@@ -36,6 +37,8 @@ import io.seqera.wave.service.view.auth.ViewAuthService
 class ViewAuthControllerTest extends Specification {
 
     static final String EP = 'https://platform.io/api'
+
+    static final String VALID_STATE = 'ZmFrZXN0YXRl0123'
 
     private ViewAuthController controller(ViewAuthService auth) {
         new ViewAuthController(authService: auth)
@@ -55,23 +58,22 @@ class ViewAuthControllerTest extends Specification {
         return ((resp.body() as ModelAndView).model.get() as Map).error_message
     }
 
-    /** A server-side request: the client-side HttpRequest.GET cannot carry cookies */
-    private HttpRequest<?> callbackRequest(Map<String,String> cookies=[:]) {
-        final jar = Mock(Cookies) {
-            findCookie(_) >> { String name -> Optional.ofNullable(cookies.get(name)).map(v -> Cookie.of(name, v as String)) }
-        }
-        return Mock(HttpRequest) { getCookies() >> jar }
+    /** HttpRequest.GET builds a client request, whose getCookies() is not implemented */
+    private static HttpRequest<?> callbackRequest(Map<String,String> cookies=[:]) {
+        final request = new SimpleHttpRequest(HttpMethod.GET, '/view/auth/callback', null)
+        cookies.each { name, value -> request.cookie(Cookie.of(name, value)) }
+        return request
     }
 
     def 'should refuse a state this browser did not start' () {
         when: 'no pending sign-in matches the state and its cookie'
-        def resp = controller(auth(null)).callback('a-code', 'a-state', null, null, callbackRequest())
+        def resp = controller(auth(null)).callback('a-code', VALID_STATE, null, null, callbackRequest())
 
         then:
         resp.status() == HttpStatus.UNAUTHORIZED
         message(resp) == 'This sign-in link has expired. Open the page again to retry.'
         and: 'the single-use cookie is cleared whichever way the callback ends'
-        resp.getCookie(ViewAuthService.stateCookieName('a-state')).get().maxAge == 0
+        resp.getCookie(ViewAuthService.stateCookieName(VALID_STATE)).get().maxAge == 0
     }
 
     def 'should read and clear only the cookie its own state names' () {
@@ -93,12 +95,25 @@ class ViewAuthControllerTest extends Specification {
         !resp.getCookie(ViewAuthService.stateCookieName(second)).isPresent()
     }
 
+    def 'should refuse a state this never issued, without reading or clearing any cookie' () {
+        when: 'a hand-made link, whose state the strict cookie encoder would reject as a name'
+        def resp = controller(auth(null)).callback('a-code', state, null, null, callbackRequest())
+
+        then: 'the page says the link expired, and no Set-Cookie is emitted at all'
+        resp.status() == HttpStatus.UNAUTHORIZED
+        message(resp) == 'This sign-in link has expired. Open the page again to retry.'
+        resp.getCookies().isEmpty()
+
+        where:
+        state << ['a;b', 'a=b', 'a,b', 'a b', 'short', '', null]
+    }
+
     def 'should name the reason when Platform did not complete the sign-in' () {
         given: 'a state this browser did start'
         def pending = new PendingSignIn(towerEndpoint: EP, codeVerifier: 'v', returnTo: '/view/builds/bd-1_1')
 
         when: 'the viewer refused consent at Platform'
-        def resp = controller(auth(pending)).callback(null, 'a-state', 'access_denied', null, callbackRequest())
+        def resp = controller(auth(pending)).callback(null, VALID_STATE, 'access_denied', null, callbackRequest())
 
         then: 'not reported as an expired link'
         resp.status() == HttpStatus.UNAUTHORIZED
@@ -112,7 +127,7 @@ class ViewAuthControllerTest extends Specification {
         def pending = new PendingSignIn(towerEndpoint: EP, codeVerifier: 'v', returnTo: '/view/builds/bd-1_1')
 
         when: 'the exchange comes back without a token'
-        def resp = controller(auth(pending, null)).callback('a-code', 'a-state', null, null, callbackRequest())
+        def resp = controller(auth(pending, null)).callback('a-code', VALID_STATE, null, null, callbackRequest())
 
         then:
         resp.status() == HttpStatus.UNAUTHORIZED
@@ -124,7 +139,7 @@ class ViewAuthControllerTest extends Specification {
         def pending = new PendingSignIn(towerEndpoint: EP, codeVerifier: 'v', returnTo: '/view/builds/bd-1_1')
 
         when:
-        def resp = controller(auth(pending, 'new-session')).callback('a-code', 'a-state', null, 'old-session', callbackRequest())
+        def resp = controller(auth(pending, 'new-session')).callback('a-code', VALID_STATE, null, 'old-session', callbackRequest())
 
         then: 'see-other, so a cached redirect cannot pin the browser to a dead state'
         resp.status() == HttpStatus.SEE_OTHER
