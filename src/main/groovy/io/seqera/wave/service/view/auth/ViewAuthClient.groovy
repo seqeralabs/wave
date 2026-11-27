@@ -61,7 +61,12 @@ class ViewAuthClient {
     }
 
     boolean matches(String towerEndpoint) {
-        return endpoint && key(endpoint) == key(towerEndpoint)
+        // the configured spelling is fixed, so it is canonicalised once rather than per lookup
+        if( ownKey == null )
+            ownKey = key(endpoint) ?: ''
+        return ownKey && ownKey == key(towerEndpoint)
     }
+
+    private String ownKey
 
 }
