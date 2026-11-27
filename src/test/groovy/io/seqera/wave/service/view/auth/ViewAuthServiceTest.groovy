@@ -158,6 +158,14 @@ class ViewAuthServiceTest extends Specification {
         ViewAuthService.stateCookieName(null) == ViewAuthService.STATE_COOKIE
     }
 
+    def 'should not build a cookie name from a state the encoder would refuse' () {
+        expect: 'anything outside what rnd() emits falls back, rather than throwing on Set-Cookie'
+        ViewAuthService.stateCookieName(state) == ViewAuthService.STATE_COOKIE
+
+        where:
+        state << ['a;b', 'a=b', 'a,b', 'a b', 'short', '', null, 'aaaaaaaa;rest']
+    }
+
     def 'should return no url when the Platform cannot sign viewers in' () {
         expect: 'no client registered for that endpoint'
         svc(usable(), [:]).startSignIn(EP, '/view/builds/bd-1') == null

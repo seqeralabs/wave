@@ -20,6 +20,7 @@ package io.seqera.wave.service.view.auth
 
 import java.security.MessageDigest
 import java.security.SecureRandom
+import java.util.regex.Pattern
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
@@ -46,6 +47,9 @@ class ViewAuthService {
 
     /** Holds the hash of the state this browser started a sign-in with */
     static final String STATE_COOKIE = 'wave-view-state'
+
+    /** What rnd() emits, and all a state may hold for its name to be safe in a Set-Cookie */
+    static final Pattern STATE_CHARS = ~/[A-Za-z0-9_-]{8,}/
 
     /** The claim marker outlives the entry it consumes, so the state cannot be replayed */
     static private final String CLAIMED = 'claimed/'
@@ -99,7 +103,9 @@ class ViewAuthService {
      * either returns would otherwise overwrite each other's hash and fail both callbacks.
      */
     static String stateCookieName(String state) {
-        return state ? "${STATE_COOKIE}-${state.take(8)}".toString() : STATE_COOKIE
+        // the callback takes its state from the query string, and the strict cookie encoder throws
+        // on a name holding ';', '=', ',' or a space - a garbled link must not become a 500
+        return state && state ==~ STATE_CHARS ? "${STATE_COOKIE}-${state.take(8)}".toString() : STATE_COOKIE
     }
 
     /** A Secure cookie is dropped over plain http, which would loop a dev viewer through sign-in */
