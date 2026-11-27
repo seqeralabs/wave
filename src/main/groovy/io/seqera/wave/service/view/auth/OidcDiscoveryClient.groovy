@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.service.pairing.PairingEndpoint
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Singleton
@@ -72,16 +73,21 @@ class OidcDiscoveryClient {
         return params.collect { k, v -> "${k}=${URLEncoder.encode(v.toString(), 'UTF-8')}" }.join('&')
     }
 
+    /**
+     * The record keeps the endpoint spelling its submitter sent, so the canonical form is taken
+     * here: a trailing slash would otherwise double in the discovery path and answer 404.
+     */
     OidcDiscovery discover(String towerEndpoint) {
-        if( !towerEndpoint )
+        final endpoint = PairingEndpoint.normalise(towerEndpoint)
+        if( !endpoint )
             return null
-        final hit = cache.get(towerEndpoint)
+        final hit = cache.get(endpoint)
         if( hit != null && System.currentTimeMillis() < hit.expiresAt )
             return hit.value
         // deliberately not computeIfAbsent: it would hold the bin lock across the fetch
-        final found = fetch(towerEndpoint)
+        final found = fetch(endpoint)
         final ttl = found ? SUCCESS_TTL_MILLIS : FAILURE_TTL_MILLIS
-        cache.put(towerEndpoint, new Cached(found, System.currentTimeMillis() + ttl))
+        cache.put(endpoint, new Cached(found, System.currentTimeMillis() + ttl))
         return found
     }
 

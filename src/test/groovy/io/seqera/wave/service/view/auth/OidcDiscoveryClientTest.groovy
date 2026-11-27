@@ -120,6 +120,40 @@ class OidcDiscoveryClientTest extends Specification {
         calls == 1
     }
 
+    def 'should fetch the discovery document from the canonical endpoint' () {
+        given: 'a record keeps whatever spelling its submitter sent'
+        def seen = []
+        def client = new OidcDiscoveryClient() {
+            @Override protected OidcDiscovery fetch(String endpoint) { seen << endpoint; usable() }
+        }
+
+        when:
+        def found = client.discover(spelling)
+
+        then: 'the path is the one Platform serves, not one with a doubled or upper-case segment'
+        found == usable()
+        seen == [EP]
+
+        where:
+        spelling << [EP, "$EP/", 'https://PLATFORM.io/api', 'HTTPS://platform.io/api', 'https://platform.io:443/api']
+    }
+
+    def 'should share one cached document across the spellings of a single Platform' () {
+        given:
+        int calls = 0
+        def client = new OidcDiscoveryClient() {
+            @Override protected OidcDiscovery fetch(String endpoint) { calls++; usable() }
+        }
+
+        when:
+        client.discover(EP)
+        client.discover("$EP/")
+        client.discover('https://PLATFORM.io/api')
+
+        then: 'one Platform is asked once, however its records spell it'
+        calls == 1
+    }
+
     /** Ages the cached entry out, rather than sleeping for the real failure TTL */
     private static void expire(OidcDiscoveryClient client, String endpoint) {
         final f = OidcDiscoveryClient.getDeclaredField('cache')
