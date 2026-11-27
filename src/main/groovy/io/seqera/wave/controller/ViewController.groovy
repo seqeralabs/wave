@@ -27,7 +27,11 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpRequest
+import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.http.HttpResponse
+import io.micronaut.http.MutableHttpResponse
+import io.micronaut.http.cookie.SameSite
+import io.micronaut.http.cookie.Cookie
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
@@ -38,11 +42,15 @@ import io.micronaut.http.client.annotation.Client
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.http.annotation.CookieValue
+import io.micronaut.http.annotation.Produces
+import io.micronaut.http.MediaType
+import io.micronaut.http.HttpHeaders
+import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.http.HttpStatus
-import io.seqera.wave.exception.UnauthorizedException
+import io.seqera.wave.service.access.AccessRules
 import io.seqera.wave.service.access.RecordAccessService
-import io.seqera.wave.service.view.auth.RefusedViewCounter
 import io.seqera.wave.service.view.auth.ViewAuthService
+import io.seqera.wave.service.view.auth.ViewSession
 import io.seqera.wave.tower.RecordOwner
 import io.micronaut.views.ModelAndView
 import io.micronaut.views.View
@@ -125,21 +133,20 @@ class ViewController {
 
     @Inject
     @Nullable
-    private RefusedViewCounter refusedViews
+    private MeterRegistry meterRegistry
 
-    @View("mirror-view")
     @Get('/mirrors/{mirrorId}')
     HttpResponse viewMirror(String mirrorId, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
         if( !mirrorService )
             throw new UnsupportedMirrorServiceException()
         final result = mirrorService.getMirrorResult(mirrorId)
         if( !result ){
-            return HttpResponse.ok(["error_message": "Unknown container mirror id '$mirrorId'"])
+            return HttpResponse.ok(new ModelAndView("mirror-view", ["error_message": "Unknown container mirror id '$mirrorId'"]))
         }
         final denied = guard(result.owner, result.visibility, sessionId, "/view/mirrors/$mirrorId")
         if( denied )
             return denied
-        return HttpResponse.ok(renderMirrorView(result))
+        return HttpResponse.ok(new ModelAndView("mirror-view", renderMirrorView(result)))
     }
 
     protected Map<String,Object> renderMirrorView(MirrorResult result) {
@@ -151,7 +158,7 @@ class ViewController {
         binding.mirror_in_progress = result.exitCode == null
         binding.mirror_exitcode = result.exitCode ?: null
         binding.mirror_logs = result.exitCode ? result.logs : null
-        binding.mirror_log_url = result.logs ? "$serverUrl/v1alpha1/mirrors/${result.mirrorId}/logs" : null
+        binding.mirror_log_url = result.logs ? "$serverUrl/view/mirrors/${result.mirrorId}/logs" : null
         binding.mirror_time = formatTimestamp(result.creationTime, result.offsetId) ?: '-'
         binding.mirror_duration = formatDuration(result.duration) ?: '-'
         binding.mirror_source_image = result.sourceImage
@@ -165,46 +172,67 @@ class ViewController {
     }
 
 
-    /** A rejected token is no longer any use: drop it so the viewer is sent to sign in again */
-    private RecordAccessService.Decision decide(RecordOwner owner, String visibility, String sessionId) {
-        try {
-            return accessService.check(owner, visibility, authService.tokenFor(sessionId, owner?.towerEndpoint))
-        }
-        catch( UnauthorizedException e ) {
-            authService.forget(sessionId, owner?.towerEndpoint)
-            return RecordAccessService.Decision.UNAUTHORIZED
-        }
+    /** @param session the viewer's session, read once by the caller and reused for the refusal */
+    private RecordAccessService.Decision decide(RecordOwner owner, String visibility, String sessionId, ViewSession session) {
+        final decision = accessService.check(owner, visibility, session?.tokenFor(owner?.towerEndpoint))
+        // a rejected token is no longer any use: drop it so the viewer is sent to sign in again
+        if( decision == RecordAccessService.Decision.REJECTED )
+            authService.forget(sessionId, session, owner?.towerEndpoint)
+        return decision
     }
 
     /** Lists never start a sign-in: they use a session only if the viewer already has one */
-    protected boolean isReadable(RecordOwner owner, String visibility, String sessionId) {
-        return decide(owner, visibility, sessionId) == RecordAccessService.Decision.ALLOW
+    protected RecordAccessService.Decision readDecision(RecordOwner owner, String visibility, String sessionId) {
+        // a public row admits everyone, so a list of them reads the session store not at all
+        if( !AccessRules.isPrivate(owner, visibility) )
+            return RecordAccessService.Decision.ALLOW
+        return decide(owner, visibility, sessionId, authService.session(sessionId))
     }
 
-    static protected HttpResponse<?> authError(HttpStatus status, String message, String platformUrl=null) {
-        final model = new HashMap<String,Object>(2)
-        model.error_message = message
-        if( platformUrl ) model.platform_url = platformUrl
-        return HttpResponse.status(status).body(new ModelAndView("view-auth-error", model))
+    static protected MutableHttpResponse<?> authError(HttpStatus status, String message, String retryTo=null) {
+        // a link back to the page, not to owner.towerEndpoint: that is the API address, and it is
+        // whatever endpoint the record's submitter paired
+        return HttpResponse.status(status).body(
+                new ModelAndView("view-auth-error", [error_message: message, retry_url: retryTo]))
     }
+
+    static final private String PLATFORM_UNREACHABLE =
+            'Seqera Platform could not be reached to check access. Try again shortly.'
 
     protected HttpResponse<?> guard(RecordOwner owner, String visibility, String sessionId, String returnTo) {
-        final decision = decide(owner, visibility, sessionId)
+        if( !AccessRules.isPrivate(owner, visibility) )
+            return null
+        final session = authService.session(sessionId)
+        final decision = decide(owner, visibility, sessionId, session)
         if( decision == RecordAccessService.Decision.ALLOW )
             return null
 
-        refusedViews?.increment(authService.known(owner?.towerEndpoint), decision.toString())
+        // an expired token signs in again, so both decisions offer it before anything is refused
+        final signIn = decision in [RecordAccessService.Decision.REJECTED, RecordAccessService.Decision.UNAUTHORIZED]
+                ? authService.startSignIn(owner.towerEndpoint, returnTo)
+                : null
+        // a first visit sent to sign in is not a refusal, but a token Platform refused is: a
+        // sign-in loop would show up here and nowhere else
+        if( !signIn || decision == RecordAccessService.Decision.REJECTED )
+            refused(owner, decision)
+        if( signIn )
+            return HttpResponse.seeOther(URI.create(signIn.url)).cookie(authService.stateCookie(signIn))
+
         switch (decision) {
-            case RecordAccessService.Decision.UNAUTHORIZED:
-                final url = authService.startSignIn(owner.towerEndpoint, returnTo)
-                return url
-                        ? HttpResponse.seeOther(URI.create(url))
-                        : authError(HttpStatus.UNAUTHORIZED, 'This record belongs to a Seqera Platform workspace. Sign in to Seqera Platform to view it.', owner.towerEndpoint)
             case RecordAccessService.Decision.FORBIDDEN:
                 return authError(HttpStatus.FORBIDDEN, 'This record belongs to a workspace you do not have access to.')
+            case RecordAccessService.Decision.UNAVAILABLE:
+                return authError(HttpStatus.SERVICE_UNAVAILABLE, PLATFORM_UNREACHABLE)
             default:
-                return authError(HttpStatus.SERVICE_UNAVAILABLE, 'Seqera Platform could not be reached to check access. Try again shortly.')
+                return authError(HttpStatus.UNAUTHORIZED, 'This record belongs to a Seqera Platform workspace, and Wave cannot sign viewers in to it.')
         }
+    }
+
+    /** Not the ordinary first visit: counting that redirect would drown the signal */
+    private void refused(RecordOwner owner, RecordAccessService.Decision decision) {
+        meterRegistry?.counter('wave.view.refused',
+                'endpoint', authService.known(owner?.towerEndpoint),
+                'outcome', decision.toString())?.increment()
     }
 
     @Get('/builds/{buildId}')
@@ -225,8 +253,17 @@ class ViewController {
                 log.debug "Found not build with id: $buildId"
                 return HttpResponse.ok(new ModelAndView("build-list", ["error_message": "Unknown build id '$buildId'"]))
             }
-            builds = builds.findAll { isReadable(it.owner, it.visibility, sessionId) }
+            boolean unavailable = false
+            builds = builds.findAll {
+                final decision = readDecision(it.owner, it.visibility, sessionId)
+                if( decision == RecordAccessService.Decision.UNAVAILABLE )
+                    unavailable = true
+                return decision == RecordAccessService.Decision.ALLOW
+            }
             if( !builds ) {
+                // a row Platform could not be asked about is not a row that is absent
+                if( unavailable )
+                    return authError(HttpStatus.SERVICE_UNAVAILABLE, PLATFORM_UNREACHABLE)
                 return HttpResponse.ok(new ModelAndView("build-list", ["error_message": "No build visible for id '$buildId'"]))
             }
             if( builds.size()==1 ) {
@@ -335,18 +372,17 @@ class ViewController {
             final buildLog = buildLogService.fetchLogString(result.buildId)
             binding.build_log_data = buildLog?.data
             binding.build_log_truncated = buildLog?.truncated
-            binding.build_log_url = "$serverUrl/v1alpha1/builds/${result.buildId}/logs"
+            binding.build_log_url = "$serverUrl/view/builds/${result.buildId}/logs"
         }
         //add conda lock file when available
         if( buildLogService && result.condaFile ) {
             binding.build_conda_lock_data = buildLogService.fetchCondaLockString(result.buildId)
-            binding.build_conda_lock_url = "$serverUrl/v1alpha1/builds/${result.buildId}/condalock"
+            binding.build_conda_lock_url = "$serverUrl/view/builds/${result.buildId}/condalock"
         }
         // result the main object
         return binding
       }
 
-    @View("container-view")
     @Get('/containers/{token}')
     HttpResponse<?> viewContainer(String token, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
         // Go through ContainerRequestService (not PersistenceService directly) so the view sees the
@@ -397,7 +433,7 @@ class ViewController {
         binding.mirror_url =  data.mirror ? "$serverUrl/view/mirrors/${data.buildId}" : null
         binding.mirror_cached = data.mirror ? !data.buildNew : null
         binding.server_url = serverUrl
-        return HttpResponse.<Map<String,Object>>ok(binding)
+        return HttpResponse.ok(new ModelAndView("container-view", binding))
     }
 
     /**
@@ -465,8 +501,16 @@ class ViewController {
                 log.debug "Found not scan with id: $scanId"
                 throw new NotFoundException("Unknown container scan id '$scanId'")
             }
-            scans = scans.findAll { isReadable(it.owner, it.visibility, sessionId) }
+            boolean unavailable = false
+            scans = scans.findAll {
+                final decision = readDecision(it.owner, it.visibility, sessionId)
+                if( decision == RecordAccessService.Decision.UNAVAILABLE )
+                    unavailable = true
+                return decision == RecordAccessService.Decision.ALLOW
+            }
             if( !scans ) {
+                if( unavailable )
+                    return authError(HttpStatus.SERVICE_UNAVAILABLE, PLATFORM_UNREACHABLE)
                 return HttpResponse.ok(new ModelAndView("scan-list", ["error_message": "No scan visible for id '$scanId'"]))
             }
             if( scans.size()==1 ) {
@@ -476,27 +520,21 @@ class ViewController {
             else
                 return HttpResponse.ok(new ModelAndView("scan-list", renderScansView(scans)))
         }
-        // a scan inherits its parent's owner, so it is guarded before anything is rendered
+        // read once: re-reading to render would skip the guard when the first read returns null
         final scanRecord = scanService.getScanRecord(scanId)
-        if( scanRecord ) {
-            final denied = guard(scanRecord.owner, scanRecord.visibility, sessionId, "/view/scans/$scanId")
-            if( denied )
-                return denied
-        }
-        final binding = new HashMap(10)
-        try {
-            final result = loadScanRecord(scanId)
-            log.debug "Render scan record=$result"
-            makeScanViewBinding(result, binding)
-        }
-        catch (NotFoundException e){
-            binding.scan_exist = false
-            binding.scan_completed = true
-            binding.error_message = e.getMessage()
-            binding.should_refresh = false
-        }
+        if( !scanRecord )
+            return HttpResponse.ok(new ModelAndView("scan-view",
+                    [scan_exist: false, scan_completed: true, should_refresh: false,
+                     error_message: "No scan report exists with id: $scanId".toString(),
+                     server_url: serverUrl]))
 
-        // return the response
+        // a scan inherits its parent's owner, so it is guarded before anything is rendered
+        final denied = guard(scanRecord.owner, scanRecord.visibility, sessionId, "/view/scans/$scanId")
+        if( denied )
+            return denied
+
+        final binding = new HashMap(10)
+        makeScanViewBinding(scanRecord, binding)
         binding.put('server_url', serverUrl)
         return HttpResponse.ok(new ModelAndView("scan-view", binding))
     }
@@ -543,20 +581,80 @@ class ViewController {
                 : false
     }
 
-    /**
-     * Retrieve a {@link ScanEntry} object for the specified scan ID
-     *
-     * @param scanId The ID of the scan for which load the scan result
-     * @return The {@link ScanEntry} object associated with the specified build ID or throws the exception {@link NotFoundException} otherwise
-     * @throws NotFoundException If the a record for the specified scan ID cannot be found
-     */
-    protected WaveScanRecord loadScanRecord(String scanId) {
-        if( !scanService )
-            throw new UnsupportedScanServiceException()
-        final scanRecord = scanService.getScanRecord(scanId)
-        if( !scanRecord )
-            throw new NotFoundException("No scan report exists with id: ${scanId}")
-        return scanRecord
+
+    // ------------------------------------------------------------------
+    // Record artifacts. These carry the same access check as the page that
+    // links to them, and are served here rather than from /v1 so the read
+    // API stays bearer-only - a browser session must not authenticate it.
+    // ------------------------------------------------------------------
+
+    @Get('/builds/{buildId}/logs')
+    @Produces(MediaType.TEXT_PLAIN)
+    HttpResponse<?> viewBuildLogs(String buildId, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
+        final record = buildService?.getBuildRecord(buildId)
+        if( !record )
+            return HttpResponse.notFound()
+        final denied = guard(record.owner, record.visibility, sessionId, "/view/builds/$buildId")
+        if( denied )
+            return denied
+        final logs = buildLogService?.fetchLogStream(buildId)
+        return logs ? HttpResponse.ok(logs) : HttpResponse.notFound()
+    }
+
+    @Get('/builds/{buildId}/condalock')
+    @Produces(MediaType.TEXT_PLAIN)
+    HttpResponse<?> viewCondaLock(String buildId, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
+        final record = buildService?.getBuildRecord(buildId)
+        if( !record )
+            return HttpResponse.notFound()
+        final denied = guard(record.owner, record.visibility, sessionId, "/view/builds/$buildId")
+        if( denied )
+            return denied
+        final condaLock = buildLogService?.fetchCondaLockStream(buildId)
+        return condaLock ? HttpResponse.ok(condaLock) : HttpResponse.<StreamedFile>notFound()
+    }
+
+    @Get('/mirrors/{mirrorId}/logs')
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    HttpResponse<?> viewMirrorLogs(String mirrorId, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
+        final record = mirrorService?.getMirrorResult(mirrorId)
+        if( !record )
+            return HttpResponse.notFound()
+        final denied = guard(record.owner, record.visibility, sessionId, "/view/mirrors/$mirrorId")
+        if( denied )
+            return denied
+        return record.logs
+                ? HttpResponse.ok(record.logs).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=${mirrorId}.log".toString())
+                : HttpResponse.notFound()
+    }
+
+    @Get('/scans/{scanId}/spdx')
+    @Produces(MediaType.TEXT_PLAIN)
+    HttpResponse<?> viewScanSpdx(String scanId, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
+        final record = scanService?.getScanRecord(scanId)
+        if( !record )
+            return HttpResponse.notFound()
+        final denied = guard(record.owner, record.visibility, sessionId, "/view/scans/$scanId")
+        if( denied )
+            return denied
+        final report = scanService.fetchReportStream(scanId, ScanType.Spdx)
+        return report
+                ? HttpResponse.ok(report).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"spdx-${scanId}.json\"".toString())
+                : HttpResponse.<StreamedFile>notFound()
+    }
+
+    @Get('/scans/{scanId}/logs')
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    HttpResponse<?> viewScanLogs(String scanId, @Nullable @CookieValue(ViewAuthService.COOKIE) String sessionId) {
+        final record = scanService?.getScanRecord(scanId)
+        if( !record )
+            return HttpResponse.notFound()
+        final denied = guard(record.owner, record.visibility, sessionId, "/view/scans/$scanId")
+        if( denied )
+            return denied
+        return record.logs
+                ? HttpResponse.ok(record.logs).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=${scanId}.log".toString())
+                : HttpResponse.notFound()
     }
 
     @View("inspect-view")
@@ -605,9 +703,9 @@ class ViewController {
         binding.scan_failed = result.status == ScanEntry.FAILED
         binding.scan_succeeded = result.status == ScanEntry.SUCCEEDED
         binding.scan_exitcode = result.exitCode
-        binding.scan_sbom_spdx_url = hasSpdx(result) ? "$serverUrl/v1alpha1/scans/${result.id}/spdx" : null
+        binding.scan_sbom_spdx_url = hasSpdx(result) ? "$serverUrl/view/scans/${result.id}/spdx" : null
         binding.scan_logs = result.logs
-        binding.scan_log_url = result.logs ? "$serverUrl/v1alpha1/scans/${result.id}/logs" : null
+        binding.scan_log_url = result.logs ? "$serverUrl/view/scans/${result.id}/logs" : null
         // build info
         binding.build_id = result.buildId
         binding.build_url = result.buildId ? "$serverUrl/view/builds/${result.buildId}" : null

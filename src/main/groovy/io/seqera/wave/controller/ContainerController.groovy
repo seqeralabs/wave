@@ -388,14 +388,20 @@ class ContainerController {
         return honoured ? Visibility.PRIVATE : Visibility.PUBLIC
     }
 
-    /** A private request must belong to the workspace it names, or a caller could compute another workspace's private build id */
-    protected void checkWorkspaceAccess(PlatformId identity, String visibility) {
+    /**
+     * A private request must belong to the workspace it names, so one tenant cannot stamp a
+     * record onto another's.
+     *
+     * @return the identity with the workspace's organisation attached, for the record's owner
+     */
+    protected PlatformId checkWorkspaceAccess(PlatformId identity, String visibility) {
         // a public record's owner gates nothing
         if( !Visibility.isPrivate(visibility) )
-            return
+            return identity
         final decision = accessService.memberOf(identity)
         if( decision != RecordAccessService.Decision.ALLOW )
             throw new HttpResponseException(decision.status, AccessRules.refusal(decision, identity))
+        return identity.withOrgId(accessService.orgIdOf(identity))
     }
 
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
@@ -436,7 +442,7 @@ class ContainerController {
         // create a unique digest to identify the build req
         // resolved before the id: a private build hashes its tenant, so the two cannot disagree
         final visibility = resolveVisibility(req, identity, buildRepository)
-        checkWorkspaceAccess(identity, visibility)
+        identity = checkWorkspaceAccess(identity, visibility)
         final tenant = RecordOwner.tenantOf(identity, visibility)
         final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext, containerConfig, tenant)
         final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, nameStrategy)
@@ -444,7 +450,7 @@ class ContainerController {
         // default to async scan for build req for backward compatibility
         final scanMode = req.scanMode!=null ? req.scanMode : ScanMode.async
         // digest is not needed for builds, because they use a unique checksum in the container name
-        final scanId = scanService?.getScanId(targetImage, null, scanMode, req.format)
+        final scanId = scanService?.getScanId(targetImage, null, scanMode, req.format, tenant)
 
         return new BuildRequest(
                 containerId,
@@ -475,10 +481,11 @@ class ContainerController {
             return null
         final multiPlatform = build.platform
         final scanMode = req.scanMode!=null ? req.scanMode : ScanMode.async
+        final tenant = RecordOwner.tenantOf(build.identity, build.visibility)
         final scanIdByPlatform = new LinkedHashMap<String, String>()
         for( ContainerPlatform.Platform p : multiPlatform.platforms ) {
             final platform = p.toString()
-            final id = scanService.getScanId("${build.targetImage}#${platform}", null, scanMode, req.format)
+            final id = scanService.getScanId("${build.targetImage}#${platform}", null, scanMode, req.format, tenant)
             if( id )
                 scanIdByPlatform.put(id, platform)
         }
@@ -601,6 +608,8 @@ class ContainerController {
             scanChildIds = build.scanChildIds
             succeeded = track.succeeded
             visibility = build.visibility
+            // makeBuildRequest attached the org to its own copy of the identity
+            identity = build.identity
             type = ContainerRequest.Type.Build
         }
         else if( req.containerFile ) {
@@ -615,12 +624,16 @@ class ContainerController {
             scanId = build.scanId
             succeeded = track.succeeded
             visibility = build.visibility
+            // makeBuildRequest attached the org to its own copy of the identity
+            identity = build.identity
             type = ContainerRequest.Type.Build
         }
         else if( req.mirror ) {
             if( !mirrorService ) throw new UnsupportedMirrorServiceException()
             final mirror = makeMirrorRequest(req, identity, digest)
             visibility = mirror.visibility
+            // makeMirrorRequest attached the org to its own copy of the identity
+            identity = mirror.identity
             final track = checkMirror(mirror, identity, req.dryRun)
             targetImage = track.targetImage
             targetContent = null
@@ -645,12 +658,16 @@ class ContainerController {
             condaContent = null
             buildId = null
             buildNew = null
-            scanId = scanService?.getScanId(targetImage, digest, req.scanMode, req.format)
+            // no build or mirror on this path, so there is no target repository to check
+            // resolved before the id: a private scan hashes its tenant, so the two cannot disagree
+            visibility = resolveVisibility(req, identity, null)
+            identity = checkWorkspaceAccess(identity, visibility)
+            // the normalised name, so the write and the failure cleanup agree on the key (#1298)
+            scanId = scanService?.getScanId(targetImage, digest, req.scanMode, req.format,
+                    RecordOwner.tenantOf(identity, visibility))
             type = ContainerRequest.Type.Container
             // when there's a scan, return null because the scan status is not known
             succeeded = scanId==null ? true : null
-            // no build or mirror on this path, so there is no target repository to check
-            visibility = resolveVisibility(req, identity, null)
         }
         else
             throw new IllegalStateException("Specify either 'containerImage' or 'containerFile' attribute")
@@ -703,7 +720,11 @@ class ContainerController {
         final configJson = inspectService.credentialsConfigJson("FROM ${request.containerImage}", targetImage, null, identity)
 
         final offset = DataTimeUtils.offsetId(request.timestamp)
-        final scanId = scanService?.getScanId(targetImage, digest, request.scanMode, request.format)
+        // resolved before the id: a private scan hashes its tenant, so the two cannot disagree
+        final visibility = resolveVisibility(request, identity, request.buildRepository)
+        identity = checkWorkspaceAccess(identity, visibility)
+        final scanId = scanService?.getScanId(targetImage, digest, request.scanMode, request.format,
+                RecordOwner.tenantOf(identity, visibility))
 
         return MirrorRequest.create(
                 request.containerImage,
@@ -716,7 +737,7 @@ class ContainerController {
                 Instant.now(),
                 offset,
                 identity,
-                resolveVisibility(request, identity, request.buildRepository)
+                visibility
         )
     }
 

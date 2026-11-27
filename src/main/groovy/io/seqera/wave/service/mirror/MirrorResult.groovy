@@ -56,11 +56,11 @@ class MirrorResult {
     final Long userId
     final String scanId
     final Status status
-    @JsonIgnore @PersistOnly final RecordOwner owner   // stored, not returned by the API
-    final String visibility                            // a Visibility value; null is read as public
     final Duration duration
     final Integer exitCode
     final String logs
+    @JsonIgnore @PersistOnly final RecordOwner owner   // stored, not returned by the API
+    final String visibility                            // a Visibility value
 
     boolean succeeded() {
         status==Status.COMPLETED && exitCode==0
@@ -80,11 +80,11 @@ class MirrorResult {
                 this.userId,
                 this.scanId,
                 Status.COMPLETED,
-                this.owner,
-                this.visibility,
                 Duration.between(this.creationTime, Instant.now()),
                 exitCode,
-                logs
+                logs,
+                this.owner,
+                this.visibility
         )
     }
 
@@ -106,11 +106,11 @@ class MirrorResult {
                 this.userId,
                 this.scanId,
                 this.status,
-                this.owner,
-                this.visibility,
                 this.duration,
                 this.exitCode,
-                this.logs
+                this.logs,
+                this.owner,
+                this.visibility
         )
     }
 
@@ -128,6 +128,9 @@ class MirrorResult {
                 request.identity?.user?.id,
                 request.scanId,
                 Status.PENDING,
+                null,   // duration
+                null,   // exitCode
+                null,   // logs
                 RecordOwner.of(request.identity),
                 request.visibility
         )

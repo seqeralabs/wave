@@ -93,10 +93,18 @@ class TowerClient {
     }
 
     /**
-     * The organisations and workspaces the caller belongs to. Platform allows a caller to list
-     * only their own, so this is safe to call with the caller's token.
+     * The organisations and workspaces the caller belongs to; Platform lists only their own.
+     * The submit path: Wave authenticated this caller via the refreshing path, so the stored
+     * token is used here too, but with the short access-check ttl rather than userInfo's long one.
      */
     ListWorkspacesResponse listWorkspaces(String towerEndpoint, JwtAuth authorization, Long userId) {
+        final uri = listWorkspacesEndpoint(towerEndpoint, userId)
+        final k = RegHelper.sipHash(uri, authorization.key, null, null)
+        return get0(uri, towerEndpoint, authorization, ListWorkspacesResponse, k, accessCheckDuration) as ListWorkspacesResponse
+    }
+
+    /** The read path validates the token as presented, so it takes no newer one from the store */
+    ListWorkspacesResponse listWorkspacesForAccess(String towerEndpoint, JwtAuth authorization, Long userId) {
         return getAsPresented(listWorkspacesEndpoint(towerEndpoint, userId), towerEndpoint, authorization, ListWorkspacesResponse) as ListWorkspacesResponse
     }
 

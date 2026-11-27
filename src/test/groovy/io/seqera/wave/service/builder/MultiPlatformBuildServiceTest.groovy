@@ -176,6 +176,39 @@ class MultiPlatformBuildServiceTest extends Specification {
         1 * jobService.launchMultiBuild(_)
     }
 
+    def 'should carry the template visibility onto the synthetic parent entry'() {
+        given: 'a private multi-arch build'
+        def buildService = Mock(ContainerBuildService)
+        def buildStore = Mock(BuildStateStore)
+        def multiBuildStore = Mock(MultiBuildStateStore)
+        def service = new MultiPlatformBuildService(
+                buildService: buildService,
+                buildStore: buildStore,
+                multiBuildStore: multiBuildStore,
+                manifestAssembler: Mock(ManifestAssembler),
+                jobService: Mock(JobService) )
+        and:
+        def template = BuildRequest.of(
+                containerId: 'abc123',
+                containerFile: 'FROM ubuntu:latest',
+                workspace: Path.of('/tmp'),
+                targetImage: 'docker.io/wave:abc123',
+                identity: TEST_IDENTITY,
+                platform: ContainerPlatform.of('linux/amd64'),
+                format: BuildFormat.DOCKER,
+                maxDuration: Duration.ofMinutes(5),
+                visibility: 'private' )
+        and:
+        buildService.buildImage(_) >> new BuildTrack('bd-amd64_0', 'docker.io/wave:amd64', false, null)
+
+        when:
+        service.buildMultiPlatformImage(template, 'multi123', 'docker.io/wave:multi123', PlatformId.NULL)
+
+        then: 'the parent entry is private too, otherwise its record reads as public'
+        1 * buildStore.storeIfAbsent('docker.io/wave:multi123', { it.request.visibility == 'private' }) >> true
+        1 * multiBuildStore.put('docker.io/wave:multi123', _)
+    }
+
     def 'should assemble manifest and persist record on job completion with success'() {
         given:
         def buildStore = Mock(BuildStateStore)
@@ -514,4 +547,41 @@ class MultiPlatformBuildServiceTest extends Specification {
         result.type == job.type
         result.launchTime != null
     }
+
+    def 'should keep the child builds of two workspaces apart on a private request' () {
+        given:
+        def service = new MultiPlatformBuildService()
+        def template = { PlatformId who, String visibility -> BuildRequest.of(
+                containerId: 'abc123',
+                containerFile: 'FROM ubuntu:latest',
+                workspace: Path.of('/tmp'),
+                targetImage: 'docker.io/wave:abc123',
+                identity: who,
+                visibility: visibility,
+                platform: ContainerPlatform.of('linux/amd64'),
+                cacheRepository: 'docker.io/cache',
+                ip: '10.0.0.1',
+                configJson: '{}',
+                offsetId: '+0',
+                format: BuildFormat.DOCKER,
+                maxDuration: Duration.ofMinutes(5),
+                buildTemplate: null ) }
+        and:
+        def ws10 = new PlatformId(new User(id: 1), 10L, 'tok', 'https://platform.io/api')
+        def ws20 = new PlatformId(new User(id: 1), 20L, 'tok', 'https://platform.io/api')
+        def child = { PlatformId who, String vis ->
+            service.createPlatformRequest(template(who, vis), MultiPlatformBuildService.PLATFORM_AMD64, '-linux-amd64') }
+
+        expect: 'the per-architecture id carries the tenant, so neither workspace reads the other'
+        child(ws10, 'private').targetImage != child(ws20, 'private').targetImage
+        child(ws10, 'private').containerId != child(ws20, 'private').containerId
+
+        and: 'the same workspace twice still shares one child build'
+        child(ws10, 'private').targetImage == child(ws10, 'private').targetImage
+
+        and: 'a public multi-arch build still hashes to the id it did before the tenant existed'
+        child(ws10, null).containerId == 'c342e721ffb1f2a1'
+        child(ws20, null).containerId == 'c342e721ffb1f2a1'
+    }
+
 }

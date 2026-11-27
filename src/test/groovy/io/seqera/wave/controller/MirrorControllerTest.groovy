@@ -152,4 +152,36 @@ class MirrorControllerTest extends Specification {
         and:
         res.body() == "Mirroring failed"
     }
+
+    def "should not return the owner in the mirror record response"() {
+        given:
+        def identity = new PlatformId(new User(id: 100), 200L, 'tok', 'https://api.cloud.seqera.io')
+        def mirrorRequest = MirrorRequest.create(
+                "docker.io/library/nginx:1.24-alpine",
+                "wave.seqera.io/mirror/nginx:1.24-alpine",
+                "sha256:abcd1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd",
+                ContainerPlatform.DEFAULT,
+                Path.of("/tmp/workdir"),
+                "{auth:json}",
+                "scan-123",
+                Instant.now(),
+                "offset-12345",
+                identity
+        )
+        def mirrorResult = MirrorResult.of(mirrorRequest)
+        and:
+        persistenceService.saveMirrorResultAsync(mirrorResult)
+
+        when: 'the record is read back over HTTP, as a client sees it'
+        def res = client.toBlocking().exchange(HttpRequest.GET("/v1alpha1/mirrors/${mirrorRequest.mirrorId}"), String)
+
+        then:
+        res.status.code == 200
+        and: 'the owner is absent from the response'
+        !res.body().contains('"owner"')
+        !res.body().contains('api.cloud.seqera.io')
+        and: 'while the stored record still carries it'
+        mirrorResult.owner != null
+        persistenceService.loadMirrorResult(mirrorRequest.mirrorId).owner == mirrorResult.owner
+    }
 }

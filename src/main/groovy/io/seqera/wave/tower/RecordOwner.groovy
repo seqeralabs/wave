@@ -22,9 +22,8 @@ import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import io.seqera.serde.moshi.MoshiSerializable
+import io.seqera.service.pairing.PairingEndpoint
 import io.seqera.wave.api.Visibility
-
-import static io.seqera.wave.util.ContainerHelper.normalisePlatformEndpoint
 
 /**
  * Model the Platform tenant a Wave record belongs to.
@@ -55,14 +54,21 @@ class RecordOwner implements MoshiSerializable {
     Long workspaceId
 
     /**
+     * The organisation owning the workspace, recorded for stats and accounting. Null on public
+     * records and personal workspaces. Nothing in the access check reads it.
+     */
+    Long orgId
+
+    /**
      * The tenant this record belongs to: the workspace when there is one, otherwise the user.
      *
      * The endpoint is canonicalised here rather than on the stored field, so that two spellings
-     * of one Platform give one tenant without the stored address losing the spelling the pairing
-     * lookup resolves.
+     * of one Platform give one tenant, as ADR 20261029-workspace-ownership 2.3 requires. It uses
+     * the same form as the pairing key, so a Platform can't be paired under a spelling that the
+     * tenant would fold into another Platform's.
      */
     String tenant() {
-        final endpoint = normalisePlatformEndpoint(towerEndpoint)
+        final endpoint = PairingEndpoint.normalise(towerEndpoint)
         // not `workspaceId ?:` - 0L is falsy in Groovy
         return workspaceId != null ? "$endpoint:$workspaceId" : "$endpoint:user:$userId"
     }
@@ -72,7 +78,12 @@ class RecordOwner implements MoshiSerializable {
      *      public or anonymous - in which case the id is unchanged from before this existed.
      */
     static String tenantOf(PlatformId identity, String visibility) {
-        return Visibility.isPrivate(visibility) ? of(identity)?.tenant() : null
+        return tenantOf(of(identity), visibility)
+    }
+
+    /** The same tenant seen from a stored record, so a cached one can be matched to a new request */
+    static String tenantOf(RecordOwner owner, String visibility) {
+        return Visibility.isPrivate(visibility) ? owner?.tenant() : null
     }
 
     static RecordOwner of(PlatformId identity) {
@@ -83,7 +94,8 @@ class RecordOwner implements MoshiSerializable {
         new RecordOwner(
                 towerEndpoint: identity.towerEndpoint,
                 userId: identity.userId,
-                workspaceId: identity.workspaceId )
+                workspaceId: identity.workspaceId,
+                orgId: identity.orgId )
     }
 
 }

@@ -42,11 +42,15 @@ class ScanId {
         "sc-${base}_${count}"
     }
 
-    static ScanId of(String containerImage, String digest=null){
-        final data = new LinkedHashMap(2)
+    static ScanId of(String containerImage, String digest=null, String tenant=null){
+        final data = new LinkedHashMap(3)
         data.image = containerImage
         if( digest )
             data.digest = digest
+        // absent, not null: sipHash contributes the key even for a null value, so always
+        // putting it would change every existing public and anonymous scan id
+        if( tenant )
+            data.tenant = tenant
         final x = RegHelper.sipHash(data)
         return new ScanId(x)
     }

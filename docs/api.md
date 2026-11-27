@@ -85,6 +85,7 @@ The endpoint returns the name of the container request made available by Wave.
     towerRefreshToken: string,
     towerEndpoint: string,
     towerWorkspaceId: number,
+    visibility: string,
 }
 ```
 
@@ -112,6 +113,7 @@ The endpoint returns the name of the container request made available by Wave.
 | `towerEndpoint`                     | Seqera Platform service endpoint from where container registry credentials are retrieved (optional). Default `https://api.cloud.seqera.io`.                       |
 | `towerAccessToken`                  | Access token of the user account granting access to the Seqera Platform service specified via `towerEndpoint` (optional).                      |
 | `towerWorkspaceId`                  | ID of the Seqera Platform workspace from where the container registry credentials are retrieved (optional). When omitted the personal workspace is used. |
+| `visibility`                        | `public` or `private` (optional, default `public`). A `private` record is readable only with a Seqera Platform token for the workspace that owns it, and its build and scan ids are scoped to that workspace. `private` is honoured for any authenticated request whose build does not target the community repository, the personal workspace included. An anonymous request, or one building to the community repository, stays public. |
 
 #### Response
 
@@ -739,6 +741,52 @@ The `conda/pixi:v1-fast` container content is the same as `conda/pixi:v1` produc
 :::important
 `conda/micromamba:v2-fast` and `conda/pixi:v1-fast` build Docker images only. Singularity requests (`format: "sif"`) are rejected with HTTP 400 and the message `Build template '<template>' does not support Singularity format`.
 :::
+
+## Reading records: `/v1`
+
+The `/v1` routes supersede the `/v1alpha1` and `/v1alpha2` reads and apply the record access
+check. The older routes still work and answer with a `Deprecation: true` header and a `Link` header
+naming `/v1` as their successor.
+
+A public record is served to anyone. A private one needs a Seqera Platform token for the workspace
+that owns it, sent as `Authorization: Bearer <token>`. A browser session does not authenticate
+these routes: the view pages serve their own artifact links from `/view` instead.
+
+| Route | Returns |
+| --- | --- |
+| GET `/v1/builds/{buildId}` | the build record |
+| GET `/v1/builds/{buildId}/status` | the build status |
+| GET `/v1/builds/{buildId}/logs` | the build logs |
+| GET `/v1/builds/{buildId}/condalock` | the Conda lock file |
+| GET `/v1/mirrors/{mirrorId}` | the mirror record |
+| GET `/v1/mirrors/{mirrorId}/logs` | the mirror logs |
+| GET `/v1/scans/{scanId}` | the scan record |
+| GET `/v1/scans/{scanId}/spdx` | the SPDX bill of materials |
+| GET `/v1/scans/{scanId}/logs` | the scan logs |
+| GET `/v1/container/{requestId}` | the container request record |
+| GET `/v1/container/{requestId}/status` | the container request status |
+
+**Status codes**
+
+| Code | Meaning |
+| --- | --- |
+| 200 | the record is public, or the token may read it |
+| 401 | the record is private and no usable token was presented |
+| 403 | the token is valid, but the caller is not in the owning workspace |
+| 404 | no record with that id |
+| 503 | the owning Seqera Platform could not be reached, so access could not be decided |
+
+A caller may send `X-Tower-Endpoint` naming the Seqera Platform its token belongs to. When it is
+sent and does not match the record's owner, Wave answers 401 without forwarding the token.
+
+#### Examples
+
+```shell
+% curl --location 'http://localhost:9090/v1/builds/6c084f2e43f86a78_1'
+
+% curl --location 'http://localhost:9090/v1/builds/6c084f2e43f86a78_1' \
+    --header 'Authorization: Bearer <PLATFORM TOKEN>'
+```
 
 ### GET `/v1alpha1/builds/{buildId}/status`
 

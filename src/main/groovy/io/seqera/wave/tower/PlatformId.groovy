@@ -42,6 +42,19 @@ class PlatformId {
     final String towerEndpoint
     final String workflowId
 
+    /**
+     * The organisation owning {@code workspaceId}, learned from the workspace listing after the
+     * request is authenticated, so it is null until the submit check has run. Recorded on the
+     * record's owner for accounting; it is deliberately absent from {@link #stableHash()}, which
+     * decides build and container ids.
+     */
+    final Long orgId
+
+    /** @return a copy carrying the organisation the workspace listing reported */
+    PlatformId withOrgId(Long orgId) {
+        return new PlatformId(user, workspaceId, accessToken, towerEndpoint, workflowId, orgId)
+    }
+
     boolean asBoolean() {
         user!=null || workspaceId!=null || accessToken || towerEndpoint || workflowId
     }

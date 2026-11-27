@@ -43,6 +43,7 @@ import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.tower.RecordOwner
 import io.seqera.wave.service.request.ContainerRequest
 import io.seqera.wave.tower.PlatformId
 import io.seqera.random.LongRndKey
@@ -69,6 +70,27 @@ class ContainerScanServiceImplTest extends Specification {
 
     @Inject
     CleanupService cleanupService
+
+    def 'should not let one tenant own the scan id of a shared public image' () {
+        given: 'the same public image, requested by two tenants and anonymously'
+        def image = 'docker.io/library/ubuntu:22.04'
+        def t1 = 'https://api.tower.nf:100'
+        def t2 = 'https://api.tower.nf:200'
+        def base = { String id -> id.substring(0, id.lastIndexOf('_')) }
+
+        when:
+        def a = scanService.getScanId(image, null, ScanMode.async, null, t1)
+        def b = scanService.getScanId(image, null, ScanMode.async, null, t2)
+        def anon = scanService.getScanId(image, null, ScanMode.async, null, null)
+
+        then: 'each tenant gets its own id, and neither takes over the public one'
+        base(a) != base(b)
+        base(a) != base(anon)
+        base(b) != base(anon)
+
+        and: 'the same tenant keeps its own entry rather than joining another'
+        base(scanService.getScanId(image, null, ScanMode.async, null, t1)) == base(a)
+    }
 
     def 'should start scan successfully'() {
         given:
@@ -538,4 +560,27 @@ class ContainerScanServiceImplTest extends Specification {
         1 * persistenceService.saveScanRecordAsync(new WaveScanRecord(scanFailed)) >> null
         1 * cleanupService.cleanupScanId(container) >> null
     }
+
+    def 'should clear the same key a private scan id was written under' () {
+        given: 'a failed scan on a private record'
+        def config = Mock(ScanConfig) { getFailureDuration() >> Duration.ofSeconds(1) }
+        def container = "ubuntu:${LongRndKey.rndHex()}".toString()
+        def owner = new RecordOwner(towerEndpoint: 'https://platform.io/api', userId: 1L, workspaceId: 10L)
+        and:
+        def cleanupService = Mock(CleanupService)
+        def scanService = Spy(new ContainerScanServiceImpl(config: config, scanStore: Mock(ScanStateStore),
+                persistenceService: Mock(PersistenceService), cleanupService: cleanupService))
+        def failed = ScanEntry.of(scanId: 'sc-1', buildId: 'build-1', containerImage: container,
+                status: ScanEntry.FAILED, duration: Duration.ofSeconds(1), startTime: Instant.now(),
+                owner: owner, visibility: 'private')
+
+        when:
+        scanService.storeScanEntry(failed)
+
+        then: 'the tenant-scoped key is cleared, so the failure can be retried'
+        1 * cleanupService.cleanupScanId(ScanIdStore.key(container, owner.tenant())) >> null
+        and: 'the public entry for the same image is left alone'
+        0 * cleanupService.cleanupScanId(container)
+    }
+
 }

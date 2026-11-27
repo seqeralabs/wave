@@ -22,6 +22,7 @@ import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import io.seqera.serde.moshi.MoshiSerializable
+import io.seqera.service.pairing.PairingEndpoint
 
 /**
  * A viewer's signed-in state, one token per Platform endpoint.
@@ -35,21 +36,27 @@ import io.seqera.serde.moshi.MoshiSerializable
 @CompileStatic
 class ViewSession implements MoshiSerializable {
 
+    /**
+     * Keyed by the canonical endpoint, not the spelling a record carried: the owner keeps the
+     * spelling the request used, so two records of one Platform can name it differently and must
+     * still share the token this session holds.
+     */
     Map<String,String> tokens = new HashMap<>()
 
     String tokenFor(String towerEndpoint) {
-        return towerEndpoint ? tokens?.get(towerEndpoint) : null
+        final key = PairingEndpoint.normalise(towerEndpoint)
+        return key ? tokens?.get(key) : null
     }
 
     ViewSession without(String towerEndpoint) {
         final copy = new HashMap<String,String>(tokens ?: [:])
-        copy.remove(towerEndpoint)
+        copy.remove(PairingEndpoint.normalise(towerEndpoint))
         return new ViewSession(tokens: copy)
     }
 
     ViewSession withToken(String towerEndpoint, String token) {
         final copy = new HashMap<String,String>(tokens ?: [:])
-        copy.put(towerEndpoint, token)
+        copy.put(PairingEndpoint.normalise(towerEndpoint), token)
         return new ViewSession(tokens: copy)
     }
 

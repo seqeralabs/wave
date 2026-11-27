@@ -79,6 +79,7 @@ import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanId
 import io.seqera.wave.api.ScanMode
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.RecordOwner
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
 import jakarta.inject.Inject
@@ -94,6 +95,9 @@ class ContainerControllerTest extends Specification {
     @Inject
     @Client("/")
     HttpClient client
+
+    @Inject
+    PersistenceService persistenceService
 
     @Inject
     BuildConfig buildConfig
@@ -245,7 +249,7 @@ class ContainerControllerTest extends Specification {
         def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:22.04', containerPlatform: 'linux/amd64', scanMode: ScanMode.required)
         controller.makeRequestData(req, PlatformId.NULL, "")
         then:
-        1 * scanService.getScanId('docker.io/library/ubuntu:22.04', _, ScanMode.required, _) >> 'sc-12345_1'
+        1 * scanService.getScanId('docker.io/library/ubuntu:22.04', _, ScanMode.required, _, _) >> 'sc-12345_1'
     }
 
     def 'should create request data with freeze mode' () {
@@ -429,7 +433,7 @@ class ContainerControllerTest extends Specification {
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         // the scan id follows the target image, which embeds the container id
         def scanService = Mock(ContainerScanService) {
-            getScanId(_, _, _, _) >> { String img, String d, ScanMode m, String f -> ScanId.of(img).toString() }
+            getScanId(_, _, _, _, _) >> { String img, String d, ScanMode m, String f, String t -> ScanId.of(img, d, t).toString() }
         }
         // this spec is about ids, not membership: allow every workspace it names
         def access = Mock(RecordAccessService) { memberOf(_) >> RecordAccessService.Decision.ALLOW }
@@ -475,6 +479,8 @@ class ContainerControllerTest extends Specification {
 
         and: 'two spellings of one Platform are one tenant'
         id('private', new PlatformId(new User(id: 1), 10L, 'tok', 'HTTPS://API.cloud.seqera.io:443/')).buildId == ws10.buildId
+        id('private', new PlatformId(new User(id: 1), 10L, 'tok', 'https://api.cloud.seqera.io/')).buildId == ws10.buildId
+        id('private', new PlatformId(new User(id: 1), 10L, 'tok', 'https://api.cloud.seqera.io:443')).buildId == ws10.buildId
     }
 
     static final String COMMUNITY_REPO = 'public.cr.seqera.io/wave'
@@ -539,6 +545,63 @@ class ContainerControllerTest extends Specification {
         controller.makeBuildRequest(new SubmitContainerTokenRequest(containerFile: encode('FROM foo')), who(999L), '')
         then: 'nothing is refused'
         noExceptionThrown()
+    }
+
+    def 'should record the organisation of the workspace on a private build' () {
+        given:
+        def access = Mock(RecordAccessService) {
+            memberOf(_) >> RecordAccessService.Decision.ALLOW
+            orgIdOf(_) >> { PlatformId pid -> pid.workspaceId == 10L ? 300L : null }
+        }
+        def controller = new ContainerController(
+                inspectService: Mock(ContainerInspectServiceImpl), buildConfig: buildConfig,
+                validationService: validationService, accessService: access )
+        def build = { String vis, Long wsp -> controller.makeBuildRequest(
+                new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), visibility: vis),
+                new PlatformId(new User(id: 1), wsp, 'tok', 'https://api.cloud.seqera.io'), '') }
+
+        expect: 'the org the listing reported reaches the record owner'
+        build('private', 10L).identity.orgId == 300L
+
+        and: 'a personal workspace has none'
+        build('private', null).identity.orgId == null
+
+        and: 'a public request never asks, so it records none'
+        build(null, 10L).identity.orgId == null
+    }
+
+    def 'should carry the organisation onto the container record of a build and a mirror' () {
+        given:
+        def access = Mock(RecordAccessService) {
+            memberOf(_) >> RecordAccessService.Decision.ALLOW
+            orgIdOf(_) >> 300L
+        }
+        def builder = Mock(ContainerBuildService)
+        def controller = new ContainerController(
+                buildService: builder, mirrorService: Mock(ContainerMirrorService),
+                inspectService: Mock(ContainerInspectServiceImpl), registryProxyService: proxyRegistry,
+                buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService),
+                validationService: validationService, accessService: access,
+                persistenceService: Mock(PersistenceService) )
+        def who = new PlatformId(new User(id: 1), 10L, 'tok', 'https://api.cloud.seqera.io')
+
+        when: 'a private build request'
+        def built = controller.makeRequestData(
+                new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerPlatform: 'linux/amd64', visibility: 'private'), who, '')
+
+        then: 'no digest for the target, so the build runs rather than hitting the cache'
+        1 * proxyRegistry.getImageDigestOrUnavailable(_, _) >> null
+        1 * builder.buildImage(_) >> new BuildTrack('1', 'wave/build:abc', false, true)
+        and: 'the request the record is built from carries it, not only the build record'
+        built.identity.orgId == 300L
+
+        when: 'a private mirror request'
+        def mirrored = controller.makeRequestData(
+                new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', mirror: true,
+                        containerPlatform: 'linux/amd64', buildRepository: 'quay.io/foo', visibility: 'private'), who, '')
+
+        then: 'source and target digests match, so the cached branch is taken'
+        mirrored.identity.orgId == 300L
     }
 
     def 'should fail closed when the workspace listing is unavailable' () {
@@ -1327,5 +1390,35 @@ class ContainerControllerTest extends Specification {
         def build2 = controller.makeBuildRequest(request2, PlatformId.NULL,"")
         then:
         build1.containerId == build2.containerId
+    }
+
+    def 'should not return the owner in the container record response' () {
+        given:
+        def identity = new PlatformId(new User(id: 100), 200L, 'tok', 'https://api.cloud.seqera.io')
+        def req = new SubmitContainerTokenRequest(
+                towerEndpoint: 'https://api.cloud.seqera.io',
+                towerWorkspaceId: 200,
+                containerPlatform: ContainerPlatform.of('amd64'),
+                timestamp: Instant.now().toString() )
+        def data = ContainerRequest.of(
+                requestId: 'wave-owner123',
+                identity: identity,
+                containerImage: 'hello-world' )
+        def record = new WaveContainerRecord(req, data, 'wave.io/foo:latest', '1.2.3.4', Instant.now())
+        and:
+        persistenceService.saveContainerRequestAsync(record)
+
+        when: 'the record is read back over HTTP, as a client sees it'
+        def res = client.toBlocking().exchange(HttpRequest.GET("/v1alpha2/container/${record.id}"), String)
+
+        then:
+        res.status.code == 200
+        and: 'the owner object is absent from the response'
+        !res.body().contains('"owner"')
+        and: 'the record keeps its own endpoint and workspace, which this endpoint has always returned'
+        res.body().contains('"towerEndpoint"')
+        res.body().contains('"workspaceId"')
+        and: 'while the stored record still carries the owner'
+        persistenceService.loadContainerRequest(record.id).owner == RecordOwner.of(identity)
     }
 }

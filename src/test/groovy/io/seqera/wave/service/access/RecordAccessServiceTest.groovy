@@ -48,6 +48,14 @@ class RecordAccessServiceTest extends Specification {
             new ListWorkspacesResponse.OrgAndWorkspace(orgId: it[0] as Long, workspaceId: it[1] as Long, roles: it[2] as Set) })
     }
 
+    private static PlatformId identity(Long workspaceId, String token='tok') {
+        new PlatformId(new User(id: 7L), workspaceId, token, EP)
+    }
+
+    private static Throwable rejection() {
+        new ExecutionException(new HttpResponseException(401, 'Unauthorized'))
+    }
+
     private static GetUserInfoResponse caller(Long id) {
         new GetUserInfoResponse(user: new User(id: id))
     }
@@ -55,6 +63,8 @@ class RecordAccessServiceTest extends Specification {
     private RecordAccessService svc(GetUserInfoResponse who, ListWorkspacesResponse wsp=null) {
         def client = Mock(TowerClient)
         client.userInfoForAccess(_, _) >> { if( who==null ) throw new RuntimeException('unreachable'); return who }
+        // the read path takes the token as presented, the submit path the stored one
+        client.listWorkspacesForAccess(_, _, _) >> { if( wsp==null ) throw new RuntimeException('unreachable'); return wsp }
         client.listWorkspaces(_, _, _) >> { if( wsp==null ) throw new RuntimeException('unreachable'); return wsp }
         return new RecordAccessService(towerClient: client)
     }
@@ -101,6 +111,95 @@ class RecordAccessServiceTest extends Specification {
         svc(null).check(owner(1L, 10L), 'private', 'tok') == Decision.UNAVAILABLE
         and: 'workspace listing unreachable'
         svc(caller(7L), null).check(owner(1L, 10L), 'private', 'tok') == Decision.UNAVAILABLE
+    }
+
+    def 'should report a rejected token as unauthorized, not unreachable' () {
+        given: 'Platform answers 401, as it arrives from a future'
+        def client = Mock(TowerClient)
+        client.userInfoForAccess(_, _) >> { throw rejection() }
+        def svc = new RecordAccessService(towerClient: client)
+
+        expect: 'it is a rejection, not a 503 that invites a retry'
+        svc.check(owner(1L, 10L), 'private', 'stale-token') == Decision.REJECTED
+    }
+
+    def 'should take the stored token on the submit path and the presented one on the read path' () {
+        given: 'a caller whose access token has expired but is refreshable'
+        def client = Mock(TowerClient)
+        def svc = new RecordAccessService(towerClient: client)
+        def identity = identity(10L, 'stale-token')
+
+        when: 'the submit path checks membership'
+        def submit = svc.memberOf(identity)
+
+        then: 'it goes through the refreshing client, so the stored token is used'
+        1 * client.listWorkspaces(EP, _, 7L) >> listing([[1L, 10L, ['owner'] as Set]])
+        0 * client.listWorkspacesForAccess(_, _, _)
+        submit == Decision.ALLOW
+
+        when: 'the read path checks the same workspace'
+        def read = svc.check(owner(7L, 10L), 'private', 'stale-token')
+
+        then: 'the token is validated exactly as presented, never swapped for a stored one'
+        1 * client.userInfoForAccess(EP, _) >> caller(7L)
+        1 * client.listWorkspacesForAccess(EP, _, 7L) >> listing([[1L, 10L, ['owner'] as Set]])
+        0 * client.listWorkspaces(_, _, _)
+        read == Decision.ALLOW
+    }
+
+    def 'should decide membership without a workspace and fail closed when unreachable' () {
+        given:
+        def client = Mock(TowerClient)
+        def svc = new RecordAccessService(towerClient: client)
+
+        expect: 'a personal workspace needs no listing at all'
+        svc.memberOf(identity(null)) == Decision.ALLOW
+
+        when: 'Platform cannot be reached'
+        def out = svc.memberOf(identity(10L))
+        then:
+        1 * client.listWorkspaces(_, _, _) >> { throw new RuntimeException('unreachable') }
+        out == Decision.UNAVAILABLE
+
+        when: 'Platform rejects the token'
+        def bad = svc.memberOf(identity(10L))
+        then:
+        1 * client.listWorkspaces(_, _, _) >> { throw rejection() }
+        bad == Decision.REJECTED
+    }
+
+    def 'should read the org id from the listing the membership check fetched' () {
+        given:
+        def client = Mock(TowerClient)
+        def svc = new RecordAccessService(towerClient: client)
+
+        when: 'the workspace is in the listing'
+        def found = svc.orgIdOf(identity(10L))
+        then: 'the same cached call the membership check uses, never the read path one'
+        1 * client.listWorkspaces(EP, _, 7L) >> listing([[1L, 10L, ['owner'] as Set]])
+        0 * client.listWorkspacesForAccess(_, _, _)
+        found == 1L
+
+        expect: 'a personal workspace has no organisation and needs no listing'
+        svc.orgIdOf(identity(null)) == null
+
+        when: 'the listing does not mention the workspace'
+        def missing = svc.orgIdOf(identity(10L))
+        then:
+        1 * client.listWorkspaces(_, _, _) >> listing([[1L, 99L, ['owner'] as Set]])
+        missing == null
+
+        when: 'Platform cannot be reached'
+        def unreachable = svc.orgIdOf(identity(10L))
+        then: 'accounting data must not fail a request whose membership already passed'
+        1 * client.listWorkspaces(_, _, _) >> { throw new RuntimeException('unreachable') }
+        unreachable == null
+
+        when: 'Platform rejects the token'
+        def rejected = svc.orgIdOf(identity(10L))
+        then:
+        1 * client.listWorkspaces(_, _, _) >> { throw rejection() }
+        rejected == null
     }
 
     def 'should refuse when Platform answers without a user' () {

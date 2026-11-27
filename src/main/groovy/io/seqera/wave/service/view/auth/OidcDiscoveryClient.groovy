@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.service.pairing.PairingEndpoint
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Singleton
@@ -43,21 +44,56 @@ import jakarta.inject.Singleton
 @CompileStatic
 class OidcDiscoveryClient {
 
-    private final Map<String,OidcDiscovery> cache = new ConcurrentHashMap<>()
+    private static class Cached {
+        final OidcDiscovery value
+        final long expiresAt
+        Cached(OidcDiscovery value, long expiresAt) {
+            this.value = value
+            this.expiresAt = expiresAt
+        }
+    }
+
+    private final Map<String,Cached> cache = new ConcurrentHashMap<>()
 
     private final HttpClient http = HttpClientFactory.followRedirectsHttpClient()
 
-    /** A fetch failure is cached too: sign-in stays off for that endpoint until restart */
-    private static final OidcDiscovery NONE = new OidcDiscovery()
+    /**
+     * The code exchange posts the client secret, and a 307 or 308 would resend the body to
+     * whatever location the token endpoint names. This client refuses to follow it.
+     */
+    private final HttpClient tokenHttp = HttpClientFactory.neverRedirectsHttpClient()
+
+    /** A failure is cached only briefly, so one transient outage cannot disable sign-in until restart */
+    private static final long FAILURE_TTL_MILLIS = Duration.ofMinutes(1).toMillis()
+
+    /** A success expires too: a Platform that moves its OIDC endpoints is picked up within a day */
+    private static final long SUCCESS_TTL_MILLIS = Duration.ofHours(24).toMillis()
 
     static String formEncode(Map<String,?> params) {
         return params.collect { k, v -> "${k}=${URLEncoder.encode(v.toString(), 'UTF-8')}" }.join('&')
     }
 
+    /**
+     * The record keeps the endpoint spelling its submitter sent, so the canonical form is taken
+     * here: a trailing slash would otherwise double in the discovery path and answer 404.
+     */
     OidcDiscovery discover(String towerEndpoint) {
-        if( !towerEndpoint )
+        final endpoint = PairingEndpoint.normalise(towerEndpoint)
+        if( !endpoint )
             return null
-        return cache.computeIfAbsent(towerEndpoint, (it)-> fetch(it) ?: NONE)
+        final hit = cache.get(endpoint)
+        if( hit != null && System.currentTimeMillis() < hit.expiresAt )
+            return hit.value
+        // deliberately not computeIfAbsent: it would hold the bin lock across the fetch
+        final found = fetch(endpoint)
+        final ttl = found ? SUCCESS_TTL_MILLIS : FAILURE_TTL_MILLIS
+        cache.put(endpoint, new Cached(found, System.currentTimeMillis() + ttl))
+        return found
+    }
+
+    /** The token POST on its own, so a test can stand in for the response, as fetch does */
+    protected HttpResponse<String> post(HttpRequest request) {
+        return tokenHttp.send(request, HttpResponse.BodyHandlers.ofString())
     }
 
     protected OidcDiscovery fetch(String towerEndpoint) {
@@ -97,15 +133,19 @@ class OidcDiscoveryClient {
                     .header('Content-Type', 'application/x-www-form-urlencoded')
                     .POST(HttpRequest.BodyPublishers.ofString(body))
                     .build()
-            final resp = http.send(req, HttpResponse.BodyHandlers.ofString())
+            final resp = post(req)
             if( resp.statusCode() != 200 ) {
-                log.debug "OIDC token exchange with '$towerEndpoint' returned ${resp.statusCode()}"
+                // the OAuth error body names the misconfiguration and carries no token
+                log.warn "OIDC token exchange with '$towerEndpoint' returned ${resp.statusCode()} - ${resp.body()?.take(500)}"
                 return null
             }
-            return (JacksonHelper.fromJson(resp.body(), Map) as Map)?.get('access_token')
+            final token = (JacksonHelper.fromJson(resp.body(), Map) as Map)?.get('access_token') as String
+            if( !token )
+                log.warn "OIDC token exchange with '$towerEndpoint' returned no access_token"
+            return token
         }
         catch( Exception e ) {
-            log.debug "OIDC token exchange with '$towerEndpoint' failed - cause: ${e.message}"
+            log.warn "OIDC token exchange with '$towerEndpoint' failed - cause: ${e.message}"
             return null
         }
     }

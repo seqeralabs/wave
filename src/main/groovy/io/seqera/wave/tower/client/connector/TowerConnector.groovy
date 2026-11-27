@@ -129,27 +129,33 @@ abstract class TowerConnector {
      * @return a future of T
      */
     public <T> CompletableFuture<T> sendAsync(String endpoint, URI uri, JwtAuth auth, Class<T> type) {
-        return sendAsync0(endpoint, uri, auth, type, 1, true)
+        return sendAsync0(endpoint, uri, auth, type, 1, true, maxAttempts)
     }
 
-    /** Send with the token exactly as presented: no newer token from the store, no refresh on 401 */
+    /**
+     * Send with the token exactly as presented: no newer token from the store, no refresh on 401.
+     *
+     * No retries. This serves a reader waiting on a page, and the submit path's budget -
+     * six attempts, each behind the pairing timeout, with back-off between - would hold the thread
+     * for minutes before answering that the owning Platform is unreachable.
+     */
     public <T> CompletableFuture<T> sendAsyncAsPresented(String endpoint, URI uri, JwtAuth auth, Class<T> type) {
-        return sendAsync0(endpoint, uri, auth, type, 1, false)
+        return sendAsync0(endpoint, uri, auth, type, 1, false, 0)
     }
 
-    protected ExponentialAttempt newAttempt(int attempt) {
+    protected ExponentialAttempt newAttempt(int attempt, int maxRetries) {
         new ExponentialAttempt()
                 .withAttempt(attempt)
                 .withMaxDelay(retryMaxDelay)
                 .withBackOffBase(retryBackOffBase)
                 .withBackOffDelay(retryBackOffDelay)
-                .withMaxAttempts(maxAttempts)
+                .withMaxAttempts(maxRetries)
     }
 
     @CompileDynamic
-    protected <T> CompletableFuture<T> sendAsync0(String endpoint, URI uri, JwtAuth auth, Class<T> type, int attempt0, boolean useTokenStore) {
+    protected <T> CompletableFuture<T> sendAsync0(String endpoint, URI uri, JwtAuth auth, Class<T> type, int attempt0, boolean useTokenStore, int maxRetries) {
         final msgId = rndHex()
-        final attempt = newAttempt(attempt0)
+        final attempt = newAttempt(attempt0, maxRetries)
         // note: use a local variable for the executor, otherwise it will fail to reference the `ioExecutor` in the closure
         final exec0 = this.ioExecutor
         return sendAsync1(endpoint, uri, auth, msgId, useTokenStore, useTokenStore)
@@ -177,7 +183,7 @@ abstract class TowerConnector {
                         final delay = attempt.delay()
                         final exec = CompletableFuture.delayedExecutor(delay.toMillis(), TimeUnit.MILLISECONDS, exec0)
                         log.debug "Unable to connect '$endpoint' - cause: ${err.message ?: err}; attempt: ${attempt.current()}; await: ${delay}; msgId: ${msgId}"
-                        return CompletableFuture.supplyAsync(()->sendAsync0(endpoint, uri, auth, type, attempt.current()+1, useTokenStore), exec)
+                        return CompletableFuture.supplyAsync(()->sendAsync0(endpoint, uri, auth, type, attempt.current()+1, useTokenStore, maxRetries), exec)
                                 .thenCompose(Function.identity());
                     }
                     // report IO error

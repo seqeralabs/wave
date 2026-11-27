@@ -50,6 +50,8 @@ class ViewControllerDisabledTest extends Specification {
     def 'should not load the view controller when views are disabled'() {
         expect:
         !applicationContext.containsBean(ViewController)
+        and: 'the sign-in callback goes with the pages it serves'
+        !applicationContext.containsBean(ViewAuthController)
     }
 
     def 'should return not found for view pages when views are disabled'() {
@@ -66,6 +68,7 @@ class ViewControllerDisabledTest extends Specification {
                 '/view/mirrors/mr-12345',
                 '/view/scans/sc-12345',
                 '/view/containers/1234567890ab',
+                '/view/auth/callback',
         ]
     }
 

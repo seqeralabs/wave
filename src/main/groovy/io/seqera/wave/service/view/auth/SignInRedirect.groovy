@@ -18,29 +18,22 @@
 
 package io.seqera.wave.service.view.auth
 
+import groovy.transform.Canonical
 import groovy.transform.CompileStatic
-import io.micrometer.core.instrument.MeterRegistry
-import io.micronaut.context.annotation.Requires
-import jakarta.inject.Inject
-import jakarta.inject.Singleton
 
 /**
- * Counts view pages refused, by endpoint and outcome.
+ * Where to send a browser to sign in, and the value that ties the reply back to it.
+ *
+ * The caller sets {@code stateHash} as a cookie: the callback only accepts a {@code state}
+ * that hashes to it, so a sign-in started elsewhere cannot be planted on this browser.
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@Singleton
-@Requires(bean = MeterRegistry)
+@Canonical
 @CompileStatic
-class RefusedViewCounter {
-
-    @Inject
-    private MeterRegistry registry
-
-    void increment(String towerEndpoint, String outcome) {
-        registry.counter('wave.view.refused',
-                'endpoint', towerEndpoint ?: 'none',
-                'outcome', outcome ?: 'unknown').increment()
-    }
-
+class SignInRedirect {
+    String url
+    String stateHash
+    /** Names the cookie that holds {@code stateHash}, so concurrent sign-ins keep one each */
+    String state
 }

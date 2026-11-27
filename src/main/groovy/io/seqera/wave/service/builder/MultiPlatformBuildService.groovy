@@ -141,7 +141,9 @@ class MultiPlatformBuildService implements JobHandler<MultiBuildEntry> {
                 compression: templateRequest.compression,
                 buildTemplate: templateRequest.buildTemplate,
                 buildChildIds: buildChildIds,
-                scanChildIds: templateRequest.scanChildIds
+                scanChildIds: templateRequest.scanChildIds,
+                // absent visibility reads as public, so the parent must carry the template's
+                visibility: templateRequest.visibility
         )
         final initialEntry = BuildEntry.create(syntheticRequest)
         final stored = buildStore.storeIfAbsent(finalTargetImage, initialEntry)

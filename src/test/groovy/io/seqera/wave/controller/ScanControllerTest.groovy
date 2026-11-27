@@ -34,6 +34,7 @@ import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ScanEntry
 import io.seqera.wave.service.scan.ScanVulnerability
+import io.seqera.wave.tower.RecordOwner
 import jakarta.inject.Inject
 /**
  *
@@ -148,5 +149,31 @@ class ScanControllerTest extends Specification {
 
         and:
         res.body() == "scan failed"
+    }
+
+    def "should not return the owner in the scan record response"() {
+        given:
+        def owner = new RecordOwner(towerEndpoint: 'https://api.cloud.seqera.io', userId: 100L, workspaceId: 200L)
+        def scan = new WaveScanRecord(
+                id: 'sc-owner123',
+                buildId: 'bd-owner123_1',
+                containerImage: 'testcontainerimage',
+                status: 'SUCCEEDED',
+                startTime: Instant.now(),
+                owner: owner )
+        and:
+        persistenceService.saveScanRecordAsync(scan)
+
+        when: 'the record is read back over HTTP, as a client sees it'
+        def res = client.toBlocking().exchange(HttpRequest.GET("/v1alpha1/scans/${scan.id}"), String)
+
+        then:
+        res.status.code == 200
+        res.body().contains(scan.id)
+        and: 'the owner is absent from the response'
+        !res.body().contains('"owner"')
+        !res.body().contains('api.cloud.seqera.io')
+        and: 'while the stored record still carries it'
+        persistenceService.loadScanRecord(scan.id).owner == owner
     }
 }

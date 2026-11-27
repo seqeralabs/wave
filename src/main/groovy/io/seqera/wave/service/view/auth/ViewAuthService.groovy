@@ -20,13 +20,14 @@ package io.seqera.wave.service.view.auth
 
 import java.security.MessageDigest
 import java.security.SecureRandom
+import java.time.Duration
+import java.util.regex.Pattern
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Property
-import io.micronaut.core.convert.format.MapFormat
-import io.micronaut.core.naming.conventions.StringConvention
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.http.cookie.Cookie
+import io.micronaut.http.cookie.SameSite
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
@@ -45,6 +46,18 @@ class ViewAuthService {
 
     static final String COOKIE = 'wave-view-session'
 
+    /** Holds the hash of the state this browser started a sign-in with */
+    static final String STATE_COOKIE = 'wave-view-state'
+
+    /** What rnd() emits; the callback refuses a state outside this set before naming a cookie */
+    static final Pattern STATE_CHARS = ~/[A-Za-z0-9_-]{8,}/
+
+    /** How much of the state names its cookie - the pattern's minimum length is this */
+    static private final int NAME_PREFIX = 8
+
+    /** The claim marker outlives the entry it consumes, so the state cannot be replayed */
+    static private final String CLAIMED = 'claimed/'
+
     private static final SecureRandom RANDOM = new SecureRandom()
 
     @Inject
@@ -59,18 +72,53 @@ class ViewAuthService {
     @Value('${wave.server.url}')
     private String serverUrl
 
+    /** The cookie outlives nothing the sign-in itself does: the pending entry expires with it */
+    @Value('${wave.view.auth.pending-duration:5m}')
+    private Duration pendingDuration
+
     /** Registered per paired Platform; sign-in is unavailable for any endpoint not listed */
-    @Property(name = 'wave.view.auth.clients')
-    @MapFormat(keyFormat = StringConvention.RAW, transformation = MapFormat.MapTransformation.FLAT)
+    @Inject
     @Nullable
-    private Map<String,String> clients
+    private List<ViewAuthClient> clients
+
+    protected ViewAuthClient client(String towerEndpoint) {
+        return towerEndpoint ? clients?.find { it.matches(towerEndpoint) } : null
+    }
 
     protected String clientId(String towerEndpoint) {
-        return clients?.get(towerEndpoint)?.tokenize('|')?.first()
+        return client(towerEndpoint)?.clientId
     }
 
     protected String clientSecret(String towerEndpoint) {
-        return clients?.get(towerEndpoint)?.tokenize('|')?.getAt(1)
+        return client(towerEndpoint)?.clientSecret
+    }
+
+    /** The cookie binding a started sign-in to this browser, living exactly as long as it does */
+    Cookie stateCookie(SignInRedirect signIn) {
+        return stateCookie(signIn.state, signIn.stateHash, pendingDuration.toSeconds())
+    }
+
+    /**
+     * The state cookie, set with a lifetime and cleared with zero. Both go through here: a
+     * clearing Set-Cookie only takes effect when its path and attributes match the one that set it.
+     */
+    Cookie stateCookie(String state, String value, long maxAge) {
+        return Cookie.of(stateCookieName(state), value)
+                .path('/view/auth')
+                .httpOnly(true)
+                .secure(secureCookie())
+                .sameSite(SameSite.Lax)
+                .maxAge(maxAge)
+    }
+
+    /**
+     * One cookie per sign-in, named after the state it carries: two private pages opened before
+     * either returns would otherwise overwrite each other's hash and fail both callbacks.
+     */
+    static String stateCookieName(String state) {
+        // belt and braces: the callback rejects a state outside STATE_CHARS before it gets here,
+        // and the strict cookie encoder throws on a name holding ';', '=', ',' or a space
+        return state && state ==~ STATE_CHARS ? "${STATE_COOKIE}-${state.take(NAME_PREFIX)}".toString() : STATE_COOKIE
     }
 
     /** A Secure cookie is dropped over plain http, which would loop a dev viewer through sign-in */
@@ -86,10 +134,14 @@ class ViewAuthService {
      * @return The Platform URL to redirect the browser to, or null when that Platform cannot
      *      sign viewers in.
      */
-    String startSignIn(String towerEndpoint, String returnTo) {
-        final discovery = discoveryClient.discover(towerEndpoint)
+    SignInRedirect startSignIn(String towerEndpoint, String returnTo) {
+        // the client id first: the endpoint is the record's own, and anything that paired can
+        // name any address, so only a configured Platform is ever fetched
         final id = clientId(towerEndpoint)
-        if( !id || !discovery?.usable() )
+        if( !id )
+            return null
+        final discovery = discoveryClient.discover(towerEndpoint)
+        if( !discovery?.usable() )
             return null
 
         final state = rnd()
@@ -104,17 +156,31 @@ class ViewAuthService {
                 state: state,
                 code_challenge: challengeOf(verifier),
                 code_challenge_method: 'S256' ]
-        return "${discovery.authorization_endpoint}?${OidcDiscoveryClient.formEncode(params)}".toString()
+        final url = "${discovery.authorization_endpoint}?${OidcDiscoveryClient.formEncode(params)}".toString()
+        return new SignInRedirect(url, challengeOf(state), state)
     }
 
-    PendingSignIn consume(String state) {
-        if( !state )
+    /**
+     * @return the pending sign-in, or null unless this is the browser that started it and the
+     *      first caller to claim the state. The claim is the atomic step: get-then-remove would
+     *      let two callbacks carrying one state both through.
+     */
+    PendingSignIn consume(String state, String stateHash) {
+        if( !state || !stateHash )
+            return null
+        if( !MessageDigest.isEqual(challengeOf(state).bytes, stateHash.bytes) )
             return null
         final pending = pendingStore.get(state)
-        if( pending )
-            pendingStore.remove(state)
+        // a claim marker carries no verifier: a state spelled 'claimed/<other>' finds one
+        if( !pending?.codeVerifier )
+            return null
+        // an empty marker: the store is typed to PendingSignIn, but this need not hold a verifier
+        if( !pendingStore.putIfAbsent(CLAIMED + state, new PendingSignIn()) )
+            return null
+        pendingStore.remove(state)
         return pending
     }
+
 
     /** @return the new session id, or null when the exchange failed */
     String completeSignIn(PendingSignIn pending, String code, String existingSessionId) {
@@ -138,20 +204,24 @@ class ViewAuthService {
         return sessionId
     }
 
-    /** Drops a token Platform has rejected, so the next page starts a fresh sign-in */
-    void forget(String sessionId, String towerEndpoint) {
-        final session = sessionId ? sessionStore.get(sessionId) : null
+    /** @return the viewer's session, or null. One read for a caller that needs more than the token */
+    ViewSession session(String sessionId) {
+        return sessionId ? sessionStore.get(sessionId) : null
+    }
+
+    /**
+     * Drops a token Platform has rejected, so the next page starts a fresh sign-in.
+     * Takes the session the caller already read: the store has no local tier, so re-reading
+     * it here would cost a second round-trip.
+     */
+    void forget(String sessionId, ViewSession session, String towerEndpoint) {
         if( session?.tokenFor(towerEndpoint) )
             sessionStore.put(sessionId, session.without(towerEndpoint))
     }
 
-    /** @return the endpoint when Wave can sign in to it, otherwise a constant - keeps metric labels bounded */
+    /** @return the client's name when Wave can sign in to that endpoint, otherwise a constant */
     String known(String towerEndpoint) {
-        return clientId(towerEndpoint) ? towerEndpoint : 'other'
-    }
-
-    String tokenFor(String sessionId, String towerEndpoint) {
-        return sessionId ? sessionStore.get(sessionId)?.tokenFor(towerEndpoint) : null
+        return client(towerEndpoint)?.name ?: 'other'
     }
 
     static private String rnd() {

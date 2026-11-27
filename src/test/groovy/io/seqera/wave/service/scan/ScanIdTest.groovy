@@ -27,7 +27,26 @@ import spock.lang.Specification
 class ScanIdTest extends Specification {
 
     def 'should create scanid' () {
+        expect:
         ScanId.of("docker.io/foo/bar:latest").toString() == 'sc-057d44d43bb7f81c_0'
+    }
+
+    def 'should scope a private scan id to its tenant' () {
+        expect: 'a public id is unchanged - the tenant is absent, not null'
+        ScanId.of('x').toString() == 'sc-94be9fbddcc3af8e_0'
+        ScanId.of('x', 'y').toString() == 'sc-00769af315dcb1fe_0'
+
+        and: 'two tenants scanning the same image never share an id'
+        ScanId.of('x', null, 'https://api.tower.nf:1') != ScanId.of('x', null, 'https://api.tower.nf:2')
+
+        and: 'a tenant id is distinct from the public one for the same image'
+        ScanId.of('x', null, 'https://api.tower.nf:1') != ScanId.of('x')
+
+        and: 'the same tenant is stable'
+        ScanId.of('x', null, 'https://api.tower.nf:1') == ScanId.of('x', null, 'https://api.tower.nf:1')
+
+        and: 'the tenant is distinguished from the digest, not merged into it'
+        ScanId.of('x', 'y') != ScanId.of('x', null, 'y')
     }
 
     def 'create a count with the specified count' () {

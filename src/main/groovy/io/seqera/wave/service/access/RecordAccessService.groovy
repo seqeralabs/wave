@@ -80,14 +80,39 @@ class RecordAccessService {
         return askPlatform(identity.towerEndpoint, () -> member(identity.towerEndpoint, auth, identity.userId, identity.workspaceId))
     }
 
+    /**
+     * The organisation owning the workspace the request names, for the record's owner.
+     *
+     * Reads the same listing the membership check just fetched, which is cached for the access
+     * check's ttl, so it costs no further Platform call.
+     *
+     * @return null when the request names no workspace, or the listing does not say
+     */
+    Long orgIdOf(PlatformId identity) {
+        if( identity?.workspaceId == null )
+            return null
+        try {
+            final ws = towerClient.listWorkspaces(identity.towerEndpoint, JwtAuth.of(identity), identity.userId)
+            return ws?.orgsAndWorkspaces?.find { it.workspaceId == identity.workspaceId }?.orgId
+        }
+        catch( Exception e ) {
+            // membership has already been granted on this listing, and the org id is recorded for
+            // accounting only, so failing to read it must not fail the request
+            log.debug "Access check - org id unavailable for '$identity.towerEndpoint' - cause: ${e.message}"
+            return null
+        }
+    }
+
     /** The token must belong to a Platform user; the kind of workspace then says which rule applies */
     private Decision reader(RecordOwner owner, JwtAuth auth) {
         final userId = towerClient.userInfoForAccess(owner.towerEndpoint, auth).user?.id
         if( userId == null )
             return Decision.UNAUTHORIZED
-        return owner.workspaceId == null
-                ? AccessRules.ownedBy(owner, userId)
-                : member(owner.towerEndpoint, auth, userId, owner.workspaceId)
+        if( owner.workspaceId == null )
+            return AccessRules.ownedBy(owner, userId)
+        // the read path judges the token as presented, so it takes no newer one from the store
+        final ws = towerClient.listWorkspacesForAccess(owner.towerEndpoint, auth, userId)
+        return AccessRules.memberOf(ws, owner.workspaceId)
     }
 
     private Decision member(String endpoint, JwtAuth auth, Long userId, Long workspaceId) {
